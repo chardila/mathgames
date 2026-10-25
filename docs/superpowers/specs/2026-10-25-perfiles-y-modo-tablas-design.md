@@ -71,6 +71,18 @@ Contexto: la niña ya probó la versión actual (aventura básica sin tiempo, ac
 - **15 estaciones por defecto**, ajustable por perfil desde la zona de padres (hoy: 10 rápida / 25 normal). Afinar con los tiempos medidos.
 - **Final**: tesoro y resumen como ahora, pero el resumen destaca el avance ("hoy dominaste 2 operaciones nuevas") en lugar del porcentaje de aciertos.
 
+### Motor de aprendizaje de tablas _(propuesto por el diseñador, aprobado por el usuario)_
+
+- **55 operaciones únicas** (pares `a ≤ b`, 1–10); `7 × 9` y `9 × 7` son la misma, pero se preguntan en ambos sentidos.
+- **Estados**: nueva → practicando → dominada.
+- **Dominada** = correcta en **< 3 s, sin pista, 3 veces, en ≥ 2 días distintos**. Correcta pero lenta cuenta como acierto, no como "rápida". Si necesitó pista o respuesta, se reinicia su cuenta de rápidas.
+- **Descubrimiento inicial**: las primeras rondas recorren todas las operaciones para detectar las que ya salen rápido; esas quedan "casi dominadas" y se confirman otro día.
+- **Orden de introducción** de lo no sabido: tablas 1, 2, 5, 10 → 3, 4, 9 → 6, 7, 8.
+- **Composición de una ronda de 15**: ~2 operaciones nuevas, cada una ~3 veces y espaciadas; ~90 % practicando/conocidas. Una fallada vuelve 3–4 estaciones después.
+- **Repaso espaciado** de dominadas: a 1, 3, 7 y 14 días. Si falla en repaso, vuelve a "practicando" en el álbum de padres.
+- **Nunca se quita nada coleccionado**: el personaje no se vacía aunque una operación vuelva a "practicando".
+- Para el hermano, las mismas reglas lo llevan a dominar casi todo en pocos días; su siguiente reto es el trabajo 3.
+
 ## No metas (de este documento)
 
 - Multiplicación de varias cifras en columnas → trabajo 3, documento aparte.
@@ -87,14 +99,12 @@ Contexto: la niña ya probó la versión actual (aventura básica sin tiempo, ac
 
 ## Decisiones del diseñador (para revisar)
 
-- Una operación cuenta como **dominada** cuando se responde bien y rápido varias veces, en días distintos. Umbrales exactos: pendiente.
+- Umbrales del motor de aprendizaje (ver sección propia), aprobados por el usuario.
 - `7 × 9` y `9 × 7` cuentan como la **misma operación aprendida**: dominarla suma a ambas tablas.
 - Personajes con diseño propio (SVG/CSS como los tesoros actuales), no copias de Numberblocks.
 
 ## Pendiente de decidir (dónde se quedó la conversación)
 
-- Umbrales de "dominada" (cuántos aciertos, qué tan rápido, en cuántos días).
-- Orden en que se introducen las tablas nuevas y qué pasa con las ya dominadas (repaso espaciado).
 - Música o sonidos: ¿melodías propias para enganchar?
 - Cómo encaja este modo con los modos actuales del menú.
 - Revisión por un constructor independiente (paso final antes de entregar el documento).
