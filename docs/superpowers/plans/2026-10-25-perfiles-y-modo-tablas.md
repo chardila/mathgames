@@ -120,4 +120,334 @@ Cómo se enlazan los módulos:
 
 ---
 
+## Preparación (una vez, antes de la Tarea 1)
+
+- [ ] Crear la rama: `git switch -c feature/perfiles-y-tablas`.
+- [ ] Comprobar la línea base: `npm test && npm run validate && npm run test:browser`. Todo debe pasar antes de tocar nada.
+
+---
+
+## Fase A · Perfiles y zona de padres
+
+### Tarea 1: Modelo de perfiles puro, migración y reto de padres
+
+**Archivos:**
+
+- Modificar: `app.js` (sección 2, después de `migrateLearningStart`, y `module.exports`)
+- Crear: `tests/profiles.test.js`
+- Modificar: `package.json` (añadir `node tests/profiles.test.js` al script `test`)
+- Modificar: `service-worker.js` (`CACHE_VERSION = "tablas-del-tesoro-v2"`)
+- Modificar: `tests/offline.test.js` (`caches.keys` simulado devuelve `["tablas-del-tesoro-v1", "tablas-del-tesoro-v2"]` y la prueba espera `deleted === "tablas-del-tesoro-v1"`)
+
+**Interfaces:**
+
+- Consume: `normalizeLearning`, `migrateLearningStart`, `randInt`, `MATH_MODES` (ya existen en `app.js`).
+- Produce (exportado en `module.exports`):
+  - `DEFAULT_SETTINGS`: `{ sound: true, music: true, timer: false, blitz: false, quick: false, choices: true, setbacks: false, tableStations: 15, mainMode: "tables" }`
+  - `TABLE_STATION_OPTIONS = [10, 15, 20, 25]`
+  - `MAIN_MODES = ["tables", "add", "sub", "mul", "div", "mix"]`
+  - `PROFILE_AVATARS = ["🦊", "🐱", "🐼", "🦁", "🐸", "🐵", "🦄", "🐲", "🐧", "🐢"]`
+  - `PROFILE_NAME_MAX = 20`
+  - `defaultProgress() -> object`: el mismo objeto que hoy arma `resetProgress` (monedas 0, `buddies: ["kid"]`, `inventory` en cero, `learning: normalizeLearning()`, `learningStartVersion: 1`, etc.). Devuelve un objeto nuevo en cada llamada.
+  - `normalizeSettings(saved) -> object`: valores de `DEFAULT_SETTINGS` donde falten o tengan un tipo inválido. Si `tableStations` no está en `TABLE_STATION_OPTIONS`, pasa a 15; si `mainMode` no está en `MAIN_MODES`, pasa a `"tables"`.
+  - `cleanProfileName(name, fallback) -> string`: quita espacios sobrantes, corta a `PROFILE_NAME_MAX` y usa `fallback` si queda vacío.
+  - `createProfile(name, avatar, existingIds, fallbackName) -> profile`
+  - `normalizeProfile(saved) -> profile | null`: `null` si `saved` no es un objeto o no tiene `id` de texto.
+  - `normalizeProfileStore(saved) -> { version: 1, lastId: string, profiles: profile[] }`
+  - `migrateLegacyStorage(savedStore, legacyProgress, legacySettings, defaultName) -> store`
+  - `parentChallenge() -> { a, b, answer }`
+- Forma de un perfil: `{ id: "p1", name: "Ana", avatar: "🐼", settings: {...}, progress: {...}, tables: <se conserva tal cual; la Tarea 5 lo normaliza> }`. Los ids son `"p" + entero` y no se repiten dentro del almacén.
+
+- [ ] **Paso 1: Escribir las pruebas que fallan** en `tests/profiles.test.js`, con el mismo estilo que `tests/learning.test.js` (`node:assert/strict`, un contador `check`, un `console.log` final). Casos y aserciones:
+
+```js
+const app = require("../app.js");
+// normalizeSettings
+assert.deepEqual(app.normalizeSettings({}), app.DEFAULT_SETTINGS);
+const s = app.normalizeSettings({ tableStations: 13, mainMode: "x", timer: "yes", quick: true, extra: 1 });
+check(s.tableStations === 15 && s.mainMode === "tables" && s.timer === false && s.quick === true, "settings coerced");
+check(app.normalizeSettings({ tableStations: 25, mainMode: "div" }).tableStations === 25, "valid stations kept");
+// defaultProgress
+const p1 = app.defaultProgress(), p2 = app.defaultProgress();
+check(p1 !== p2 && p1.learning !== p2.learning, "fresh objects");
+check(p1.coins === 0 && p1.buddies[0] === "kid" && p1.learningStartVersion === 1 &&
+  Object.values(p1.learning).every((r) => r.level === 1.5), "default progress");
+// createProfile / cleanProfileName
+const ana = app.createProfile("  Ana  ", "🐼", ["p1", "p2"], "Jugador");
+check(ana.name === "Ana" && ana.avatar === "🐼" && !["p1", "p2"].includes(ana.id), "create profile");
+assert.deepEqual(ana.settings, app.DEFAULT_SETTINGS);
+check(app.cleanProfileName("x".repeat(40), "J").length === 20, "name max 20");
+check(app.cleanProfileName("   ", "Jugador 2") === "Jugador 2", "empty name fallback");
+check(app.createProfile("A", "🚀", [], "J").avatar === app.PROFILE_AVATARS[0], "unknown avatar -> first");
+// normalizeProfile
+check(app.normalizeProfile(null) === null && app.normalizeProfile({ name: "x" }) === null, "invalid profile");
+const np = app.normalizeProfile({ id: "p7", name: "", progress: { coins: 5, customFutureField: "keep" } });
+check(np.progress.coins === 5 && np.progress.customFutureField === "keep" && np.progress.learning.add.level === 1.5, "progress kept + learning normalized");
+check(np.name.length > 0, "nameless profile gets a name");
+// normalizeProfileStore
+assert.deepEqual(app.normalizeProfileStore("garbage"), { version: 1, lastId: "", profiles: [] });
+const st = app.normalizeProfileStore({ lastId: "p9", profiles: [{ id: "p1", name: "A" }, { id: "p1", name: "B" }, 3] });
+check(st.profiles.length === 1 && st.profiles[0].name === "A" && st.lastId === "", "dedupe, drop invalid, reset unknown lastId");
+// migrateLegacyStorage
+const legacyProgress = { coins: 500, learning: { div: { level: 3 } }, customFutureField: "keep" };
+const legacySettings = { timer: true, sound: false, quick: true };
+const frozen = JSON.stringify([legacyProgress, legacySettings]);
+const m = app.migrateLegacyStorage(null, legacyProgress, legacySettings, "Jugador 1");
+check(m.profiles.length === 1 && m.profiles[0].name === "Jugador 1" && m.lastId === m.profiles[0].id, "one migrated profile");
+const mp = m.profiles[0];
+check(mp.progress.coins === 500 && mp.progress.learning.div.level === 3 && mp.progress.learning.add.level === 1.5 &&
+  mp.progress.customFutureField === "keep", "legacy progress migrated");
+check(mp.settings.timer === true && mp.settings.sound === false && mp.settings.quick === true &&
+  mp.settings.setbacks === false && mp.settings.mainMode === "tables" && mp.settings.tableStations === 15, "legacy settings migrated");
+check(JSON.stringify([legacyProgress, legacySettings]) === frozen, "legacy inputs not mutated");
+assert.deepEqual(app.migrateLegacyStorage(m, { coins: 1 }, null, "X"), app.normalizeProfileStore(m)); // idempotent
+const empty = app.migrateLegacyStorage(null, null, null, "Jugador 1");
+check(empty.profiles.length === 1 && empty.profiles[0].progress.coins === 0, "fresh install default profile");
+check(app.migrateLegacyStorage(null, 42, [], "J").profiles[0].progress.coins === 0, "non-object legacy ignored");
+check(app.migrateLegacyStorage({ version: 1, lastId: "", profiles: [] }, legacyProgress, null, "J").profiles.length === 0,
+  "an existing empty store stays empty (all profiles deleted)");
+// parentChallenge
+for (let i = 0; i < 1000; i++) {
+  const c = app.parentChallenge();
+  check(c.a >= 12 && c.a <= 19 && c.b >= 12 && c.b <= 19 && c.answer === c.a * c.b, "parent challenge range");
+}
+```
+
+- [ ] **Paso 2: Ejecutar y ver el fallo.** `node tests/profiles.test.js` → falla con `app.normalizeSettings is not a function`.
+- [ ] **Paso 3: Implementar** las funciones de la lista "Produce" en `app.js`, debajo de `migrateLearningStart`, con comentarios de una línea como el resto de la sección. Una regla que las pruebas no fijan: `migrateLegacyStorage` usa `savedStore` si es un objeto con `profiles` de tipo array (aunque esté vacío). Si no, crea un perfil a partir de los datos antiguos que sean objetos, o uno por defecto si no hay ninguno. El progreso antiguo pasa por `migrateLearningStart(Object.assign(defaultProgress(), legacyProgress))`.
+- [ ] **Paso 4: Subir la caché.** Cambiar `CACHE_VERSION` y `tests/offline.test.js` como dice "Archivos". Añadir la prueba a `package.json`.
+- [ ] **Paso 5: Verificar.** `npm test && npm run validate` → todo pasa, incluida la línea final de `profiles.test.js`. `npm run test:browser` sigue pasando: la interfaz aún no usa nada de esto.
+- [ ] **Paso 6: Commit.** `git add app.js tests/profiles.test.js tests/offline.test.js package.json service-worker.js && git commit -m "feat: pure profile model, legacy migration and parent challenge"`
+
+---
+
+### Tarea 2: Perfiles en la app y pantalla "¿Quién juega?"
+
+**Archivos:**
+
+- Modificar: `app.js` (`startApp`: almacenamiento, estado, arranque, navegación; nuevos textos `I18N`)
+- Modificar: `index.html` (nueva sección `#screen-profiles`; botón "Cambiar jugador" en `#screen-menu`)
+- Modificar: `styles.css` (`.profile-grid`, `.profile-btn`)
+- Modificar: `tests/browser.test.js`
+
+**Interfaces:**
+
+- Consume: `migrateLegacyStorage`, `normalizeProfileStore`, `DEFAULT_SETTINGS`, `defaultProgress` (Tarea 1).
+- Produce, dentro de `startApp`:
+  - `STORAGE_KEYS.profiles = "ms_profiles"`.
+  - `state.store`: el almacén normalizado.
+  - `state.profile`: el perfil activo, o `null`.
+  - `state.settings` y `state.progress`: **apuntan a** `state.profile.settings` y `state.profile.progress`. Sin perfil, `state.settings` es una copia de `DEFAULT_SETTINGS`.
+  - `saveProfiles()`: guarda `state.store` en `ms_profiles`. Reemplaza **todas** las llamadas `storageSet(STORAGE_KEYS.progress, …)` y `storageSet(STORAGE_KEYS.settings, …)`.
+  - `useProfile(id)`: activa el perfil, guarda `lastId`, aplica el acompañante, refresca las cifras y llama a `goHome()`.
+  - `goHome()`: en esta tarea muestra siempre `#screen-menu`. La Tarea 8 la hará depender de `mainMode`.
+  - `goToProfiles()`: detiene temporizadores y transición, como `goToMenu`. Pone `state.run = null` y `state.profile = null`, dibuja `#profile-grid` y muestra `#screen-profiles`.
+  - `renderProfileGrid()`
+  - Acción `switch-player` → `goToProfiles()`.
+- DOM:
+  - `#screen-profiles` contiene `h1[data-i18n="who_title"]`, `#profile-grid` y `p#who-empty[data-i18n="who_empty"]` (visible solo si no hay perfiles).
+  - Cada perfil es un `button.profile-btn[data-profile-id]` con su avatar (`.profile-avatar`) y su nombre (`.profile-name`).
+- Textos nuevos (`es` / `en`):
+  - `who_title`: "¿Quién juega?" / "Who's playing?"
+  - `who_empty`: "Todavía no hay jugadores. Pide a un adulto que cree uno." / "No players yet. Ask a grown-up to add one."
+  - `btn_switch_player`: "Cambiar jugador" / "Switch player"
+  - `profile_default_name`: "Jugador {n}" / "Player {n}"
+
+Al arrancar:
+
+1. `state.store = migrateLegacyStorage(storageGet(profiles), storageGet(progress), storageGet(settings), <profile_default_name con n=1 en el idioma guardado o "es">)`.
+2. `saveProfiles()`.
+3. Sin idioma guardado → `#screen-language`; al elegir idioma → `goToProfiles()`. Con idioma guardado → `goToProfiles()` directamente.
+
+`resetProgress` reinicia el perfil activo (`state.profile.progress = state.progress = defaultProgress()`).
+
+- [ ] **Paso 1: Adaptar `tests/browser.test.js` al flujo con perfiles** (primero fallará).
+  - Ayudantes nuevos, al principio de la función principal:
+    - `store()` lee `ms_profiles`.
+    - `saved()` devuelve el `progress` del perfil con `id === lastId`.
+    - `pickProfile(name)` pulsa `#profile-grid .profile-btn` con ese texto.
+    - `seedProfiles(profiles, lastId)` escribe `ms_profiles` (`{ version: 1, lastId, profiles }`) y recarga.
+  - Después de cada `reload()` y de elegir "Español", el flujo pasa por `pickProfile("Jugador 1")`. Se repite lo que la prueba hacía después de recargar, incluido `page.clock.install()` si hace falta.
+  - Se conservan las comprobaciones de hoy: monedas 500, `customFutureField`, `learning.div.level === 3`, `learning.add.level === 1.5`, colección, insignias y aprendizaje tras recargar. Ahora todas leen `saved()`.
+  - En el bloque de instalación nueva, el `evaluate` que escribe `ms_settings` `{timer: true, blitz: true}` y `ms_progress` `"{broken"` también ejecuta `localStorage.removeItem("ms_profiles")`, para simular una instalación antigua. Las comprobaciones "existing timer preferences retained" y "corrupt storage recovers" siguen igual.
+  - El contexto sin almacenamiento: Español → `pickProfile("Jugador 1")` → `go-modes` → `start-run` → hay 4 o más `.choice`.
+  - Comprobaciones nuevas:
+
+```js
+check((await page.locator("#profile-grid .profile-btn").count()) === 1 &&
+  (await page.locator("#profile-grid").textContent()).includes("Jugador 1"), "who plays lists migrated profile");
+check((await page.evaluate(() => JSON.parse(localStorage.getItem("ms_progress")))).coins === 500, "legacy keys untouched");
+// Two seeded profiles: A (coins 10), B (coins 99)
+await pickProfile("A"); check((await page.locator("#menu-coins").textContent()) === "10", "profile A coins");
+await page.locator('#screen-menu [data-action="switch-player"]').click();
+await pickProfile("B"); check((await page.locator("#menu-coins").textContent()) === "99", "profile B coins");
+// buy a joker as B -> A still has 10 coins in the store
+check((await store()).profiles.find((p) => p.name === "A").progress.coins === 10, "profiles isolated");
+// ms_profiles = "{broken" and no legacy keys -> one "Jugador 1" with 0 coins
+check(/* ... */ true, "corrupt profile store recovers");
+```
+
+- [ ] **Paso 2: Ejecutar** `npm run test:browser` → falla porque no existe `#profile-grid`.
+- [ ] **Paso 3: Implementar** lo de "Produce" y el arranque descrito arriba. El botón `switch-player` va en `#screen-menu`, debajo de los botones actuales, con `btn--ghost`. `refreshMenuStats` no cambia: ya lee `state.progress`.
+- [ ] **Paso 4: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa.
+- [ ] **Paso 5: Commit.** `git commit -am "feat: per-child profiles with who-plays screen"` (antes, `git add` del HTML y el CSS si hiciera falta).
+
+---
+
+### Tarea 3: Zona de padres con freno y editor de perfiles; fuera los ajustes de las pantallas de niños
+
+**Archivos:**
+
+- Modificar: `index.html`:
+  - `#screen-settings` pasa a ser `#screen-profile-edit`.
+  - Nuevas `#screen-parents` y `#parent-gate` (overlay).
+  - Se quita `[data-action="go-settings"]` de `#screen-menu`.
+  - Se quitan los tres `switch-row` de `#screen-modes`.
+- Modificar: `app.js` (acciones, `els`, `syncToggles` y `wireToggles` reescritas sobre el perfil en edición, textos)
+- Modificar: `styles.css`
+- Modificar: `tests/browser.test.js`
+
+**Interfaces:**
+
+- Consume: `parentChallenge`, `createProfile`, `cleanProfileName`, `PROFILE_AVATARS`, `TABLE_STATION_OPTIONS`, `MAIN_MODES` (Tarea 1); `goToProfiles`, `saveProfiles` (Tarea 2).
+- Produce:
+  - **Freno.** La acción `open-parents` (botón `#screen-profiles [data-action="open-parents"]`, con candado 🔒 y texto `btn_parents`) muestra `#parent-gate`:
+    - `#gate-question`: "14 × 17 = ?"
+    - `#gate-input`: `type="text" inputmode="numeric" autocomplete="off"`
+    - `[data-action="gate-ok"]` y `[data-action="gate-cancel"]`
+    - Con Enter en `#gate-input` se comprueba.
+    - Si la respuesta es mala: se muestra `#gate-feedback` con `gate_wrong`, se pone un reto nuevo y se vacía la casilla.
+    - Si es buena: se cierra y se va a `#screen-parents`.
+  - **Lista.** `#screen-parents` tiene:
+    - volver `[data-action="go-profiles"]`;
+    - el selector de idioma (aquí se mueve `#settings-language-grid`);
+    - `#parent-profiles`, con una fila `.parent-profile` por perfil y su botón `[data-edit-id]`;
+    - `[data-action="add-profile"]`, que crea un perfil `profile_default_name` con `n = número de perfiles + 1`, lo guarda y abre el editor.
+  - **Editor.** `#screen-profile-edit` tiene:
+    - volver `[data-action="back-parents"]` (no vuelve a pedir el reto);
+    - `#edit-name` (`maxlength=20`; al salir del campo, `cleanProfileName`);
+    - `#edit-avatars`, con un `button[data-avatar]` por avatar;
+    - `select#edit-main-mode`, con opciones `MAIN_MODES` y textos `mode_tables` y los `m_*` existentes;
+    - los interruptores `#toggle-sound`, `#toggle-music`, `#toggle-timer`, `#toggle-blitz`, `#toggle-quick`, `#toggle-choices`, `#toggle-setbacks`;
+    - `select#edit-stations` (10/15/20/25);
+    - `[data-action="reset"]` (reinicia el perfil en edición, tras `confirm`);
+    - `[data-action="delete-profile"]` (tras `confirm(t("delete_confirm", { name }))`; si era `lastId`, este pasa a `""`; vuelve a la lista).
+  - `state.editingId`. El editor cambia **solo** `profile.settings` y `profile.name`/`avatar` del perfil en edición, y guarda en cada cambio. Como la zona de padres solo se abre desde `#screen-profiles`, no hay perfil activo mientras se edita.
+- Textos nuevos (`es` / `en`):
+  - `btn_parents`: "Zona de padres" / "Parents"
+  - `gate_title`: "Solo para adultos" / "Grown-ups only"
+  - `gate_wrong`: "No es correcto. Prueba con esta." / "Not quite. Try this one."
+  - `btn_ok`: "Entrar" / "Enter"
+  - `btn_cancel`: "Cancelar" / "Cancel"
+  - `parents_title`: "Zona de padres" / "Parents area"
+  - `add_profile`: "Añadir jugador" / "Add player"
+  - `btn_edit`: "Editar" / "Edit"
+  - `edit_title`: "Jugador" / "Player"
+  - `edit_name`: "Nombre" / "Name"
+  - `edit_avatar`: "Avatar" / "Avatar"
+  - `edit_main_mode`: "Pantalla de inicio" / "Home screen"
+  - `mode_tables`: "Aprender las tablas" / "Learn the tables"
+  - `set_music`: "Música" / "Music"
+  - `set_setbacks`: "Retroceder estaciones al fallar" / "Go back stations on a miss"
+  - `set_stations`: "Estaciones en modo tablas" / "Stations in tables mode"
+  - `set_choices`: ya existe
+  - `delete_profile`: "Borrar jugador" / "Delete player"
+  - `delete_confirm`: "¿Borrar a {name} y todo su progreso?" / "Delete {name} and all their progress?"
+
+- [ ] **Paso 1: Pruebas de navegador que fallan.**
+  - Cambiar el ayudante `start(mode, quick, diff, timer)`. Si `quick` o `timer` no coinciden con el perfil activo, se llama a `setProfileSettings({ quick, timer })`: un `evaluate` cambia los ajustes del perfil `lastId` en `ms_profiles`, recarga y elige el perfil. Ya no se tocan interruptores en `#screen-modes`.
+  - La comprobación "optional timing" pasa a leer `#toggle-timer` y `#toggle-blitz` en el editor de "Jugador 1", tras pasar el freno.
+  - El ayudante `passGate()` lee los dos números de `#gate-question`, escribe su producto en `#gate-input` y pulsa `gate-ok`.
+  - Comprobaciones:
+
+```js
+check((await page.locator('#screen-menu [data-action="go-settings"]').count()) === 0 &&
+  (await page.locator("#screen-modes .switch-row").count()) === 0, "no settings on child screens");
+// gate: wrong answer keeps it closed
+await page.locator('[data-action="open-parents"]').click();
+await page.locator("#gate-input").fill("1"); await page.locator('[data-action="gate-ok"]').click();
+check(await page.locator("#parent-gate").isVisible() && (await page.locator("#gate-input").inputValue()) === "" &&
+  !(await page.locator("#screen-parents").evaluate((el) => el.classList.contains("is-active"))), "gate rejects wrong answer");
+await passGate(); // -> #screen-parents active
+// add + rename + avatar
+await page.locator('[data-action="add-profile"]').click();
+await page.locator("#edit-name").fill("Ana"); await page.locator("#edit-name").blur();
+await page.locator('#edit-avatars [data-avatar="🐼"]').click();
+await page.locator("#toggle-timer").locator("xpath=ancestor::label").click();
+const ana = (await store()).profiles.find((p) => p.name === "Ana");
+check(ana.avatar === "🐼" && ana.settings.timer === true, "editor saves to edited profile");
+check((await store()).profiles.find((p) => p.name === "Jugador 1").settings.timer === false, "other profile untouched");
+// delete every profile -> who-plays shows the empty hint and the parents button still works
+check(await page.locator("#who-empty").isVisible() &&
+  await page.locator('[data-action="open-parents"]').isVisible(), "empty who-plays usable");
+// switching player during a pending transition writes nothing into the next profile
+// (answer correctly as A, quit at once, switch, pick B, clock.runFor(1000): B's learning unchanged)
+check(/* ... */ true, "no cross-profile writes after switch");
+```
+
+- [ ] **Paso 2: Ejecutar** `npm run test:browser` → falla (no existe `open-parents`).
+- [ ] **Paso 3: Implementar** lo de "Produce":
+  - Quitar del objeto `els` y de `wireToggles` los interruptores de `#screen-modes` y su lógica de espejo.
+  - `syncToggles()` copia los ajustes del perfil en edición al editor.
+  - Cada interruptor o selector cambia `profile.settings[key]` y llama a `saveProfiles()`.
+  - El selector de idioma de `#screen-parents` usa `setLanguage`, como hoy.
+- [ ] **Paso 4: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa.
+- [ ] **Paso 5: Commit.** `git add -A && git commit -m "feat: parents area with gate and per-profile settings editor"`
+
+---
+
+### Tarea 4: "Otros juegos" respeta el perfil (escribir, retroceso, escudo)
+
+**Archivos:**
+
+- Modificar: `index.html`. Dentro de `.task-card`, después de `#hint`:
+  - `<div class="answer-display" id="answer-display" hidden>_</div>`
+  - `<div id="numpad-wrap" hidden>` con `<div class="numpad" id="numpad"></div>` y `<button class="btn btn--primary btn--xl" data-action="check" data-i18n="btn_check">Comprobar</button>`
+
+  El CSS de `.answer-display`, `.numpad` y `.key` ya existe.
+- Modificar: `app.js` (`nextTask`, `showSolution`, `onWrong`, `onTimeout`, `renderPowerups`, `renderShop`)
+- Modificar: `tests/browser.test.js`
+
+**Interfaces:**
+
+- Consume: `state.settings.choices` y `state.settings.setbacks` (Tareas 1–3).
+- Produce:
+  - `nextTask` pone `activeTask.choice = !!state.settings.choices`, en lugar de `true` siempre.
+  - Con `choice` en falso:
+    - `setupAnswerMode` ya muestra el teclado y el botón de comprobar;
+    - `showSolution` muestra `#choices` con **solo** el botón `.choice--continue`;
+    - el siguiente `setupAnswerMode` lo vuelve a ocultar.
+  - `onWrong` y `onTimeout` llaman a `goBackOnMiss(3)` **solo si** `state.settings.setbacks`.
+  - `renderPowerups` y `renderShop` omiten el potenciador `shield` si `!state.settings.setbacks`.
+
+- [ ] **Paso 1: Pruebas que fallan.**
+  - Los bloques de hoy que comprueban "three-station setback" y "shield prevents setback" deben sembrar antes `setbacks: true` en el perfil, con `setProfileSettings`.
+  - Comprobaciones nuevas:
+
+```js
+await setProfileSettings({ choices: false, setbacks: false });
+await start("mul", true);
+check((await page.locator("#numpad .key").count()) === 12 && !(await page.locator("#choices").isVisible()), "typing mode");
+for (let i = 0; i < 10; i++) { // half with on-screen keys + Check, half with keyboard digits + Enter
+  const q = await current();
+  if (i % 2) { await page.keyboard.type(String(q.answer)); await page.keyboard.press("Enter"); }
+  else { for (const d of String(q.answer)) await page.locator("#numpad .key", { hasText: new RegExp("^" + d + "$") }).click();
+         await page.locator('[data-action="check"]').click(); }
+  await page.clock.runFor(800);
+}
+check((await page.locator("#sum-accuracy").textContent()) === "100%", "typed round completes");
+// wrong typed answer at station 5 with setbacks off: stays on 5, continue -> 6
+check(/* "Estación 5" then after .choice--continue "Estación 6" */ true, "no setback when off");
+check((await page.locator('.powerup[aria-label^="Escudo"]').count()) === 0, "shield hidden in tray when setbacks off");
+// shop: no .shop-item containing "Escudo"; with setbacks: true it is there again
+check(/* ... */ true, "shield hidden in shop when setbacks off");
+```
+
+- [ ] **Paso 2: Ejecutar** → falla (`#numpad` no tiene teclas porque no existía en el HTML).
+- [ ] **Paso 3: Implementar** lo de "Produce". `buildNumpad` ya funciona en cuanto `#numpad` existe.
+- [ ] **Paso 4: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa. Revisar a mano `.cache/mobile-modes.png`.
+- [ ] **Paso 5: Commit.** `git add -A && git commit -m "feat: other games honour profile typing, setback and shield settings"`
+
+---
+
 <!-- TAREAS -->
