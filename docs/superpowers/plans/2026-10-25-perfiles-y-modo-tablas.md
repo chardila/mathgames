@@ -543,10 +543,10 @@ t = rec(t, "7-9", "fast", "2026-10-26");
 const m = t.facts["7-9"];
 check(m.state === "mastered" && m.everMastered && m.reviewStep === 0 && m.nextReview === "2026-10-27", "mastered");
 // slow keeps the count; hint/answer reset it
-let u = rec(rec(rec(rec(fresh, "3-4", "fast", "D1"), "3-4", "slow", "D1"), "3-4", "fast", "D2"), "3-4", "fast", "D2");
+let u = rec(rec(rec(rec(fresh, "3-4", "fast", "2026-10-25"), "3-4", "slow", "2026-10-25"), "3-4", "fast", "2026-10-26"), "3-4", "fast", "2026-10-26");
 check(u.facts["3-4"].state === "mastered", "slow answers don't reset fast count");
-u = rec(rec(rec(fresh, "3-4", "fast", "D1"), "3-4", "hint", "D1"), "3-4", "fast", "D2");
-check(u.facts["3-4"].fast === 1 && u.facts["3-4"].fastDays.join() === "D2", "hint resets fast count");
+u = rec(rec(rec(fresh, "3-4", "fast", "2026-10-25"), "3-4", "hint", "2026-10-25"), "3-4", "fast", "2026-10-26");
+check(u.facts["3-4"].fast === 1 && u.facts["3-4"].fastDays.join() === "2026-10-26", "hint resets fast count");
 // spaced review 1, 3, 7, 14, 14
 t = rec(t, "7-9", "fast", "2026-10-26"); // same day, not due
 check(t.facts["7-9"].nextReview === "2026-10-27", "not due: schedule unchanged");
@@ -557,14 +557,14 @@ check(rec(t, "7-9", "slow", "2026-12-04").facts["7-9"].nextReview === "2026-12-1
 const failed = rec(t, "7-9", "hint", "2026-12-04").facts["7-9"];
 check(failed.state === "practicing" && failed.everMastered && failed.nextReview === "" && failed.fast === 0, "failed review demotes");
 // probes
-let p = rec(fresh, "7-9", "hint", "D1", "probe");
+let p = rec(fresh, "7-9", "hint", "2026-10-25", "probe");
 check(p.probes["9"].fail === 1 && !p.probes["9"].introduce, "one failed probe");
-p = rec(p, "4-9", "answer", "D1", "probe");
+p = rec(p, "4-9", "answer", "2026-10-25", "probe");
 check(p.probes["9"].introduce, "two failed probes -> table to introduce");
-check(rec(fresh, "7-9", "hint", "D1", "practice").probes["9"].fail === 0, "non-probe leaves probes alone");
-check(rec(fresh, "2-5", "fast", "D1", "probe").probes["2"].fast === 1, "fast probe counted on home table");
-const before = JSON.stringify(fresh); rec(fresh, "7-9", "fast", "D1"); check(JSON.stringify(fresh) === before, "pure");
-const avg = rec(rec(fresh, "2-2", "slow", "D1", "practice", 2000), "2-2", "slow", "D1", "practice", 4000);
+check(rec(fresh, "7-9", "hint", "2026-10-25", "practice").probes["9"].fail === 0, "non-probe leaves probes alone");
+check(rec(fresh, "2-5", "fast", "2026-10-25", "probe").probes["2"].fast === 1, "fast probe counted on home table");
+const before = JSON.stringify(fresh); rec(fresh, "7-9", "fast", "2026-10-25"); check(JSON.stringify(fresh) === before, "pure");
+const avg = rec(rec(fresh, "2-2", "slow", "2026-10-25", "practice", 2000), "2-2", "slow", "2026-10-25", "practice", 4000);
 check(avg.facts["2-2"].avgMs === 2600, "moving average");
 ```
 
@@ -632,11 +632,11 @@ const valid = (r, total) => r.length === total && r.every((it, i) =>
 for (let n = 0; n < 300; n++) for (const total of [10, 15, 20, 25])
   check(valid(T.buildTablesRound(randomTables(), "2026-11-01", total), total), "valid round");
 // cold start
-const cold = T.buildTablesRound(T.normalizeTables(), "D", 15);
+const cold = T.buildTablesRound(T.normalizeTables(), "2026-11-01", 15);
 check(cold.every((it) => it.kind === "probe") && new Set(cold.map((i) => i.key)).size === 15, "cold start: 15 distinct probes");
 assert.deepEqual(new Set(cold.map((i) => i.key)), new Set(T.factKeys().slice(0, 15)));
 // introductions: table 2 to introduce, nothing practicing
-const intro = T.buildTablesRound(stateWith({ seen: "table1", introduce: [2] }), "D", 15);
+const intro = T.buildTablesRound(stateWith({ seen: "table1", introduce: [2] }), "2026-11-01", 15);
 const news = intro.filter((i) => i.kind === "new");
 check(news.length === 6 && ["2-2", "2-3"].every((k) => news.filter((i) => i.key === k).length === 3), "2 new facts × 3");
 for (const k of ["2-2", "2-3"]) {
@@ -644,19 +644,19 @@ for (const k of ["2-2", "2-3"]) {
   check(pos[1] - pos[0] >= 2 && pos[2] - pos[1] >= 2, "new fact copies spaced");
 }
 check(intro.every((it) => it.kind !== "probe" || T.homeTable(it.key) !== 2), "introduced tables are not probed");
-check(T.buildTablesRound(stateWith({ practicing: 10, introduce: [2] }), "D", 15).every((i) => i.kind !== "new"), "too many practicing -> no new");
+check(T.buildTablesRound(stateWith({ practicing: 10, introduce: [2] }), "2026-11-01", 15).every((i) => i.kind !== "new"), "too many practicing -> no new");
 // reviews capped at 3, oldest first
 const rv = T.buildTablesRound(stateWith({ dueMastered: ["1-2@2026-10-01", "1-3@2026-10-02", "1-4@2026-10-03", "1-5@2026-10-04", "1-6@2026-10-05"] }), "2026-11-01", 15);
 assert.deepEqual(rv.filter((i) => i.kind === "review").map((i) => i.key).sort(), ["1-2", "1-3", "1-4"]);
 // fast table probed first
-const pri = T.buildTablesRound(stateWith({ seen: "table1", probes: { 5: { fast: 2, fail: 0 } } }), "D", 15);
+const pri = T.buildTablesRound(stateWith({ seen: "table1", probes: { 5: { fast: 2, fail: 0 } } }), "2026-11-01", 15);
 check(T.homeTable(pri.find((i) => i.kind === "probe").key) === 5, "fast table probed first");
 // brother: everything mastered, nothing due / everything due
-check(valid(T.buildTablesRound(stateWith({ allMastered: true }), "D", 15), 15), "all mastered round");
-check(T.buildTablesRound(stateWith({ allMastered: true, allDue: true }), "D", 15).filter((i) => i.kind === "review").length === 3, "all due -> 3 reviews + known");
+check(valid(T.buildTablesRound(stateWith({ allMastered: true }), "2026-11-01", 15), 15), "all mastered round");
+check(T.buildTablesRound(stateWith({ allMastered: true, allDue: true }), "2026-11-01", 15).filter((i) => i.kind === "review").length === 3, "all due -> 3 reviews + known");
 // orientation
 const seenOrient = new Set();
-for (let n = 0; n < 300; n++) T.buildTablesRound(stateWith({ practicing: ["7-9"] }), "D", 15)
+for (let n = 0; n < 300; n++) T.buildTablesRound(stateWith({ practicing: ["7-9"] }), "2026-11-01", 15)
   .filter((i) => i.key === "7-9").forEach((i) => seenOrient.add(i.a + "x" + i.b));
 check(seenOrient.has("7x9") && seenOrient.has("9x7"), "asked both ways");
 // retries
@@ -742,7 +742,7 @@ check(cell(3, 4).state === "almost" && cell(2, 2).state === "practicing" && cell
 // fill: 7-7 counts once for table 7; 1-7 counts for 1 and 7; never decreases
 let f = masterFacts(T.normalizeTables(), ["7-7", "1-7"]);
 check(T.characterFill(f, 7) === 2 && T.characterFill(f, 1) === 1, "fill counts");
-f = rec(f, "1-7", "hint", "D9");
+f = rec(f, "1-7", "hint", "2026-11-02");
 check(T.characterFill(f, 7) === 2, "fill never drops");
 check(T.fillMilestone(0, 1) === "first" && T.fillMilestone(4, 5) === "half" && T.fillMilestone(7, 9) === "almost" &&
   T.fillMilestone(9, 10) === "full" && T.fillMilestone(5, 5) === null && T.fillMilestone(2, 3) === null, "milestones");
@@ -755,6 +755,195 @@ assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
 - [ ] **Paso 3: Implementar** las funciones y añadir las 8 claves `trick_*` a `I18N` en `es` y `en`.
 - [ ] **Paso 4: Verificar.** `npm test` → todo pasa.
 - [ ] **Paso 5: Commit.** `git commit -am "feat: hint tricks, parent album cells and character fill"`
+
+---
+
+## Fase C · Modo tablas jugable
+
+### Tarea 8: Inicio según el perfil y ronda de modo tablas
+
+**Archivos:**
+
+- Modificar: `index.html`:
+  - nueva `#screen-tables-home`;
+  - en `#screen-summary`, `id="sum-accuracy-lbl"` en la etiqueta de aciertos y un nuevo `p#sum-progress-line` (oculto) debajo de `.summary-grid`.
+- Modificar: `app.js`
+- Modificar: `styles.css` (`.tables-home`, `.blocks`, `.block`)
+- Modificar: `tests/browser.test.js`
+
+**Interfaces:**
+
+- Consume:
+  - `Tables.buildTablesRound`, `scheduleRetry`, `recordTablesAnswer`, `classifyOutcome`, `tablesTrick`, `newlyMastered`, `localDateKey`, `HINT_DELAY_MS`, `ANSWER_DELAY_MS` (Fase B);
+  - `state.profile.tables`, `saveProfiles()`.
+- Produce:
+  - **`goHome()`.** Con `mainMode === "tables"` muestra `#screen-tables-home`. Si no, `#screen-menu`, con `state.selectedMode = mainMode` y esa `.mode-card` marcada. `goToMenu` se renombra a `goHome`, y las acciones `go-menu` y `quit` la usan.
+  - **`#screen-tables-home`**, con:
+    - el lorito y `#home-greeting` (`home_greeting` con `{name}`);
+    - `#home-coins`;
+    - `#home-characters`, vacío hasta la Tarea 10;
+    - `button.btn--primary.btn--xl[data-action="start-tables"]` (`btn_continue_learning`);
+    - `[data-action="go-shop"]`;
+    - un enlace discreto `button.btn--ghost[data-action="go-modes"]` (`btn_other_games`);
+    - `[data-action="switch-player"]`.
+
+    `refreshMenuStats` también rellena `#home-coins`.
+  - **`startTablesRun()`.** Crea `state.run` con los mismos campos que `startRun` y además:
+    - `kind: "tables"`;
+    - `round: Tables.buildTablesRound(state.profile.tables, today, state.settings.tableStations)`;
+    - `cursor: 0`;
+    - `tablesBefore`: una copia JSON de `state.profile.tables`;
+    - `stage: "ask"`.
+
+    `total` es `state.settings.tableStations`. Oculta `#powerups` (`startRun` lo vuelve a mostrar) y llama a `nextTablesStation()`. `state.lastRunKind` guarda `"tables"` o `"classic"`, y `play-again` repite el mismo tipo.
+  - **Posiciones.** `run.cursor` es la posición en `run.round` y `run.index` es la estación del mapa. Sin retroceso avanzan juntos; la Tarea 9 los separa.
+  - **`nextTablesStation()`:**
+    - Arma `activeTask = { type: "mul", operands: [a, b], text: a + " × " + b + " =", answer: a * b, choice: false, timed: false, item }`.
+    - Pone `stage = "ask"`, vacía la entrada, muestra el teclado (`setupAnswerMode`) y oculta `#hint`.
+    - Pone `taskStart = now()` y llama a `startStageTimer(HINT_DELAY_MS, enterHintStage)`.
+  - **Temporizador de fase:** `startStageTimer(ms, fn)` y `clearStageTimer()`, con `state.stageTimerId` y `state.stageDeadline`.
+    - La pausa guarda lo que falta y lo limpia; al reanudar, lo vuelve a programar con lo que faltaba. `taskStart` ya se desplaza al reanudar.
+    - `goHome`, `goToProfiles`, `startRun`, `startTablesRun` y `finishRun` lo limpian.
+  - **`submitAnswer`.** Con `state.run.kind === "tables"`, deriva a `submitTablesAnswer(value)`:
+    - **Correcta:**
+      - `outcome = Tables.classifyOutcome(stage, now() - taskStart)`.
+      - `state.profile.tables = Tables.recordTablesAnswer(state.profile.tables, item, outcome, elapsed, Tables.localDateKey(new Date()))` y `saveProfiles()`.
+      - Con `hint` o `answer`: `run.round = Tables.scheduleRetry(run.round, run.cursor)`.
+      - Luego `rewardCorrect(outcome === "fast" || outcome === "slow")`, avanza `index` y `cursor` y programa `nextTablesStation` a los 750 ms (`state.nextTaskId`, como hoy).
+    - **Incorrecta:** la racha vuelve a 0, el lorito anima y suena el pitido de error. Luego:
+      - en `ask`, pasa a `enterHintStage()`;
+      - en `hint`, pasa a `enterAnswerStage()`;
+      - en `answer`, solo se vacía la entrada.
+
+      **No se llama a `recordLearning`.** El registro antiguo por operación general no se toca en modo tablas.
+  - **`rewardCorrect(firstTry)`.** Se extrae de `onCorrect`: racha, combo, estrellas, monedas, bonos, mensajes, lorito, vibración, sonido e hitos cada 5. El cálculo no cambia. `onCorrect` la llama.
+  - **`enterHintStage()`:**
+    - Pone `stage = "hint"` y limpia la entrada.
+    - En `#hint` muestra `div.blocks` (una cuadrícula CSS de `a` filas × `b` columnas de `span.block`) y debajo `t(trick.key, trick.vars)`.
+    - El lorito dice `tables_hint_intro`.
+    - Llama a `startStageTimer(ANSWER_DELAY_MS, enterAnswerStage)`.
+  - **`enterAnswerStage()`.** Pone `stage = "answer"` y limpia el temporizador. Añade a `#hint` la línea `t("tables_write_it", { q: a + " × " + b, answer })`. Sin temporizador.
+  - **`finishRun()` en modo tablas:**
+    - `n = Tables.newlyMastered(run.tablesBefore, state.profile.tables).length`.
+    - `#sum-accuracy` = `n` y `#sum-accuracy-lbl` = `lbl_mastered_today`.
+    - `#sum-progress-line` muestra `sum_mastered_one` (si `n === 1`), `sum_mastered` (si `n > 1`) o `sum_practiced` con el número de operaciones distintas de la ronda (si `n === 0`).
+    - `#review-box` se oculta.
+
+    En las rondas clásicas se restauran `lbl_accuracy` y la línea oculta.
+- Textos nuevos (`es` / `en`):
+  - `home_greeting`: "¡Hola, {name}! ¿Seguimos?" / "Hi, {name}! Shall we keep going?"
+  - `btn_continue_learning`: "Seguir aprendiendo" / "Keep learning"
+  - `btn_other_games`: "Otros juegos" / "Other games"
+  - `tables_hint_intro`: "Mira los bloques. ¡Tú puedes!" / "Look at the blocks. You can do it!"
+  - `tables_write_it`: "{q} = {answer}. ¡Escríbelo!" / "{q} = {answer}. Type it in!"
+  - `lbl_mastered_today`: "Dominadas hoy" / "Mastered today"
+  - `sum_mastered_one`: "¡Hoy dominaste 1 operación nueva!" / "Today you mastered 1 new fact!"
+  - `sum_mastered`: "¡Hoy dominaste {n} operaciones nuevas!" / "Today you mastered {n} new facts!"
+  - `sum_practiced`: "¡Hoy practicaste {n} operaciones! Cada ronda cuenta." / "Today you practised {n} facts! Every round counts."
+
+- [ ] **Paso 1: Adaptar las pruebas existentes.**
+  - Los bloques clásicos empiezan con `setProfileSettings({ mainMode: "mix" })`.
+  - El ayudante `start()` pulsa el `[data-action="go-modes"]` visible, sea en `#screen-menu` o en `#screen-tables-home`.
+- [ ] **Paso 2: Escribir la sección "tables mode"** en `tests/browser.test.js` (falla):
+  - Se siembra el perfil "Ana": `mainMode: "tables"`, `setbacks: false`, `tableStations: 10`, `sound: false`, `timer: false`.
+  - Ayudantes:
+    - `typeAnswer(n)`: teclas en pantalla y "Comprobar";
+    - `pressAnswer(n)`: teclado físico y Enter;
+    - `factOf(text)`: devuelve la `key` de la pregunta;
+    - `fact(key)`: lee la operación del perfil activo en `ms_profiles`.
+
+```js
+await pickProfile("Ana");
+check(await page.locator("#screen-tables-home").evaluate((el) => el.classList.contains("is-active")) &&
+  (await page.locator("#home-greeting").textContent()).includes("Ana"), "tables home for tables profile");
+await page.locator('[data-action="start-tables"]').click();
+check((await page.locator("#numpad .key").count()) === 12 && !(await page.locator("#choices").isVisible()) &&
+  !(await page.locator("#powerups").isVisible()) && !(await page.locator("#timer-ring").isVisible()), "typing, no tray, no timer");
+check((await page.locator("#map-progress").textContent()).includes(" de 10"), "profile station count");
+// 1) fast answer is recorded as fast
+let q = await current(); await pressAnswer(q.answer); await page.clock.runFor(800);
+check((await fact(factOf(q))).fast === 1, "fast answer recorded");
+// 2) silence: no hint before 5 s, hint at 5 s with a×b blocks
+q = await current(); await page.clock.runFor(4900);
+check(!(await page.locator("#hint").isVisible()), "no hint before 5 s");
+await page.clock.runFor(200);
+check(await page.locator("#hint").isVisible() && (await page.locator("#hint .block").count()) === q.answer, "hint blocks at 5 s");
+// 3) answer shown 10 s later; a wrong entry there costs nothing; then the fact returns 3-4 stations later
+await page.clock.runFor(10000);
+check((await page.locator("#hint").textContent()).includes("= " + q.answer), "answer after +10 s");
+const progressBefore = await page.locator("#map-progress").textContent();
+await pressAnswer(q.answer === 1 ? 2 : 1);
+check((await page.locator("#map-progress").textContent()) === progressBefore, "wrong in answer stage: same station");
+await pressAnswer(q.answer); await page.clock.runFor(800);
+check((await fact(factOf(q))).fast === 0, "needed answer resets fast count");
+const upcoming = []; for (let i = 0; i < 4; i++) { const n = await current(); upcoming.push(factOf(n)); await pressAnswer(n.answer); await page.clock.runFor(800); }
+check(upcoming.slice(2).includes(factOf(q)), "missed fact returns 3-4 stations later");
+// 4) wrong before the hint -> hint at once; no auto-submit
+q = await current(); await pressAnswer(q.answer === 1 ? 2 : 1);
+check(await page.locator("#hint").isVisible(), "wrong answer shows hint immediately");
+for (const d of String(q.answer)) await page.locator("#numpad .key", { hasText: new RegExp("^" + d + "$") }).click();
+await page.clock.runFor(3000);
+check((await current()).text === q.text, "no auto-submit");
+await page.locator('[data-action="check"]').click(); await page.clock.runFor(800);
+// 5) pause freezes the 5 s wait and is not counted as slowness
+q = await current(); await page.clock.runFor(1000);
+await page.locator('[data-action="pause"]').click(); await page.clock.runFor(20000); await page.locator('[data-action="resume"]').click();
+check(!(await page.locator("#hint").isVisible()), "pause freezes hint wait");
+const fastBefore = (await fact(factOf(q))).fast; await pressAnswer(q.answer); await page.clock.runFor(800);
+check((await fact(factOf(q))).fast === fastBefore + 1, "paused time not counted");
+// 6) quitting during a wait leaves no timer behind
+await page.clock.runFor(1000); await quit(); await page.clock.runFor(30000);
+check(await page.locator("#screen-tables-home").evaluate((el) => el.classList.contains("is-active")) &&
+  !(await page.locator("#hint").isVisible()), "no stray timers after quit");
+// 7) a full round: never moves back, summary shows progress not accuracy
+await page.locator('[data-action="start-tables"]').click();
+// answer all 10 stations correctly (some after the hint); "Estación n" never decreases
+check((await page.locator("#sum-accuracy-lbl").textContent()) === "Dominadas hoy" &&
+  !(await page.locator("#review-box").isVisible()) && await page.locator("#sum-progress-line").isVisible(), "tables summary");
+// 8) phone width
+await page.setViewportSize({ width: 390, height: 844 }); await page.locator('[data-action="play-again"]').click();
+check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "tables game fits 390 px");
+await page.screenshot({ path: path.join(root, ".cache", "mobile-tables.png"), fullPage: true });
+```
+
+`current()` debe devolver también `text`, la pregunta tal como se ve.
+
+- [ ] **Paso 3: Ejecutar** → falla (no existe `#screen-tables-home`).
+- [ ] **Paso 4: Implementar** lo de "Produce".
+- [ ] **Paso 5: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa. Mirar `.cache/mobile-tables.png`: las teclas son grandes y los bloques de la pista caben.
+- [ ] **Paso 6: Commit.** `git add -A && git commit -m "feat: tables mode round with silent timing, hint blocks and answer stage"`
+
+---
+
+### Tarea 9: Modo tablas con retroceso o cronómetro visible (ajustes del perfil)
+
+**Archivos:**
+
+- Modificar: `app.js`, `tests/browser.test.js`
+
+**Interfaces:**
+
+- Consume: `goBackOnMiss`, `restartTimer`, `onTimeout`, `computeTimeBudget` (existentes); `run.cursor` y `run.index` (Tarea 8).
+- Produce:
+  - **Retroceso:**
+    - En `enterAnswerStage`, si `state.settings.setbacks && !run.setbackDone`, se llama a `goBackOnMiss(3)` y se pone `run.setbackDone = true`. `nextTablesStation` vuelve a poner `setbackDone = false`.
+    - El escudo no existe en modo tablas.
+    - Si `run.cursor >= run.round.length`, se alarga la cola: `run.round = run.round.concat(Tables.buildTablesRound(state.profile.tables, today, 5))`.
+    - La ronda termina cuando `run.index >= run.total`.
+  - **Cronómetro visible:**
+    - `nextTablesStation` pone `activeTask.timed = !!state.settings.timer`; `blitz` se ignora en modo tablas.
+    - `restartTimer()` y `stopTimer()` se usan como en las rondas clásicas.
+    - En modo tablas, `onTimeout` llama a `enterAnswerStage()` y nada más: ni `recordMiss`, ni `recordLearning`, ni `showSolution`.
+    - El umbral de 3 s se sigue midiendo igual.
+
+- [ ] **Paso 1: Pruebas que fallan.**
+  - **Retroceso.** Perfil "Leo" con `setbacks: true` y `tableStations: 10`. Se contestan bien 4 estaciones. En la 5.ª se espera 15 s (pasa a la fase de respuesta) → `#map-progress` incluye "Estación 2". Se sigue contestando bien hasta el resumen. Comprobar que la ronda termina con el resumen de tablas y que el total de respuestas registradas (suma de `seen`) es mayor que 10.
+  - **Cronómetro.** Perfil "Leo" con `timer: true`. Al empezar se ven `#timer-ring` y `#game-timer-chip`. Se corre el reloj el número de segundos de `#timer-num` más 0,2 s → `#hint` incluye `"= " + respuesta` (fase de respuesta).
+  - **Por defecto** ("Ana"): nada de lo anterior (ya lo cubre la Tarea 8).
+- [ ] **Paso 2: Ejecutar** → falla.
+- [ ] **Paso 3: Implementar** lo de "Produce".
+- [ ] **Paso 4: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa.
+- [ ] **Paso 5: Commit.** `git commit -am "feat: optional setbacks and visible timer in tables mode"`
 
 ---
 
