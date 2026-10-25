@@ -339,7 +339,7 @@ for (let i = 0; i < 1000; i++) {
   - `STORAGE_KEYS.profiles = "ms_profiles"`.
   - `state.store`: el almacén normalizado.
   - `state.profile`: el perfil activo, o `null`.
-  - `state.settings` y `state.progress`: **apuntan a** `state.profile.settings` y `state.profile.progress`. Sin perfil, `state.settings` es una copia de `DEFAULT_SETTINGS`.
+  - `state.settings` y `state.progress`: **apuntan a** `state.profile.settings` y `state.profile.progress`. Sin perfil, `state.settings` es una copia de `DEFAULT_SETTINGS` y `state.progress` es un `defaultProgress()` desechable que **nunca se guarda**. Así `init()`, `refreshMenuStats()` y `applyBuddy()` no fallan antes de elegir jugador, tampoco sin almacenamiento.
   - `saveProfiles()`: guarda `state.store` en `ms_profiles`. Reemplaza **todas** las llamadas `storageSet(STORAGE_KEYS.progress, …)` y `storageSet(STORAGE_KEYS.settings, …)`.
   - `useProfile(id)`: activa el perfil, guarda `lastId`, aplica el acompañante, refresca las cifras y llama a `goHome()`.
   - `goHome()`: `goToMenu` se renombra a `goHome` (y se cambian todas sus llamadas). En esta tarea muestra siempre `#screen-menu`. La Tarea 8 la hará depender de `mainMode`.
@@ -369,6 +369,7 @@ Al arrancar:
     - `saved()` devuelve el `progress` del perfil con `id === lastId`.
     - `pickProfile(name)` pulsa `#profile-grid .profile-btn` con ese texto.
     - `seedProfiles(profiles, lastId)` escribe `ms_profiles` (`{ version: 1, lastId, profiles }`) y recarga.
+  - El primer `evaluate`, el que siembra `ms_settings` y `ms_progress` antiguos, también ejecuta `localStorage.removeItem("ms_profiles")`. Al elegir "Español" en el primer arranque ya se creó un almacén vacío, y sin esto los datos antiguos se ignorarían, como manda la idempotencia de la Tarea 1. **No** se "arregla" mezclando datos antiguos en un almacén existente.
   - Después de cada `reload()` y de elegir "Español", el flujo pasa por `pickProfile("Jugador 1")`. Se repite lo que la prueba hacía después de recargar, incluido `page.clock.install()` si hace falta.
   - Se conservan las comprobaciones de hoy: monedas 500, `customFutureField`, `learning.div.level === 3`, `learning.add.level === 1.5`, colección, insignias y aprendizaje tras recargar. Ahora todas leen `saved()`.
   - En el bloque de instalación nueva, el `evaluate` que escribe `ms_settings` `{timer: true, blitz: true}` y `ms_progress` `"{broken"` también ejecuta `localStorage.removeItem("ms_profiles")`, para simular una instalación antigua. Las comprobaciones "existing timer preferences retained" y "corrupt storage recovers" siguen igual.
@@ -884,7 +885,7 @@ check(
 // probes
 let p = rec(fresh, "7-9", "hint", "2026-10-25", "probe");
 check(p.probes["9"].fail === 1 && !p.probes["9"].introduce, "one failed probe");
-p = rec(p, "4-9", "answer", "2026-10-25", "probe");
+p = rec(p, "6-9", "answer", "2026-10-25", "probe");
 check(p.probes["9"].introduce, "two failed probes -> table to introduce");
 check(
   rec(fresh, "7-9", "hint", "2026-10-25", "practice").probes["9"].fail === 0,
@@ -947,9 +948,10 @@ El ayudante es `rec(t, key, outcome, day, kind = "practice", elapsedMs = 1000)`,
 3. **Sondeos:** operaciones no vistas cuya tabla casa no tiene `introduce`, en orden de sondeo. Como mucho `MAX_PROBES_PER_ROUND`.
 4. **Relleno**, por este orden, hasta llegar a `total`:
    - (a) `practicing`, primero las de menos `fast`, luego las de `lastSeen` más antiguo y luego por orden de introducción. Como mucho `PRACTICE_MAX_REPEATS` veces cada una en la ronda.
-   - (b) Más sondeos.
-   - (c) Dominadas que no estén ya en la ronda (`"known"`), primero las de `lastSeen` más antiguo.
-   - (d) Las operaciones vistas hace más tiempo, del estado que sean, como `"known"` o `"practice"`, hasta llenar.
+   - (b) Dominadas que no estén ya en la ronda (`"known"`), primero las de `lastSeen` más antiguo.
+   - (c) Más sondeos. Van después de las conocidas a propósito: así los sondeos siguen siendo "unos pocos" dentro de la regla del ~90 %, y solo llenan la ronda cuando no queda nada conocido (el arranque en frío).
+   - (d) Las operaciones vistas hace más tiempo, del estado que sean, como `"known"` o `"practice"`.
+   - (e) Si aún falta: operaciones no vistas en orden de introducción, una copia cada una, como `"new"`. Pasa cuando todo está "por introducir" y casi nada se ha visto.
 5. **Colocación:**
    - La copia `k` (0..2) de la nueva `j` (0..1) va en la posición `j + 1 + k × NEW_SPACING`. Si la posición está ocupada, en la siguiente libre.
    - El resto se baraja en los huecos.
@@ -962,7 +964,7 @@ El ayudante es `rec(t, key, outcome, day, kind = "practice", elapsedMs = 1000)`,
 - Si no, inserta una copia de `round[index]`, con `retry: true`, en la posición `min(index + 3, total - 1)`. Si allí quedaría junto a un elemento con la misma `key`, usa `index + 4` (también limitado a `total - 1`).
 - Después recorta al tamaño `total`, quitando el último elemento.
 
-- [ ] **Paso 1: Pruebas que fallan** (semilla de azar como en `learning.test.js`; un ayudante `stateWith(spec)` arma un `tables` con los hechos en los estados indicados):
+- [ ] **Paso 1: Pruebas que fallan.** La semilla de azar es como en `learning.test.js`. Un ayudante `stateWith(spec)` arma un `tables` con los hechos en los estados indicados. `mastered: "table1"` significa las 10 operaciones con casa en la tabla 1 dominadas, **sin repaso pendiente** (`nextReview` en el futuro). Si fueran `practicing`, serían 10 y llegarían a `MAX_PRACTICING_FOR_NEW`, y no habría operaciones nuevas.
 
 ```js
 const valid = (r, total) =>
@@ -993,7 +995,7 @@ assert.deepEqual(
 );
 // introductions: table 2 to introduce, nothing practicing
 const intro = T.buildTablesRound(
-  stateWith({ seen: "table1", introduce: [2] }),
+  stateWith({ mastered: "table1", introduce: [2] }),
   "2026-11-01",
   15,
 );
@@ -1044,13 +1046,38 @@ assert.deepEqual(
 );
 // fast table probed first
 const pri = T.buildTablesRound(
-  stateWith({ seen: "table1", probes: { 5: { fast: 2, fail: 0 } } }),
+  stateWith({ mastered: "table1", probes: { 5: { fast: 2, fail: 0 } } }),
   "2026-11-01",
   15,
 );
 check(
-  T.homeTable(pri.find((i) => i.kind === "probe").key) === 5,
+  pri.filter((i) => i.kind === "probe").length > 0 &&
+    pri
+      .filter((i) => i.kind === "probe")
+      .every((i) => T.homeTable(i.key) === 5),
   "fast table probed first",
+);
+// probes stay "a few" once known facts exist (~90 % rule)
+const few = T.buildTablesRound(
+  stateWith({ masteredCount: 20, practicing: 2 }),
+  "2026-11-01",
+  15,
+);
+check(
+  few.filter((i) => i.kind === "probe").length <= T.MAX_PROBES_PER_ROUND,
+  "probes capped when known facts exist",
+);
+// everything "to introduce", nothing seen: still a full valid round
+check(
+  valid(
+    T.buildTablesRound(
+      stateWith({ introduce: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }),
+      "2026-11-01",
+      15,
+    ),
+    15,
+  ),
+  "degenerate state still fills the round",
 );
 // brother: everything mastered, nothing due / everything due
 check(
@@ -1298,7 +1325,8 @@ assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
       - `outcome = Tables.classifyOutcome(stage, now() - taskStart)`.
       - `state.profile.tables = Tables.recordTablesAnswer(state.profile.tables, item, outcome, elapsed, Tables.localDateKey(new Date()))` y `saveProfiles()`.
       - Con `hint` o `answer`: `run.round = Tables.scheduleRetry(run.round, run.cursor)`.
-      - Luego `rewardCorrect(outcome === "fast" || outcome === "slow")`, avanza `index` y `cursor` y programa `nextTablesStation` a los 750 ms (`state.nextTaskId`, como hoy).
+      - Luego `rewardCorrect(outcome === "fast" || outcome === "slow")`, avanza `index` y `cursor` y programa `nextStation` a los 750 ms (`state.nextTaskId`, como hoy).
+  - **`nextStation()`** reparte según `state.run.kind`: `"tables"` va a `nextTablesStation()` y el resto a `nextTask()`. **Todos** los que hoy llaman a `nextTask` pasan a llamar a `nextStation`: la reanudación (`resume` con `activeTask` nulo), `advanceAfterWrong`, `jokerSolve` y los `setTimeout` de 750 ms. Si no, reanudar durante la transición de una ronda de tablas generaría una tarea clásica a partir de `run.modes`, que no existe.
     - **Incorrecta:** la racha vuelve a 0, el lorito anima y suena el pitido de error. Luego:
       - en `ask`, pasa a `enterHintStage()`;
       - en `hint`, pasa a `enterAnswerStage()`;
@@ -1433,6 +1461,18 @@ await page.clock.runFor(800);
 check(
   (await fact(factOf(q))).fast === fastBefore + 1,
   "paused time not counted",
+);
+// 5b) pausing during the 750 ms transition resumes into the tables round, not a classic task
+q = await current();
+await pressAnswer(q.answer);
+await page.locator('[data-action="pause"]').click();
+await page.clock.runFor(2000);
+await page.locator('[data-action="resume"]').click();
+await page.clock.runFor(100);
+check(
+  (await page.locator("#game-question").textContent()).includes("×") &&
+    (await page.locator("#numpad .key").count()) === 12,
+  "resume after transition stays in tables mode",
 );
 // 6) quitting during a wait leaves no timer behind
 await page.clock.runFor(1000);
@@ -1725,7 +1765,7 @@ check(
   - Unitaria: `introSequence(7)` da los valores `[7, 14, …, 70]`, con `freq` estrictamente creciente, 10 pasos y la última nota de 700 ms.
   - Navegador:
     - Un `addInitScript` cuenta las llamadas a `AudioContext.prototype.createOscillator` en `window.__osc`.
-    - Se siembra "Ana" con la tabla 1 ya vista, `probes["2"].introduce = true`, `presented: []`, `sound: true` y `music: true`.
+    - Se siembra "Ana" con las 10 operaciones de la tabla 1 **dominadas y sin repaso pendiente** (no en `practicing`, porque serían 10 y bloquearían las nuevas), `probes["2"].introduce = true`, `presented: []`, `sound: true` y `music: true`.
     - `start-tables` → se ve `#intro-overlay` y `#intro-title` incluye "2". `runFor(6000)` → `#intro-number` es "20" y `__osc > 0`. `intro-done` → `#screen-game` activo, y `presented` en el almacén incluye 2.
     - Volver al inicio y empezar otra ronda → no aparece el overlay.
     - Pulsar `.char-card[data-table="7"]` → overlay con "7"; `intro-done` → de vuelta en el inicio.
