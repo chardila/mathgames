@@ -5,7 +5,7 @@
  */
 
 // Bump this version whenever cached assets change to invalidate old caches.
-const CACHE_VERSION = "tablas-del-tesoro-v1";
+const CACHE_VERSION = "tablas-del-tesoro-v2";
 
 // All files required for the app to run fully offline.
 const PRECACHE_URLS = [

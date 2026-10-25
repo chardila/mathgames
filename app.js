@@ -673,6 +673,171 @@ function migrateLearningStart(progress) {
   return next;
 }
 
+// Per-profile defaults, options and limits.
+var DEFAULT_SETTINGS = {
+  sound: true,
+  music: true,
+  timer: false,
+  blitz: false,
+  quick: false,
+  choices: true,
+  setbacks: false,
+  tableStations: 15,
+  mainMode: "tables",
+};
+var TABLE_STATION_OPTIONS = [10, 15, 20, 25];
+var MAIN_MODES = ["tables", "add", "sub", "mul", "div", "mix"];
+var PROFILE_AVATARS = [
+  "🦊",
+  "🐱",
+  "🐼",
+  "🦁",
+  "🐸",
+  "🐵",
+  "🦄",
+  "🐲",
+  "🐧",
+  "🐢",
+];
+var PROFILE_NAME_MAX = 20;
+
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+// A brand-new progress record (fresh object on every call).
+function defaultProgress() {
+  return {
+    coins: 0,
+    treasures: 0,
+    badges: [],
+    bestStreak: 0,
+    avgMs: 0,
+    totalCorrect: 0,
+    lastPlayed: "",
+    blitzWins: 0,
+    bestCombo: 0,
+    stars: 0,
+    collection: [],
+    inventory: { joker: 0, fifty: 0, time: 0, shield: 0 },
+    buddies: ["kid"],
+    buddy: "kid",
+    learning: normalizeLearning(),
+    learningStartVersion: 1,
+  };
+}
+
+// Keep only known settings, falling back to defaults on missing/invalid values.
+function normalizeSettings(saved) {
+  var src = isPlainObject(saved) ? saved : {};
+  var out = {};
+  Object.keys(DEFAULT_SETTINGS).forEach(function (key) {
+    var def = DEFAULT_SETTINGS[key];
+    out[key] = typeof src[key] === typeof def ? src[key] : def;
+  });
+  if (TABLE_STATION_OPTIONS.indexOf(out.tableStations) === -1) {
+    out.tableStations = DEFAULT_SETTINGS.tableStations;
+  }
+  if (MAIN_MODES.indexOf(out.mainMode) === -1) {
+    out.mainMode = DEFAULT_SETTINGS.mainMode;
+  }
+  return out;
+}
+
+// Trim, cap the length and fall back when the name ends up empty.
+function cleanProfileName(name, fallback) {
+  var clean = typeof name === "string" ? name.trim() : "";
+  clean = clean.slice(0, PROFILE_NAME_MAX).trim();
+  return clean || fallback;
+}
+
+// Ids look like "p<integer>"; pick the first one not already taken.
+function nextProfileId(existingIds) {
+  var n = 1;
+  while (existingIds.indexOf("p" + n) !== -1) n++;
+  return "p" + n;
+}
+
+function createProfile(name, avatar, existingIds, fallbackName) {
+  return {
+    id: nextProfileId(existingIds || []),
+    name: cleanProfileName(name, fallbackName),
+    avatar:
+      PROFILE_AVATARS.indexOf(avatar) === -1 ? PROFILE_AVATARS[0] : avatar,
+    settings: normalizeSettings(),
+    progress: defaultProgress(),
+  };
+}
+
+// Repair a saved profile; null when it cannot be recognised.
+function normalizeProfile(saved) {
+  if (!isPlainObject(saved) || typeof saved.id !== "string" || !saved.id) {
+    return null;
+  }
+  var profile = {
+    id: saved.id,
+    name: cleanProfileName(saved.name, "Jugador"),
+    avatar:
+      PROFILE_AVATARS.indexOf(saved.avatar) === -1
+        ? PROFILE_AVATARS[0]
+        : saved.avatar,
+    settings: normalizeSettings(saved.settings),
+    progress: migrateLearningStart(
+      Object.assign(
+        defaultProgress(),
+        isPlainObject(saved.progress) ? saved.progress : {},
+      ),
+    ),
+  };
+  // Table-mode data is normalized elsewhere; keep it untouched.
+  if (saved.tables !== undefined) profile.tables = saved.tables;
+  return profile;
+}
+
+// Repair the whole store: drop invalid and duplicate profiles, validate lastId.
+function normalizeProfileStore(saved) {
+  var store = { version: 1, lastId: "", profiles: [] };
+  if (!isPlainObject(saved) || !Array.isArray(saved.profiles)) return store;
+  var seen = {};
+  saved.profiles.forEach(function (item) {
+    var profile = normalizeProfile(item);
+    if (!profile || seen[profile.id]) return;
+    seen[profile.id] = true;
+    store.profiles.push(profile);
+  });
+  if (seen[saved.lastId]) store.lastId = saved.lastId;
+  return store;
+}
+
+// Use the saved store if present; otherwise build one profile from legacy data.
+function migrateLegacyStorage(
+  savedStore,
+  legacyProgress,
+  legacySettings,
+  defaultName,
+) {
+  if (isPlainObject(savedStore) && Array.isArray(savedStore.profiles)) {
+    return normalizeProfileStore(savedStore);
+  }
+  var profile = createProfile(defaultName, PROFILE_AVATARS[0], [], defaultName);
+  if (isPlainObject(legacyProgress)) {
+    profile.progress = migrateLearningStart(
+      Object.assign(defaultProgress(), legacyProgress),
+    );
+  }
+  if (isPlainObject(legacySettings)) {
+    profile.settings = normalizeSettings(legacySettings);
+  }
+  return normalizeProfileStore({ lastId: profile.id, profiles: [profile] });
+}
+
+// Simple 12-19 multiplication to keep young children out of parent settings.
+function parentChallenge() {
+  var a = randInt(12, 19);
+  var b = randInt(12, 19);
+  return { a: a, b: b, answer: a * b };
+}
+
 // Four independent successes raise the rating by just one eighth of a level.
 function updateLearning(record, correct, elapsed) {
   var next = Object.assign({}, record);
@@ -2796,6 +2961,19 @@ if (typeof document !== "undefined") {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
+    DEFAULT_SETTINGS: DEFAULT_SETTINGS,
+    TABLE_STATION_OPTIONS: TABLE_STATION_OPTIONS,
+    MAIN_MODES: MAIN_MODES,
+    PROFILE_AVATARS: PROFILE_AVATARS,
+    PROFILE_NAME_MAX: PROFILE_NAME_MAX,
+    defaultProgress: defaultProgress,
+    normalizeSettings: normalizeSettings,
+    cleanProfileName: cleanProfileName,
+    createProfile: createProfile,
+    normalizeProfile: normalizeProfile,
+    normalizeProfileStore: normalizeProfileStore,
+    migrateLegacyStorage: migrateLegacyStorage,
+    parentChallenge: parentChallenge,
     LANGUAGES: LANGUAGES,
     I18N: I18N,
     randInt: randInt,
