@@ -119,9 +119,23 @@ La música motiva; no es el método principal (recordar fija más que cantar).
 - `7 × 9` y `9 × 7` cuentan como la **misma operación aprendida**: dominarla suma a ambas tablas.
 - Personajes con diseño propio (SVG/CSS como los tesoros actuales), no copias de Numberblocks.
 
+### Decisiones tras la revisión del constructor _(del diseñador; el usuario puede cambiarlas)_
+
+1. **Ciclo de una estación en modo tablas** (sigue la técnica de demora constante):
+   - Se muestra la operación; ella escribe y confirma.
+   - Si responde **mal antes de la pista**, o pasan **~5 s** sin respuesta → aparece la **pista visual** (bloques + truco) y tiene **otro intento**, sin límite de tiempo visible.
+   - Si responde **mal después de la pista**, o pasan **~10 s más** → se muestra la **respuesta** y ella la escribe para continuar.
+   - Correcta sin pista y rápida → cuenta como rápida. Correcta tras pista → "necesitó pista". Tras ver la respuesta → "necesitó respuesta". En ambos casos se reinicia su cuenta de rápidas y la operación vuelve 3–4 estaciones después.
+   - Un error **nunca** suma retroceso si el perfil lo tiene apagado.
+2. **Descubrimiento inicial dentro de la regla del ~90 %**: no se hace una ronda de diagnóstico aparte. Cada ronda "sondea" unas pocas operaciones aún no vistas, **siguiendo el orden de introducción** (1, 2, 5, 10 → 3, 4, 9 → 6, 7, 8). Si una tabla sale rápida en los sondeos, sus operaciones restantes se sondean antes; si falla 2 operaciones de una tabla, esa tabla pasa a "por introducir" y se deja de sondear. Una respuesta rápida en un sondeo **cuenta como 1 de las 3 rápidas**; "casi dominada" se confirma cumpliendo la regla normal (3 rápidas en ≥ 2 días).
+3. **Los ajustes salen de las pantallas de los niños**: cronómetro, relámpago, rápida, opción múltiple, retroceso, duración, música y modo principal se configuran **solo en la zona de padres**, por perfil. "Otros juegos" **respeta los ajustes del perfil** (para ella: sin cronómetro y sin retroceso también allí).
+4. **El modo tablas siempre es escribir**; la opción múltiple no aplica en este modo. El cronómetro visible **sí** puede activarse en el perfil (p. ej. el hermano), pero el umbral de dominio se mide igual, en silencio.
+5. **Solo el modo tablas actualiza el registro por operación y el álbum.** Las respuestas en "Otros juegos" no cuentan (con opción múltiple, una respuesta rápida no prueba que la recuerde).
+6. **Medición de los 3 s**: desde que aparece la operación hasta que pulsa **confirmar**. Sin envío automático (revelaría cuántas cifras tiene la respuesta). Si en la práctica el umbral resulta inalcanzable en tablet, se ajusta (p. ej. 3,5 s) con los datos medidos.
+
 ## Pendiente de decidir (dónde se quedó la conversación)
 
-- Revisión por un constructor independiente (paso final antes de entregar el documento).
+- **Potenciadores en modo tablas** (pregunta al usuario): el comodín resuelve sin recordar, el 50:50 no sirve al escribir, el tiempo extra no sirve sin cronómetro, y el escudo ya se oculta. Si se ocultan todos, las monedas solo comprarían acompañantes.
 
 ## Lo que queda al constructor
 
