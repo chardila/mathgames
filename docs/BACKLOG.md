@@ -117,6 +117,14 @@ Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12.
 - **Qué pasa:** cada cambio de redacción en `I18N` puede romper pruebas. Ya pasó al pasar del alemán al español.
 - **A analizar:** usar atributos estables (`data-*`, ids) en lugar de texto.
 
+#### H-13 · `app.js` mezcla toda la interfaz en un solo archivo
+
+- **Estado:** `por-analizar`
+- **Dónde:** `startApp()` en `app.js`: unas 1600 de sus 2800 líneas, con la tienda, el mapa, la ronda, los ajustes y, cuando se implemente el plan, los perfiles.
+- **Qué pasa:** cualquier cambio en la interfaz obliga a moverse dentro de un archivo enorme que comparte `state` y `els` en una sola clausura. Leerlo cuesta mucho contexto y es fácil pisar algo sin querer.
+- **Ideas (sin decidir):** separar la interfaz en archivos por área (`shop.js`, `map.js`, `profiles.js`…) con el mismo patrón que `tables.js` (variable global más `module.exports`, sin build). Habría que añadir cada archivo a `index.html` y a la caché de `service-worker.js`.
+- **A analizar:** cuándo hacerlo (¿después del plan de perfiles, para no mezclar los dos cambios?), cómo compartir `state`, `els` y `t` entre archivos y cómo probarlo sin romper `tests/browser.test.js`.
+
 ### Limitaciones de diseño heredadas
 
 #### H-10 · El progreso vive solo en un dispositivo y navegador
