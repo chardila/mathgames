@@ -1835,10 +1835,12 @@ function startApp() {
   }
 
   function updateMapProgressLabel() {
+    var n = Math.min(state.run.index + 1, state.run.total);
     els.mapProgress.textContent = t("station_progress", {
-      n: Math.min(state.run.index + 1, state.run.total),
+      n: n,
       total: state.run.total,
     });
+    els.mapProgress.setAttribute("data-station", String(n));
   }
 
   var activeTask = null;
@@ -1864,8 +1866,8 @@ function startApp() {
     // Decide per task whether it is timed (Blitz) and/or multiple choice.
     activeTask.timed =
       state.settings.timer || (state.settings.blitz && Math.random() < 0.4);
-    // All tasks are multiple-choice now (tap one of 4-6 answers, no typing).
-    activeTask.choice = true;
+    // The profile decides between answer buttons and typing on the number pad.
+    activeTask.choice = !!state.settings.choices;
 
     currentInput = "";
     els.question.textContent = activeTask.text;
@@ -2049,8 +2051,8 @@ function startApp() {
     haptic([8, 40, 8]);
     beep(180, 220, "sawtooth");
     recordMiss();
-    // Penalty: a wrong answer sends the traveller back along the path.
-    goBackOnMiss(3);
+    // Penalty (if the profile allows it): a wrong answer sends the traveller back.
+    if (state.settings.setbacks) goBackOnMiss(3);
     recordLearning(false, 0);
     currentInput = "";
     // Show the worked calculation path; tap it to move to the next task.
@@ -2106,6 +2108,13 @@ function startApp() {
       els.hint.onclick = advanceAfterWrong;
     }
     if (els.choices) {
+      // Typing mode: swap the number pad for the choices area holding only
+      // the continue button (the next setupAnswerMode restores both).
+      if (!activeTask.choice) {
+        if (els.numpadWrap) els.numpadWrap.hidden = true;
+        els.choices.innerHTML = "";
+        els.choices.hidden = false;
+      }
       var cont = document.createElement("button");
       cont.type = "button";
       cont.className = "choice choice--continue";
@@ -2251,8 +2260,8 @@ function startApp() {
     els.gameStreak.textContent = 0;
     recordMiss();
     recordLearning(false, 0);
-    // Too slow on the Blitz timer: send the traveller back along the path.
-    goBackOnMiss(3);
+    // Too slow on the Blitz timer: send the traveller back (if allowed).
+    if (state.settings.setbacks) goBackOnMiss(3);
     showSolution();
   }
   function stopTimer() {
@@ -2533,10 +2542,12 @@ function startApp() {
     starBtn.addEventListener("click", buyTimeWithStars);
     els.powerups.appendChild(starBtn);
     SHOP_POWERUPS.forEach(function (pu) {
+      if (pu.id === "shield" && !state.settings.setbacks) return;
       var count = inventoryCount(pu.id);
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "powerup" + (count <= 0 ? " is-empty" : "");
+      btn.setAttribute("data-powerup", pu.id);
       btn.innerHTML =
         '<span class="powerup-icon" aria-hidden="true">' +
         pu.icon +
@@ -2677,6 +2688,8 @@ function startApp() {
     ov.querySelector(".shop-h-buddy").textContent = t("shop_buddies");
     els.shopPowerups.innerHTML = "";
     SHOP_POWERUPS.forEach(function (pu) {
+      // Without setbacks there is nothing for a shield to absorb.
+      if (pu.id === "shield" && !state.settings.setbacks) return;
       var row = document.createElement("div");
       row.className = "shop-item";
       row.setAttribute("data-powerup", pu.id);

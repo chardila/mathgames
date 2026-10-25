@@ -425,6 +425,82 @@ const server = http.createServer((request, response) => {
       await solve();
       await quit();
     }
+    await setProfileSettings({ choices: false, setbacks: false });
+    await start("mul", true);
+    check(
+      (await page.locator("#numpad .key").count()) === 12 &&
+        !(await page.locator("#choices").isVisible()),
+      "typing mode",
+    );
+    for (let i = 0; i < 10; i++) {
+      // half with on-screen keys + Check, half with keyboard digits + Enter
+      const q = await current();
+      if (i % 2) {
+        await page.keyboard.type(String(q.answer));
+        await page.keyboard.press("Enter");
+      } else {
+        for (const d of String(q.answer))
+          await page
+            .locator("#numpad .key", { hasText: new RegExp("^" + d + "$") })
+            .click();
+        await page.locator('[data-action="check"]').click();
+      }
+      await page.clock.runFor(800);
+    }
+    check(
+      (await page.locator("#sum-accuracy").textContent()) === "100%",
+      "typed round completes",
+    );
+    // wrong typed answer at station 5 with setbacks off: stays on 5, continue -> 6
+    await page.locator('#screen-summary [data-action="go-menu"]').click();
+    await start("mul", true);
+    for (let i = 0; i < 4; i++) {
+      const q = await current();
+      await page.keyboard.type(String(q.answer));
+      await page.keyboard.press("Enter");
+      await page.clock.runFor(800);
+    }
+    const miss = await current();
+    await page.keyboard.type(String(miss.answer === 1 ? 2 : 1));
+    await page.keyboard.press("Enter");
+    check(
+      (await page.locator("#map-progress").getAttribute("data-station")) ===
+        "5" &&
+        (await page.locator("#choices .choice").count()) === 1 &&
+        (await page.locator(".choice--continue").isVisible()) &&
+        !(await page.locator("#numpad-wrap").isVisible()),
+      "no setback when off; continue button shown while typing",
+    );
+    await page.locator(".choice--continue").click();
+    check(
+      (await page.locator("#map-progress").getAttribute("data-station")) ===
+        "6" &&
+        !(await page.locator("#choices").isVisible()) &&
+        (await page.locator("#numpad-wrap").isVisible()),
+      "continue after typed miss",
+    );
+    check(
+      (await page.locator('#powerups [data-powerup="joker"]').count()) === 1 &&
+        (await page.locator('#powerups [data-powerup="shield"]').count()) === 0,
+      "shield hidden in tray when setbacks off",
+    );
+    await quit();
+    await page.locator('#screen-menu [data-action="go-shop"]').click();
+    check(
+      (await page.locator('.shop-item[data-powerup="joker"]').count()) === 1 &&
+        (await page.locator('.shop-item[data-powerup="shield"]').count()) === 0,
+      "shield hidden in shop when setbacks off",
+    );
+    await page.locator('[data-action="close-shop"]').click();
+    await setProfileSettings({ setbacks: true });
+    await page.locator('#screen-menu [data-action="go-shop"]').click();
+    check(
+      (await page.locator('.shop-item[data-powerup="shield"]').count()) === 1,
+      "shield back in shop when setbacks on",
+    );
+    await page.locator('[data-action="close-shop"]').click();
+    // the setback and shield checks below need answer buttons and setbacks on
+    await setProfileSettings({ choices: true, setbacks: true });
     await start("div", false, "hard");
     for (let i = 0; i < 4; i++) await solve();
     const q = await current();
