@@ -43,6 +43,10 @@ python3 -m http.server 8080
 
 Para instalarlo en una tablet: abrir la dirección en el navegador y elegir **Añadir a la pantalla de inicio**.
 
+## 📝 Backlog y hallazgos
+
+Lo que se ha detectado para mejorar (todavía por analizar, no comprometido) está en [docs/BACKLOG.md](docs/BACKLOG.md).
+
 ## 🧪 Pruebas
 
 ```bash

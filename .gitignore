@@ -24,3 +24,7 @@ build/
 # Environment
 .env
 .env.local
+
+# Local tooling caches
+.tldr/
+.tldrignore
