@@ -444,6 +444,37 @@ check(
   "late retry clamps to last station",
 );
 assert.deepEqual(T.scheduleRetry(r, 14), r);
+const noRepeats = (list, total) =>
+  list.length === total &&
+  list.every((it, i) => i === 0 || list[i - 1].key !== it.key);
+// a missed copy of a new fact never lands next to its next copy
+for (let n = 0; n < 100; n++) {
+  const round = T.buildTablesRound(
+    stateWith({ mastered: "table1", introduce: [2] }),
+    "2026-11-01",
+    15,
+  );
+  round.forEach((it, i) => {
+    if (it.kind === "new")
+      check(noRepeats(T.scheduleRetry(round, i), 15), "retry on a new copy");
+  });
+}
+// second-to-last station: no clean slot left, round unchanged
+assert.deepEqual(T.scheduleRetry(r, 13), r);
+// property: every index, and chained retries, keep the round clean
+for (let n = 0; n < 300; n++) {
+  const round = T.buildTablesRound(randomTables(), "2026-11-01", 15);
+  const before = JSON.stringify(round);
+  for (let i = 0; i < 15; i++)
+    check(noRepeats(T.scheduleRetry(round, i), 15), "retry at any index");
+  let chained = round;
+  for (let i = 0; i < 15; i++)
+    if (Math.random() < 0.5) {
+      chained = T.scheduleRetry(chained, i);
+      check(noRepeats(chained, 15), "chained retries");
+    }
+  check(JSON.stringify(round) === before, "scheduleRetry is pure");
+}
 // presentation
 const tp = T.tablesToPresent(intro, stateWith({ introduce: [2] }));
 assert.deepEqual(tp, [2]);

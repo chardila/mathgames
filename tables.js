@@ -437,7 +437,8 @@ function buildTablesRound(tables, today, total) {
   // 4c. More probes: they only fill the round when nothing known is left.
   while (probeAt < probes.length && room() > 0) add(probes[probeAt++], "probe");
 
-  // 4d. Least recently seen facts, whatever their state.
+  // 4d. Least recently seen facts, whatever their state. This and the safety
+  // net may exceed the repeat caps, only in degenerate or very long rounds.
   var seen = sortKeys(
     keys.filter(function (k) {
       return !isUnseen(facts[k]);
@@ -490,21 +491,28 @@ function scheduleRetry(round, index) {
     }
   }
   copy.retry = true;
-  function insertAt(pos) {
-    var out = round.slice();
-    out.splice(pos, 0, copy);
-    return out;
-  }
-  function clashes(list, pos) {
+  // Clean: neither neighbour that survives the trim has the same key.
+  // (Inserting only splits a pair, so it never joins two other equal keys.)
+  function isClean(pos) {
     return (
-      list[pos - 1].key === copy.key ||
-      (pos + 1 < total && list[pos + 1].key === copy.key)
+      round[pos - 1].key !== copy.key &&
+      (pos + 1 >= total || round[pos].key !== copy.key)
     );
   }
-  var at = Math.min(index + 3, total - 1);
-  var next = insertAt(at);
-  if (clashes(next, at)) next = insertAt(Math.min(index + 4, total - 1));
-  return next.slice(0, total);
+  // Try 3 later, 4 later, then further on, then 2 later.
+  var tries = [index + 3, index + 4];
+  for (var p = index + 5; p <= total - 1; p++) tries.push(p);
+  tries.push(index + 2);
+  for (var i = 0; i < tries.length; i++) {
+    var at = tries[i];
+    if (at <= total - 1 && isClean(at)) {
+      var next = round.slice();
+      next.splice(at, 0, copy);
+      return next.slice(0, total);
+    }
+  }
+  // No clean slot left: no retry in this round.
+  return round.slice();
 }
 
 // Home tables of the round's new facts not presented yet, in TABLE_ORDER.
