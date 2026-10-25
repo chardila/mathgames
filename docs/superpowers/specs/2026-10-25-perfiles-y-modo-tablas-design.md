@@ -1,6 +1,6 @@
 # Perfiles y modo para dominar las tablas — diseño
 
-> **Estado: COMPLETO, pendiente de aprobación del usuario.** Revisado por un constructor independiente el 2026-10-25. No implementar hasta que el usuario lo apruebe.
+> **Estado: APROBADO por el usuario el 2026-10-25.** Siguiente paso: plan de implementación con `superpowers:writing-plans`.
 
 - Fecha de inicio: 2026-10-25
 - Proyecto: Tablas del Tesoro (`app.js`, `index.html`, `styles.css`, PWA sin backend)
@@ -140,7 +140,7 @@ La música motiva; no es el método principal (recordar fija más que cantar).
 
 ## Pendiente de decidir (dónde se quedó la conversación)
 
-- Nada pendiente de diseño. Falta la **aprobación del documento por el usuario**; después, el plan de implementación (`superpowers:writing-plans`).
+- Nada pendiente. Documento aprobado; siguiente paso: plan de implementación (`superpowers:writing-plans`).
 
 ## Lo que queda al constructor
 
