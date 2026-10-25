@@ -149,6 +149,10 @@ check(
   ).profiles.length === 0,
   "an existing empty store stays empty (all profiles deleted)",
 );
+check(
+  Object.keys(app.createProfile("A", "🐼", [], "J").tables.facts).length === 55,
+  "profile has tables",
+);
 // parentChallenge
 for (let i = 0; i < 1000; i++) {
   const c = app.parentChallenge();

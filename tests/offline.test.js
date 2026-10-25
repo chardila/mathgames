@@ -70,7 +70,7 @@ const vm = require("node:vm");
     },
   });
   await pending;
-  assert.equal(stores.size, 9);
+  assert.equal(stores.size, 10);
   events.activate({
     waitUntil: (promise) => {
       pending = promise;

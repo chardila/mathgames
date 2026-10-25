@@ -13,6 +13,7 @@ const PRECACHE_URLS = [
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./tables.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

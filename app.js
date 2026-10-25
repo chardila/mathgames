@@ -319,6 +319,10 @@ var BADGE_LABELS = {
 /* 2. Pure math generators + validation (test-friendly)                */
 /* ================================================================== */
 
+// Tables-mode learning engine (loaded by index.html in the browser).
+var Tables =
+  typeof TablesEngine !== "undefined" ? TablesEngine : require("./tables.js");
+
 // Inclusive random integer in [min, max].
 function randInt(min, max) {
   min = Math.ceil(min);
@@ -810,6 +814,7 @@ function createProfile(name, avatar, existingIds, fallbackName) {
       PROFILE_AVATARS.indexOf(avatar) === -1 ? PROFILE_AVATARS[0] : avatar,
     settings: normalizeSettings(),
     progress: defaultProgress(),
+    tables: Tables.normalizeTables(),
   };
 }
 
@@ -832,9 +837,8 @@ function normalizeProfile(saved) {
         isPlainObject(saved.progress) ? saved.progress : {},
       ),
     ),
+    tables: Tables.normalizeTables(saved.tables),
   };
-  // Table-mode data is normalized elsewhere; keep it untouched.
-  if (saved.tables !== undefined) profile.tables = saved.tables;
   return profile;
 }
 
@@ -3065,6 +3069,7 @@ function startApp() {
     if (!profile) return;
     if (!window.confirm(t("reset_confirm"))) return;
     profile.progress = defaultProgress();
+    profile.tables = Tables.normalizeTables();
     saveProfiles();
   }
 
