@@ -450,4 +450,312 @@ check(/* ... */ true, "shield hidden in shop when setbacks off");
 
 ---
 
+## Fase B · Motor de aprendizaje de tablas (puro)
+
+Las funciones del motor **no llaman a `Date` ni a `localStorage`**: reciben `today` (`"YYYY-MM-DD"`, fecha local) y `elapsedMs` como parámetros. Todas devuelven objetos nuevos sin modificar los que reciben. El azar usa `Math.random`, que las pruebas sustituyen por una semilla, como en `tests/learning.test.js`.
+
+### Tarea 5: `tables.js`, registro por operación, dominio y repaso espaciado
+
+**Archivos:**
+
+- Crear: `tables.js`
+- Crear: `tests/tables.test.js`
+- Modificar: `index.html` (`<script src="tables.js" defer></script>` antes de `app.js`)
+- Modificar: `service-worker.js` (`"./tables.js"` en `PRECACHE_URLS`)
+- Modificar: `tests/offline.test.js` (`stores.size` 10)
+- Modificar: `package.json` (`node tests/tables.test.js` en `test`; `node --check tables.js` en `validate`)
+- Modificar: `.github/workflows/quality.yml` (`node --check tables.js`)
+- Modificar: `app.js`:
+  - la línea `var Tables = …` (ver "Mapa de archivos");
+  - `normalizeProfile` y `createProfile` ponen `tables: Tables.normalizeTables(saved.tables)`;
+  - `resetProgress` (del editor) también reinicia `tables`.
+- Modificar: `tests/profiles.test.js` (un perfil normalizado trae 55 operaciones)
+
+**Interfaces (`TablesEngine`):**
+
+- Constantes:
+  - `TABLE_ORDER = [1, 2, 5, 10, 3, 4, 9, 6, 7, 8]`
+  - `FAST_MS = 3000`, `HINT_DELAY_MS = 5000`, `ANSWER_DELAY_MS = 10000`
+  - `REVIEW_INTERVALS = [1, 3, 7, 14]`
+  - `PROBE_FAILS_TO_INTRODUCE = 2`, `PROBE_FASTS_TO_PRIORITIZE = 2`
+- `factKey(a, b) -> "min-max"`
+- `factKeys() -> string[55]`, en orden de introducción (ver Tarea 6).
+- `parseKey(key) -> [a, b]`
+- `homeTable(key) -> number`: de los dos factores, el que aparece antes en `TABLE_ORDER`.
+- `factTables(key) -> number[]`: `[a]` si `a === b`; si no, `[a, b]`.
+- `localDateKey(date) -> "YYYY-MM-DD"` (usa `getFullYear`, `getMonth` y `getDate`)
+- `addDays(dateKey, n) -> dateKey`
+- `normalizeTables(saved) -> tables`, con esta forma:
+
+```
+{ facts: { "7-9": { state: "new"|"practicing"|"mastered", seen, fast, fastDays: [dateKey], lastSeen: dateKey|"",
+                    avgMs, everMastered: bool, reviewStep: 0..3, nextReview: dateKey|"" }, … 55 },
+  probes: { "1": { fast, fail, introduce: bool }, … "10" },
+  presented: [table numbers whose intro song already played] }
+```
+
+- `classifyOutcome(stage, elapsedMs) -> "fast" | "slow" | "hint" | "answer"`. `stage` es `"ask"`, `"hint"` o `"answer"`.
+- `isDue(fact, today) -> bool`: dominada y con `nextReview <= today`.
+- `recordTablesAnswer(tables, item, outcome, elapsedMs, today) -> tables`. `item = { key, kind }`; `kind` sale de la Tarea 6.
+
+Reglas de `recordTablesAnswer`, copiadas del diseño:
+
+- **Siempre:**
+  - `seen++` y `lastSeen = today`.
+  - `avgMs` es una media móvil (0,7 la anterior, 0,3 la nueva; la primera muestra es el valor inicial).
+  - Una operación `new` pasa a `practicing`.
+- **`fast`:**
+  - `fast++` y se añade `today` a `fastDays` (sin repetir; se guardan como mucho los 3 días más recientes).
+  - Si no estaba dominada y queda con `fast >= 3` y `fastDays.length >= 2`, pasa a `mastered`, con `everMastered = true`, `reviewStep = 0` y `nextReview = today + 1`.
+  - Si ya estaba dominada y le tocaba repaso: `reviewStep = min(reviewStep + 1, 3)` y `nextReview = today + REVIEW_INTERVALS[reviewStep]`.
+- **`slow`:** no toca los contadores de rápidas. Si estaba dominada y le tocaba repaso: `nextReview = today + REVIEW_INTERVALS[reviewStep]`, sin avanzar de intervalo.
+- **`hint` o `answer`:**
+  - `fast = 0` y `fastDays = []`.
+  - Si estaba dominada: vuelve a `practicing`, con `reviewStep = 0` y `nextReview = ""`. `everMastered` se queda en `true`.
+- **Si `item.kind === "probe"`** (cambia `probes[homeTable(key)]`):
+  - con `fast`: `fast++`;
+  - con `hint` o `answer`: `fail++`, y con `fail >= 2`, `introduce = true`.
+
+- [ ] **Paso 1: Pruebas que fallan** en `tests/tables.test.js` (mismo estilo; con un ayudante `rec(t, key, outcome, day, kind = "practice")`):
+
+```js
+const T = require("../tables.js");
+check(T.factKeys().length === 55 && new Set(T.factKeys()).size === 55, "55 unique facts");
+check(T.factKey(9, 7) === "7-9" && T.factKey(7, 9) === "7-9", "7×9 and 9×7 are one fact");
+const homes = {}; T.factKeys().forEach((k) => (homes[T.homeTable(k)] = (homes[T.homeTable(k)] || 0) + 1));
+assert.deepEqual(homes, { 1: 10, 2: 9, 5: 8, 10: 7, 3: 6, 4: 5, 9: 4, 6: 3, 7: 2, 8: 1 });
+check(T.homeTable("7-9") === 9 && T.homeTable("2-7") === 2 && T.homeTable("6-8") === 6, "home table");
+assert.deepEqual(T.factTables("7-7"), [7]); assert.deepEqual(T.factTables("1-7"), [1, 7]);
+check(T.localDateKey(new Date(2026, 9, 25, 23, 30)) === "2026-10-25", "local date, not UTC");
+check(T.addDays("2026-10-31", 1) === "2026-11-01" && T.addDays("2026-12-31", 14) === "2027-01-14", "addDays");
+const fresh = T.normalizeTables();
+check(Object.values(fresh.facts).every((f) => f.state === "new" && f.seen === 0 && !f.everMastered), "fresh facts");
+check(Object.keys(fresh.probes).length === 10 && fresh.presented.length === 0, "fresh probes");
+check(T.normalizeTables({ facts: { "7-9": { state: "weird", seen: -3 } } }).facts["7-9"].state === "new", "invalid fact recovers");
+assert.deepEqual(T.normalizeTables(JSON.parse(JSON.stringify(fresh))), fresh);
+check(T.classifyOutcome("ask", 2999) === "fast" && T.classifyOutcome("ask", 3000) === "slow" &&
+  T.classifyOutcome("hint", 100) === "hint" && T.classifyOutcome("answer", 100) === "answer", "outcome thresholds");
+// mastery: 3 fast on >= 2 different days
+let t = fresh;
+for (let i = 0; i < 3; i++) t = rec(t, "7-9", "fast", "2026-10-25");
+check(t.facts["7-9"].state === "practicing" && t.facts["7-9"].fast === 3, "3 fast on one day is not mastery");
+t = rec(t, "7-9", "fast", "2026-10-26");
+const m = t.facts["7-9"];
+check(m.state === "mastered" && m.everMastered && m.reviewStep === 0 && m.nextReview === "2026-10-27", "mastered");
+// slow keeps the count; hint/answer reset it
+let u = rec(rec(rec(rec(fresh, "3-4", "fast", "D1"), "3-4", "slow", "D1"), "3-4", "fast", "D2"), "3-4", "fast", "D2");
+check(u.facts["3-4"].state === "mastered", "slow answers don't reset fast count");
+u = rec(rec(rec(fresh, "3-4", "fast", "D1"), "3-4", "hint", "D1"), "3-4", "fast", "D2");
+check(u.facts["3-4"].fast === 1 && u.facts["3-4"].fastDays.join() === "D2", "hint resets fast count");
+// spaced review 1, 3, 7, 14, 14
+t = rec(t, "7-9", "fast", "2026-10-26"); // same day, not due
+check(t.facts["7-9"].nextReview === "2026-10-27", "not due: schedule unchanged");
+for (const [day, next] of [["2026-10-27", "2026-10-30"], ["2026-10-30", "2026-11-06"], ["2026-11-06", "2026-11-20"], ["2026-11-20", "2026-12-04"]]) {
+  t = rec(t, "7-9", "fast", day); check(t.facts["7-9"].nextReview === next, "review step -> " + next);
+}
+check(rec(t, "7-9", "slow", "2026-12-04").facts["7-9"].nextReview === "2026-12-18", "slow review keeps interval");
+const failed = rec(t, "7-9", "hint", "2026-12-04").facts["7-9"];
+check(failed.state === "practicing" && failed.everMastered && failed.nextReview === "" && failed.fast === 0, "failed review demotes");
+// probes
+let p = rec(fresh, "7-9", "hint", "D1", "probe");
+check(p.probes["9"].fail === 1 && !p.probes["9"].introduce, "one failed probe");
+p = rec(p, "4-9", "answer", "D1", "probe");
+check(p.probes["9"].introduce, "two failed probes -> table to introduce");
+check(rec(fresh, "7-9", "hint", "D1", "practice").probes["9"].fail === 0, "non-probe leaves probes alone");
+check(rec(fresh, "2-5", "fast", "D1", "probe").probes["2"].fast === 1, "fast probe counted on home table");
+const before = JSON.stringify(fresh); rec(fresh, "7-9", "fast", "D1"); check(JSON.stringify(fresh) === before, "pure");
+const avg = rec(rec(fresh, "2-2", "slow", "D1", "practice", 2000), "2-2", "slow", "D1", "practice", 4000);
+check(avg.facts["2-2"].avgMs === 2600, "moving average");
+```
+
+El ayudante es `rec(t, key, outcome, day, kind = "practice", elapsedMs = 1000)`, que llama a `T.recordTablesAnswer(t, { key, kind }, outcome, elapsedMs, day)`.
+
+- [ ] **Paso 2: Ejecutar** `node tests/tables.test.js` → falla (`Cannot find module '../tables.js'`).
+- [ ] **Paso 3: Implementar** `tables.js` con todo lo de "Interfaces". Hacer también el cableado de "Archivos". En `tests/profiles.test.js`, añadir `check(Object.keys(app.createProfile("A", "🐼", [], "J").tables.facts).length === 55, "profile has tables")`.
+- [ ] **Paso 4: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa.
+- [ ] **Paso 5: Commit.** `git add -A && git commit -m "feat: per-fact tables engine with mastery and spaced review"`
+
+---
+
+### Tarea 6: Composición de la ronda, sondeos y reintentos
+
+**Archivos:**
+
+- Modificar: `tables.js`, `tests/tables.test.js`
+
+**Interfaces:**
+
+- Consume: todo lo de la Tarea 5.
+- Produce:
+  - Constantes: `NEW_PER_ROUND = 2`, `NEW_REPEATS = 3`, `NEW_SPACING = 3`, `MAX_PROBES_PER_ROUND = 3`, `MAX_PRACTICING_FOR_NEW = 10`, `PRACTICE_MAX_REPEATS = 2`.
+  - `buildTablesRound(tables, today, total) -> item[]`, de longitud exacta `total`. Cada elemento es `{ key, a, b, kind }`, donde `kind` es `"review"`, `"new"`, `"probe"`, `"practice"` o `"known"`, y `a × b` es como se muestra en pantalla (`factKey(a, b) === key`).
+  - `scheduleRetry(round, index) -> item[]`: misma longitud; no modifica `round`.
+  - `tablesToPresent(round, tables) -> number[]`: las tablas casa de los elementos `"new"` que aún no están en `tables.presented`, sin repetir y en orden de `TABLE_ORDER`.
+  - `markPresented(tables, table) -> tables`
+
+**Orden de introducción:** las tablas según `TABLE_ORDER`. Dentro de cada tabla, sus operaciones (las que la tienen como casa) por el otro factor, de menor a mayor. `factKeys()` sigue este orden: `1-1, 1-2, …, 1-10, 2-2, 2-3, …`.
+
+**Orden de sondeo:** el de introducción, con dos cambios:
+
+- Primero van las tablas "rápidas" (`probes[t].fast >= 2` y `probes[t].fail === 0`), en su orden.
+- Se saltan las tablas con `introduce = true`.
+
+**`buildTablesRound`:**
+
+1. **Repasos:** operaciones dominadas a las que les toca repaso. Primero las de `nextReview` más antiguo y, a igualdad, por orden de introducción. Como mucho `Math.floor(total / 5)` (3 en una ronda de 15).
+2. **Nuevas:** solo si hay menos de `MAX_PRACTICING_FOR_NEW` operaciones en `practicing`. Se toman las no vistas (`seen === 0`) cuya tabla casa tiene `introduce`, en orden de introducción. Como mucho `NEW_PER_ROUND`, y solo mientras quepan `NEW_REPEATS` copias de cada una en lo que queda.
+3. **Sondeos:** operaciones no vistas cuya tabla casa no tiene `introduce`, en orden de sondeo. Como mucho `MAX_PROBES_PER_ROUND`.
+4. **Relleno**, por este orden, hasta llegar a `total`:
+   - (a) `practicing`, primero las de menos `fast`, luego las de `lastSeen` más antiguo y luego por orden de introducción. Como mucho `PRACTICE_MAX_REPEATS` veces cada una en la ronda.
+   - (b) Más sondeos.
+   - (c) Dominadas que no estén ya en la ronda (`"known"`), primero las de `lastSeen` más antiguo.
+   - (d) Las operaciones vistas hace más tiempo, del estado que sean, como `"known"` o `"practice"`, hasta llenar.
+5. **Colocación:**
+   - La copia `k` (0..2) de la nueva `j` (0..1) va en la posición `j + 1 + k × NEW_SPACING`. Si la posición está ocupada, en la siguiente libre.
+   - El resto se baraja en los huecos.
+   - Luego se recorre la ronda: si dos elementos seguidos tienen la misma `key`, el segundo se intercambia con el primer elemento posterior que no cree otro par igual.
+   - Para cada elemento con `a ≠ b`, el orden se elige al azar (se pregunta en ambos sentidos).
+
+**`scheduleRetry(round, index)`:**
+
+- Si `index` es la última posición, devuelve una copia sin cambios.
+- Si no, inserta una copia de `round[index]`, con `retry: true`, en la posición `min(index + 3, total - 1)`. Si allí quedaría junto a un elemento con la misma `key`, usa `index + 4` (también limitado a `total - 1`).
+- Después recorta al tamaño `total`, quitando el último elemento.
+
+- [ ] **Paso 1: Pruebas que fallan** (semilla de azar como en `learning.test.js`; un ayudante `stateWith(spec)` arma un `tables` con los hechos en los estados indicados):
+
+```js
+const valid = (r, total) => r.length === total && r.every((it, i) =>
+  T.factKey(it.a, it.b) === it.key && ["review", "new", "probe", "practice", "known"].includes(it.kind) &&
+  (i === 0 || r[i - 1].key !== it.key));
+// random states x totals
+for (let n = 0; n < 300; n++) for (const total of [10, 15, 20, 25])
+  check(valid(T.buildTablesRound(randomTables(), "2026-11-01", total), total), "valid round");
+// cold start
+const cold = T.buildTablesRound(T.normalizeTables(), "D", 15);
+check(cold.every((it) => it.kind === "probe") && new Set(cold.map((i) => i.key)).size === 15, "cold start: 15 distinct probes");
+assert.deepEqual(new Set(cold.map((i) => i.key)), new Set(T.factKeys().slice(0, 15)));
+// introductions: table 2 to introduce, nothing practicing
+const intro = T.buildTablesRound(stateWith({ seen: "table1", introduce: [2] }), "D", 15);
+const news = intro.filter((i) => i.kind === "new");
+check(news.length === 6 && ["2-2", "2-3"].every((k) => news.filter((i) => i.key === k).length === 3), "2 new facts × 3");
+for (const k of ["2-2", "2-3"]) {
+  const pos = intro.map((it, i) => (it.key === k ? i : -1)).filter((i) => i >= 0);
+  check(pos[1] - pos[0] >= 2 && pos[2] - pos[1] >= 2, "new fact copies spaced");
+}
+check(intro.every((it) => it.kind !== "probe" || T.homeTable(it.key) !== 2), "introduced tables are not probed");
+check(T.buildTablesRound(stateWith({ practicing: 10, introduce: [2] }), "D", 15).every((i) => i.kind !== "new"), "too many practicing -> no new");
+// reviews capped at 3, oldest first
+const rv = T.buildTablesRound(stateWith({ dueMastered: ["1-2@2026-10-01", "1-3@2026-10-02", "1-4@2026-10-03", "1-5@2026-10-04", "1-6@2026-10-05"] }), "2026-11-01", 15);
+assert.deepEqual(rv.filter((i) => i.kind === "review").map((i) => i.key).sort(), ["1-2", "1-3", "1-4"]);
+// fast table probed first
+const pri = T.buildTablesRound(stateWith({ seen: "table1", probes: { 5: { fast: 2, fail: 0 } } }), "D", 15);
+check(T.homeTable(pri.find((i) => i.kind === "probe").key) === 5, "fast table probed first");
+// brother: everything mastered, nothing due / everything due
+check(valid(T.buildTablesRound(stateWith({ allMastered: true }), "D", 15), 15), "all mastered round");
+check(T.buildTablesRound(stateWith({ allMastered: true, allDue: true }), "D", 15).filter((i) => i.kind === "review").length === 3, "all due -> 3 reviews + known");
+// orientation
+const seenOrient = new Set();
+for (let n = 0; n < 300; n++) T.buildTablesRound(stateWith({ practicing: ["7-9"] }), "D", 15)
+  .filter((i) => i.key === "7-9").forEach((i) => seenOrient.add(i.a + "x" + i.b));
+check(seenOrient.has("7x9") && seenOrient.has("9x7"), "asked both ways");
+// retries
+const r = T.factKeys().slice(0, 15).map((key) => ({ key, a: +key.split("-")[0], b: +key.split("-")[1], kind: "practice" }));
+const r2 = T.scheduleRetry(r, 2);
+check(r2.length === 15 && r2[5].key === r[2].key && r2[5].retry && r2[6] === r[5] && r.length === 15 && !r[5].retry, "retry 3 later");
+const clash = r.slice(); clash[4] = r[2];
+check(T.scheduleRetry(clash, 2)[6].key === r[2].key, "retry 4 later when 3 would sit next to itself");
+check(T.scheduleRetry(r, 12)[14].key === r[12].key, "late retry clamps to last station");
+assert.deepEqual(T.scheduleRetry(r, 14), r);
+// presentation
+const tp = T.tablesToPresent(intro, stateWith({ introduce: [2] }));
+assert.deepEqual(tp, [2]);
+assert.deepEqual(T.tablesToPresent(intro, T.markPresented(stateWith({ introduce: [2] }), 2)), []);
+```
+
+- [ ] **Paso 2: Ejecutar** → falla (`T.buildTablesRound is not a function`).
+- [ ] **Paso 3: Implementar** lo de "Produce", con las reglas de arriba. `randomTables()` y `stateWith()` son ayudantes de la prueba, no del motor.
+- [ ] **Paso 4: Verificar.** `npm test` → todo pasa.
+- [ ] **Paso 5: Commit.** `git commit -am "feat: tables round composition, probing and in-round retries"`
+
+---
+
+### Tarea 7: Trucos de la pista, álbum, llenado de personajes y logros
+
+**Archivos:**
+
+- Modificar: `tables.js`, `tests/tables.test.js`
+- Modificar: `app.js` (textos `trick_*` en `I18N`)
+
+**Interfaces:**
+
+- `tablesTrick(a, b) -> { key, vars }`:
+  - Se busca el primer `p` de la lista `[1, 10, 9, 2, 5, 4, 3]` que sea igual a `a` o a `b`. `n` es el otro factor (o `p`, si los dos son `p`).
+  - Si ninguno está en la lista (los dos son 6, 7 u 8), se usa `trick_split` con `a` tal como se muestra.
+  - **El truco nunca dice el resultado.**
+
+| `key`         | `vars`                            | `es`                                                              | `en`                                                         |
+| ------------- | --------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| `trick_1`     | `{ n }`                           | "{n} × 1 es un solo grupo de {n}."                                | "{n} × 1 is just one group of {n}."                          |
+| `trick_10`    | `{ n }`                           | "Por 10: pon un cero detrás del {n}."                             | "Times 10: put a zero after {n}."                            |
+| `trick_9`     | `{ n, tens: n*10 }`               | "{n} × 10 = {tens}, menos {n}."                                   | "{n} × 10 = {tens}, minus {n}."                              |
+| `trick_2`     | `{ n }`                           | "Es el doble: {n} + {n}."                                         | "It's double: {n} + {n}."                                    |
+| `trick_5`     | `{ n, tens: n*10 }`               | "{n} × 10 = {tens}, y luego la mitad."                            | "{n} × 10 = {tens}, then half of it."                        |
+| `trick_4`     | `{ n, double: n*2 }`              | "El doble del doble: {n} × 2 = {double}, y otra vez el doble."    | "Double, then double again: {n} × 2 = {double}, then again." |
+| `trick_3`     | `{ n, double: n*2 }`              | "{n} × 2 = {double}, más {n}."                                    | "{n} × 2 = {double}, plus {n}."                              |
+| `trick_split` | `{ a, five: a*5, rest: b-5 }`     | "{a} × 5 = {five}, más {a} × {rest}."                             | "{a} × 5 = {five}, plus {a} × {rest}."                       |
+
+- `albumCells(tables) -> cell[100]`: por filas, `a` de 1 a 10 y `b` de 1 a 10. Cada casilla es `{ a, b, key, state }`, y `state` vale:
+  - `"mastered"` si la operación está dominada;
+  - `"almost"` si está en `practicing` y tiene `fast >= 1`;
+  - `"practicing"` si está en `practicing`;
+  - `"new"` en otro caso.
+- `characterFill(tables, table) -> 0..10`: cuántas de las 10 operaciones con ese factor tienen `everMastered`.
+- `FILL_MILESTONES = [[1, "first"], [5, "half"], [8, "almost"], [10, "full"]]`
+- `fillMilestone(before, after) -> null | "first" | "half" | "almost" | "full"`: el hito más alto con `before < umbral <= after`.
+- `newlyMastered(before, after) -> key[]`: dominadas en `after` que no lo estaban en `before`.
+
+- [ ] **Paso 1: Pruebas que fallan:**
+
+```js
+assert.deepEqual(T.tablesTrick(7, 9), { key: "trick_9", vars: { n: 7, tens: 70 } }); // spec example "7 × 10 = 70, menos 7"
+assert.deepEqual(T.tablesTrick(9, 7), T.tablesTrick(7, 9));
+assert.deepEqual(T.tablesTrick(2, 9), { key: "trick_9", vars: { n: 2, tens: 20 } });
+assert.deepEqual(T.tablesTrick(1, 1), { key: "trick_1", vars: { n: 1 } });
+assert.deepEqual(T.tablesTrick(10, 10), { key: "trick_10", vars: { n: 10 } });
+assert.deepEqual(T.tablesTrick(7, 8), { key: "trick_split", vars: { a: 7, five: 35, rest: 3 } });
+assert.deepEqual(T.tablesTrick(8, 7), { key: "trick_split", vars: { a: 8, five: 40, rest: 2 } });
+assert.deepEqual(T.tablesTrick(6, 6), { key: "trick_split", vars: { a: 6, five: 30, rest: 1 } });
+const app = require("../app.js");
+for (let a = 1; a <= 10; a++) for (let b = 1; b <= 10; b++) {
+  const tr = T.tablesTrick(a, b);
+  check(["es", "en"].every((l) => typeof app.I18N[l][tr.key] === "string") &&
+    Object.values(tr.vars).every(Number.isFinite), "trick text exists in es and en");
+  // ×1 inherently names the answer; every other trick leaves the last step to the child
+  check(tr.key === "trick_1" || Object.values(tr.vars).every((v) => v !== a * b), "trick does not give the answer");
+}
+const cells = T.albumCells(someTables); // 7-9 mastered, 3-4 practicing fast 1, 2-2 practicing fast 0
+check(cells.length === 100 && cells[0].a === 1 && cells[0].b === 1 && cells[99].a === 10, "100 cells row-major");
+const cell = (a, b) => cells[(a - 1) * 10 + (b - 1)];
+check(cell(7, 9).state === "mastered" && cell(9, 7).state === "mastered", "both cells of one fact");
+check(cell(3, 4).state === "almost" && cell(2, 2).state === "practicing" && cell(5, 5).state === "new", "album states");
+// fill: 7-7 counts once for table 7; 1-7 counts for 1 and 7; never decreases
+let f = masterFacts(T.normalizeTables(), ["7-7", "1-7"]);
+check(T.characterFill(f, 7) === 2 && T.characterFill(f, 1) === 1, "fill counts");
+f = rec(f, "1-7", "hint", "D9");
+check(T.characterFill(f, 7) === 2, "fill never drops");
+check(T.fillMilestone(0, 1) === "first" && T.fillMilestone(4, 5) === "half" && T.fillMilestone(7, 9) === "almost" &&
+  T.fillMilestone(9, 10) === "full" && T.fillMilestone(5, 5) === null && T.fillMilestone(2, 3) === null, "milestones");
+assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
+```
+
+`someTables` y `masterFacts(tables, keys)` son ayudantes de la prueba. `masterFacts` registra para cada operación 3 respuestas `fast` en dos días distintos.
+
+- [ ] **Paso 2: Ejecutar** → falla.
+- [ ] **Paso 3: Implementar** las funciones y añadir las 8 claves `trick_*` a `I18N` en `es` y `en`.
+- [ ] **Paso 4: Verificar.** `npm test` → todo pasa.
+- [ ] **Paso 5: Commit.** `git commit -am "feat: hint tricks, parent album cells and character fill"`
+
+---
+
 <!-- TAREAS -->
