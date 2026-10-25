@@ -231,6 +231,309 @@ function recordTablesAnswer(tables, item, outcome, elapsedMs, today) {
   return next;
 }
 
+// ---- Round composition ----
+
+var NEW_PER_ROUND = 2;
+var NEW_REPEATS = 3;
+var NEW_SPACING = 3;
+var MAX_PROBES_PER_ROUND = 3;
+var MAX_PRACTICING_FOR_NEW = 10;
+var PRACTICE_MAX_REPEATS = 2;
+
+function isUnseen(fact) {
+  return fact.seen === 0 && fact.state === "new";
+}
+
+// Sort keys by `compare`, ties by introduction order (stable, no mutation).
+function sortKeys(keys, compare) {
+  var order = factKeys();
+  return keys.slice().sort(function (x, y) {
+    return compare(x, y) || order.indexOf(x) - order.indexOf(y);
+  });
+}
+
+function byString(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// Unseen facts of tables not to introduce: "fast" tables first, then the rest,
+// each in introduction order.
+function probeOrder(tables) {
+  var fastTables = [];
+  var otherTables = [];
+  for (var i = 0; i < TABLE_ORDER.length; i++) {
+    var t = TABLE_ORDER[i];
+    var probe = tables.probes[t];
+    if (probe.introduce) continue;
+    if (probe.fast >= PROBE_FASTS_TO_PRIORITIZE && probe.fail === 0) {
+      fastTables.push(t);
+    } else {
+      otherTables.push(t);
+    }
+  }
+  var ordered = fastTables.concat(otherTables);
+  var keys = factKeys();
+  var out = [];
+  for (var j = 0; j < ordered.length; j++) {
+    for (var k = 0; k < keys.length; k++) {
+      if (
+        homeTable(keys[k]) === ordered[j] &&
+        isUnseen(tables.facts[keys[k]])
+      ) {
+        out.push(keys[k]);
+      }
+    }
+  }
+  return out;
+}
+
+function makeItem(key, kind) {
+  var f = parseKey(key);
+  // Ask both ways round.
+  var flip = f[0] !== f[1] && Math.random() < 0.5;
+  return { key: key, a: flip ? f[1] : f[0], b: flip ? f[0] : f[1], kind: kind };
+}
+
+function shuffle(list) {
+  var out = list.slice();
+  for (var i = out.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = out[i];
+    out[i] = out[j];
+    out[j] = tmp;
+  }
+  return out;
+}
+
+function sameKeyAt(r, i, j) {
+  return i >= 0 && j < r.length && r[i].key === r[j].key;
+}
+
+// Would swapping i and j leave no equal neighbours around both positions?
+function swapIsClean(r, i, j) {
+  var s = r.slice();
+  var tmp = s[i];
+  s[i] = s[j];
+  s[j] = tmp;
+  return (
+    !sameKeyAt(s, i - 1, i) &&
+    !sameKeyAt(s, i, i + 1) &&
+    !sameKeyAt(s, j - 1, j) &&
+    !sameKeyAt(s, j, j + 1)
+  );
+}
+
+// Break up equal neighbours: swap the second with the first later item that
+// creates no new pair (or, failing that, an earlier one).
+function separateRepeats(round) {
+  var r = round.slice();
+  for (var i = 1; i < r.length; i++) {
+    if (r[i].key !== r[i - 1].key) continue;
+    var target = -1;
+    for (var j = i + 1; j < r.length && target < 0; j++) {
+      if (swapIsClean(r, i, j)) target = j;
+    }
+    for (var k = 0; k < i - 1 && target < 0; k++) {
+      if (swapIsClean(r, i, k)) target = k;
+    }
+    if (target >= 0) {
+      var tmp = r[i];
+      r[i] = r[target];
+      r[target] = tmp;
+    }
+  }
+  return r;
+}
+
+// Build a round of exactly `total` items { key, a, b, kind }.
+function buildTablesRound(tables, today, total) {
+  var keys = factKeys();
+  var facts = tables.facts;
+  var count = {};
+  var newKeys = [];
+  var rest = [];
+
+  function used() {
+    return newKeys.length * NEW_REPEATS + rest.length;
+  }
+  function room() {
+    return total - used();
+  }
+  function add(key, kind) {
+    rest.push(makeItem(key, kind));
+    count[key] = (count[key] || 0) + 1;
+  }
+
+  // 1. Reviews: due mastered facts, oldest review date first.
+  var due = sortKeys(
+    keys.filter(function (k) {
+      return isDue(facts[k], today);
+    }),
+    function (x, y) {
+      return byString(facts[x].nextReview, facts[y].nextReview);
+    },
+  );
+  for (
+    var i = 0;
+    i < due.length && i < Math.floor(total / 5) && room() > 0;
+    i++
+  ) {
+    add(due[i], "review");
+  }
+
+  // 2. New facts from tables to introduce, while not too much is practicing.
+  var practicing = keys.filter(function (k) {
+    return facts[k].state === "practicing";
+  });
+  if (practicing.length < MAX_PRACTICING_FOR_NEW) {
+    for (var n = 0; n < keys.length; n++) {
+      if (newKeys.length >= NEW_PER_ROUND || room() < NEW_REPEATS) break;
+      var nk = keys[n];
+      if (isUnseen(facts[nk]) && tables.probes[homeTable(nk)].introduce) {
+        newKeys.push(nk);
+        count[nk] = NEW_REPEATS;
+      }
+    }
+  }
+
+  // 3. Probes: a few unseen facts of tables not yet to introduce.
+  var probes = probeOrder(tables);
+  var probeAt = 0;
+  for (
+    var p = 0;
+    p < MAX_PROBES_PER_ROUND && probeAt < probes.length && room() > 0;
+    p++
+  ) {
+    add(probes[probeAt++], "probe");
+  }
+
+  // 4a. Practicing facts: fewest fast first, then least recently seen.
+  var practiceOrder = sortKeys(practicing, function (x, y) {
+    return (
+      facts[x].fast - facts[y].fast ||
+      byString(facts[x].lastSeen, facts[y].lastSeen)
+    );
+  });
+  for (var pass = 0; pass < PRACTICE_MAX_REPEATS; pass++) {
+    for (var a = 0; a < practiceOrder.length && room() > 0; a++) {
+      if ((count[practiceOrder[a]] || 0) < PRACTICE_MAX_REPEATS) {
+        add(practiceOrder[a], "practice");
+      }
+    }
+  }
+
+  // 4b. Mastered facts not in the round yet, least recently seen first.
+  var byLastSeen = function (x, y) {
+    return byString(facts[x].lastSeen, facts[y].lastSeen);
+  };
+  var known = sortKeys(
+    keys.filter(function (k) {
+      return facts[k].state === "mastered" && !count[k];
+    }),
+    byLastSeen,
+  );
+  for (var b = 0; b < known.length && room() > 0; b++) add(known[b], "known");
+
+  // 4c. More probes: they only fill the round when nothing known is left.
+  while (probeAt < probes.length && room() > 0) add(probes[probeAt++], "probe");
+
+  // 4d. Least recently seen facts, whatever their state.
+  var seen = sortKeys(
+    keys.filter(function (k) {
+      return !isUnseen(facts[k]);
+    }),
+    byLastSeen,
+  );
+  for (var s = 0; s < seen.length && room() > 0; s++) {
+    add(seen[s], facts[seen[s]].state === "mastered" ? "known" : "practice");
+  }
+
+  // 4e. Unseen facts not in the round, one copy each.
+  for (var e = 0; e < keys.length && room() > 0; e++) {
+    if (isUnseen(facts[keys[e]]) && !count[keys[e]]) add(keys[e], "new");
+  }
+
+  // Safety net for very long rounds: cycle through every fact.
+  for (var c = 0; room() > 0; c = (c + 1) % keys.length) {
+    add(keys[c], isUnseen(facts[keys[c]]) ? "new" : "practice");
+  }
+
+  // 5. Placement: new copies spaced out, the rest shuffled into the gaps.
+  var round = [];
+  for (var z = 0; z < total; z++) round.push(null);
+  for (var j = 0; j < newKeys.length; j++) {
+    for (var k = 0; k < NEW_REPEATS; k++) {
+      var pos = j + 1 + k * NEW_SPACING;
+      while (pos < total && round[pos]) pos++;
+      if (pos >= total) {
+        pos = 0;
+        while (round[pos]) pos++;
+      }
+      round[pos] = makeItem(newKeys[j], "new");
+    }
+  }
+  var shuffled = shuffle(rest);
+  for (var g = 0, h = 0; g < total; g++) {
+    if (!round[g]) round[g] = shuffled[h++];
+  }
+  return separateRepeats(round);
+}
+
+// Put a copy of a missed item back 3 (or 4) stations later; same length.
+function scheduleRetry(round, index) {
+  var total = round.length;
+  if (index >= total - 1) return round.slice();
+  var copy = {};
+  for (var prop in round[index]) {
+    if (Object.prototype.hasOwnProperty.call(round[index], prop)) {
+      copy[prop] = round[index][prop];
+    }
+  }
+  copy.retry = true;
+  function insertAt(pos) {
+    var out = round.slice();
+    out.splice(pos, 0, copy);
+    return out;
+  }
+  function clashes(list, pos) {
+    return (
+      list[pos - 1].key === copy.key ||
+      (pos + 1 < total && list[pos + 1].key === copy.key)
+    );
+  }
+  var at = Math.min(index + 3, total - 1);
+  var next = insertAt(at);
+  if (clashes(next, at)) next = insertAt(Math.min(index + 4, total - 1));
+  return next.slice(0, total);
+}
+
+// Home tables of the round's new facts not presented yet, in TABLE_ORDER.
+function tablesToPresent(round, tables) {
+  var out = [];
+  for (var i = 0; i < TABLE_ORDER.length; i++) {
+    var t = TABLE_ORDER[i];
+    if (tables.presented.indexOf(t) !== -1) continue;
+    for (var j = 0; j < round.length; j++) {
+      if (round[j].kind === "new" && homeTable(round[j].key) === t) {
+        out.push(t);
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+function markPresented(tables, table) {
+  var next = JSON.parse(JSON.stringify(tables));
+  if (
+    TABLE_ORDER.indexOf(table) !== -1 &&
+    next.presented.indexOf(table) === -1
+  ) {
+    next.presented.push(table);
+  }
+  return next;
+}
+
 var TablesEngine = {
   TABLE_ORDER: TABLE_ORDER,
   FAST_MS: FAST_MS,
@@ -250,6 +553,16 @@ var TablesEngine = {
   classifyOutcome: classifyOutcome,
   isDue: isDue,
   recordTablesAnswer: recordTablesAnswer,
+  NEW_PER_ROUND: NEW_PER_ROUND,
+  NEW_REPEATS: NEW_REPEATS,
+  NEW_SPACING: NEW_SPACING,
+  MAX_PROBES_PER_ROUND: MAX_PROBES_PER_ROUND,
+  MAX_PRACTICING_FOR_NEW: MAX_PRACTICING_FOR_NEW,
+  PRACTICE_MAX_REPEATS: PRACTICE_MAX_REPEATS,
+  buildTablesRound: buildTablesRound,
+  scheduleRetry: scheduleRetry,
+  tablesToPresent: tablesToPresent,
+  markPresented: markPresented,
 };
 
 if (typeof module !== "undefined" && module.exports) {
