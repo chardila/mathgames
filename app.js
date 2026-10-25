@@ -1918,7 +1918,9 @@ function startApp() {
     var grid = document.createElement("div");
     grid.className = "blocks";
     grid.setAttribute("aria-hidden", "true");
-    grid.style.gridTemplateColumns = "repeat(" + b + ", 18px)";
+    // Block size comes from the larger side, so the grid stays ~100 px.
+    grid.style.setProperty("--n", String(Math.max(a, b)));
+    grid.style.gridTemplateColumns = "repeat(" + b + ", var(--cell))";
     for (var i = 0; i < a * b; i++) {
       var block = document.createElement("span");
       block.className = "block";
@@ -1970,7 +1972,6 @@ function startApp() {
       if (outcome === "hint" || outcome === "answer") {
         run.round = Tables.scheduleRetry(run.round, run.cursor);
       }
-      if (els.answerDisplay) els.answerDisplay.classList.add("is-correct");
       rewardCorrect(outcome === "fast" || outcome === "slow");
       run.index++;
       run.cursor++;

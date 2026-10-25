@@ -972,6 +972,79 @@ const server = http.createServer((request, response) => {
         fullPage: true,
       });
       await quit();
+      // 9) worst-case hint (10 × 10 = 100 blocks) still fits a 390 × 844 phone:
+      // every fact mastered (review far off) except 10-10, which is practicing.
+      const facts = {};
+      for (let a = 1; a <= 10; a++)
+        for (let b = a; b <= 10; b++)
+          facts[a + "-" + b] = {
+            state: "mastered",
+            seen: 5,
+            fast: 3,
+            lastSeen: "2026-01-01",
+            reviewStep: 3,
+            nextReview: "2999-01-01",
+          };
+      facts["10-10"] = { state: "practicing", seen: 1, lastSeen: "2026-01-01" };
+      await seedProfiles(
+        [
+          {
+            id: "p1",
+            name: "Ana",
+            settings: {
+              mainMode: "tables",
+              setbacks: false,
+              tableStations: 10,
+              sound: false,
+              timer: false,
+            },
+            tables: { facts },
+          },
+        ],
+        "p1",
+      );
+      await pickProfile("Ana");
+      await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
+      await page.locator('[data-action="start-tables"]').click();
+      for (let i = 0; i < 10 && (await current()).answer !== 100; i++) {
+        await pressAnswer((await current()).answer);
+        await page.clock.runFor(800);
+      }
+      const fitsViewport = () =>
+        page.evaluate(() =>
+          ["#numpad", '[data-action="check"]', "#hint"].every((sel) => {
+            const r = document.querySelector(sel).getBoundingClientRect();
+            return (
+              r.bottom <= window.innerHeight && r.right <= window.innerWidth
+            );
+          }),
+        );
+      check((await current()).answer === 100, "worst-case fact reached");
+      await page.clock.runFor(5100);
+      check(
+        (await page.locator("#hint .block").count()) === 100 &&
+          (await noOverflow()) &&
+          (await fitsViewport()),
+        "10 × 10 hint fits 390 × 844 without scrolling",
+      );
+      await page.clock.runFor(10000);
+      check(
+        (await hintStage()) === "answer" &&
+          (await noOverflow()) &&
+          (await fitsViewport()),
+        "answer stage fits 390 × 844 without scrolling",
+      );
+      await pressAnswer(1);
+      check(
+        (await page.locator("#feedback").textContent()) !== "" &&
+          (await noOverflow()) &&
+          (await fitsViewport()),
+        "wrong entry feedback still fits 390 × 844",
+      );
+      await page.screenshot({
+        path: path.join(root, ".cache", "mobile-tables-hint.png"),
+      });
+      await quit();
       await page.clock.resume();
     }
     // switching player during a pending transition writes nothing into the next profile

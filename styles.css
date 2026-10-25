@@ -1549,15 +1549,17 @@ h3 {
 
 /* Tables hint: a rows x b columns of blocks, then the trick */
 .blocks {
+  /* --n = larger side (set in app.js): the grid stays about 100 px. */
+  --cell: clamp(8px, calc(100px / var(--n, 5) - 2px), 18px);
   display: grid;
-  gap: 3px;
+  gap: 2px;
   justify-content: center;
   margin: 0 auto 8px;
 }
 .block {
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 2px;
   background: var(--c-gold);
   box-shadow: inset 0 -2px 0 rgba(122, 90, 0, 0.25);
 }
@@ -1570,6 +1572,21 @@ h3 {
   margin-top: 6px;
   font-size: 1.3rem;
   font-weight: 800;
+}
+/* Blocks beside the text, so the hint stays short */
+.hint:has(> .blocks) {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 12px;
+  padding: 8px 10px;
+}
+.hint:has(> .blocks) > .blocks {
+  grid-row: 1 / span 2;
+  margin: 0;
+}
+.hint:has(> .blocks) > p {
+  text-align: start;
 }
 .sum-progress-line {
   font-weight: 700;
@@ -1804,6 +1821,27 @@ h3 {
   .treasure-img {
     width: 104px;
     height: 104px;
+  }
+}
+
+/* Phones during a tables hint: map label only and slightly shorter keys,
+   so the 10 x 10 blocks, the numpad and Check fit without scrolling. */
+@media (max-width: 540px) {
+  .screen--game:has(.blocks) .map svg {
+    display: none;
+  }
+  .screen--game:has(.blocks) .feedback:empty {
+    min-height: 0;
+    margin: 0;
+  }
+  .screen--game:has(.blocks) .numpad {
+    gap: 8px;
+  }
+  .screen--game:has(.blocks) .key {
+    min-height: 56px;
+  }
+  .screen--game:has(.blocks) [data-action="check"] {
+    min-height: 64px;
   }
 }
 
