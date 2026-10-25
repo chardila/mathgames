@@ -1,6 +1,6 @@
 # Perfiles y modo para dominar las tablas — diseño
 
-> **Estado: APROBADO por el usuario el 2026-10-25.** Siguiente paso: plan de implementación con `superpowers:writing-plans`.
+> **Estado: APROBADO por el usuario el 2026-10-25.** Plan de implementación: `docs/superpowers/plans/2026-10-25-perfiles-y-modo-tablas.md` (pendiente de revisión).
 
 - Fecha de inicio: 2026-10-25
 - Proyecto: Tablas del Tesoro (`app.js`, `index.html`, `styles.css`, PWA sin backend)

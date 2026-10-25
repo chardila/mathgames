@@ -152,7 +152,7 @@ Cómo se enlazan los módulos:
   - `normalizeSettings(saved) -> object`: valores de `DEFAULT_SETTINGS` donde falten o tengan un tipo inválido. Si `tableStations` no está en `TABLE_STATION_OPTIONS`, pasa a 15; si `mainMode` no está en `MAIN_MODES`, pasa a `"tables"`.
   - `cleanProfileName(name, fallback) -> string`: quita espacios sobrantes, corta a `PROFILE_NAME_MAX` y usa `fallback` si queda vacío.
   - `createProfile(name, avatar, existingIds, fallbackName) -> profile`
-  - `normalizeProfile(saved) -> profile | null`: `null` si `saved` no es un objeto o no tiene `id` de texto.
+  - `normalizeProfile(saved) -> profile | null`: `null` si `saved` no es un objeto o no tiene `id` de texto. Si el nombre queda vacío, usa `"Jugador"`. Si el avatar no está en la lista, usa el primero.
   - `normalizeProfileStore(saved) -> { version: 1, lastId: string, profiles: profile[] }`
   - `migrateLegacyStorage(savedStore, legacyProgress, legacySettings, defaultName) -> store`
   - `parentChallenge() -> { a, b, answer }`
@@ -240,8 +240,8 @@ for (let i = 0; i < 1000; i++) {
   - `state.settings` y `state.progress`: **apuntan a** `state.profile.settings` y `state.profile.progress`. Sin perfil, `state.settings` es una copia de `DEFAULT_SETTINGS`.
   - `saveProfiles()`: guarda `state.store` en `ms_profiles`. Reemplaza **todas** las llamadas `storageSet(STORAGE_KEYS.progress, …)` y `storageSet(STORAGE_KEYS.settings, …)`.
   - `useProfile(id)`: activa el perfil, guarda `lastId`, aplica el acompañante, refresca las cifras y llama a `goHome()`.
-  - `goHome()`: en esta tarea muestra siempre `#screen-menu`. La Tarea 8 la hará depender de `mainMode`.
-  - `goToProfiles()`: detiene temporizadores y transición, como `goToMenu`. Pone `state.run = null` y `state.profile = null`, dibuja `#profile-grid` y muestra `#screen-profiles`.
+  - `goHome()`: `goToMenu` se renombra a `goHome` (y se cambian todas sus llamadas). En esta tarea muestra siempre `#screen-menu`. La Tarea 8 la hará depender de `mainMode`.
+  - `goToProfiles()`: detiene temporizadores y transición, como `goHome`. Pone `state.run = null` y `state.profile = null`, dibuja `#profile-grid` y muestra `#screen-profiles`.
   - `renderProfileGrid()`
   - Acción `switch-player` → `goToProfiles()`.
 - DOM:
@@ -284,7 +284,10 @@ await pickProfile("B"); check((await page.locator("#menu-coins").textContent()) 
 // buy a joker as B -> A still has 10 coins in the store
 check((await store()).profiles.find((p) => p.name === "A").progress.coins === 10, "profiles isolated");
 // ms_profiles = "{broken" and no legacy keys -> one "Jugador 1" with 0 coins
-check(/* ... */ true, "corrupt profile store recovers");
+await page.evaluate(() => { localStorage.clear(); localStorage.setItem("ms_lang", '"es"'); localStorage.setItem("ms_profiles", "{broken"); });
+await page.reload();
+check((await page.locator("#profile-grid .profile-btn").count()) === 1 &&
+  (await store()).profiles[0].name === "Jugador 1" && (await store()).profiles[0].progress.coins === 0, "corrupt profile store recovers");
 ```
 
 - [ ] **Paso 2: Ejecutar** `npm run test:browser` → falla porque no existe `#profile-grid`.
@@ -381,8 +384,14 @@ check((await store()).profiles.find((p) => p.name === "Jugador 1").settings.time
 check(await page.locator("#who-empty").isVisible() &&
   await page.locator('[data-action="open-parents"]').isVisible(), "empty who-plays usable");
 // switching player during a pending transition writes nothing into the next profile
-// (answer correctly as A, quit at once, switch, pick B, clock.runFor(1000): B's learning unchanged)
-check(/* ... */ true, "no cross-profile writes after switch");
+await pickProfile("A"); await start("add", true);
+const pending = await current();
+await page.locator("#choices .choice").filter({ hasText: new RegExp("^" + pending.answer + "$") }).click();
+await quit(); await page.locator('[data-action="switch-player"]').click(); await pickProfile("B");
+const bBefore = JSON.stringify((await store()).profiles.find((p) => p.name === "B").progress);
+await page.clock.runFor(1000);
+check(JSON.stringify((await store()).profiles.find((p) => p.name === "B").progress) === bBefore &&
+  !(await page.locator("#screen-game").evaluate((el) => el.classList.contains("is-active"))), "no cross-profile writes after switch");
 ```
 
 - [ ] **Paso 2: Ejecutar** `npm run test:browser` → falla (no existe `open-parents`).
@@ -437,10 +446,20 @@ for (let i = 0; i < 10; i++) { // half with on-screen keys + Check, half with ke
 }
 check((await page.locator("#sum-accuracy").textContent()) === "100%", "typed round completes");
 // wrong typed answer at station 5 with setbacks off: stays on 5, continue -> 6
-check(/* "Estación 5" then after .choice--continue "Estación 6" */ true, "no setback when off");
+await page.locator('#screen-summary [data-action="go-menu"]').click(); await start("mul", true);
+for (let i = 0; i < 4; i++) { const q = await current(); await page.keyboard.type(String(q.answer)); await page.keyboard.press("Enter"); await page.clock.runFor(800); }
+const miss = await current(); await page.keyboard.type(String(miss.answer === 1 ? 2 : 1)); await page.keyboard.press("Enter");
+check((await page.locator("#map-progress").textContent()).includes("Estación 5") && await page.locator(".choice--continue").isVisible(),
+  "no setback when off; continue button shown while typing");
+await page.locator(".choice--continue").click();
+check((await page.locator("#map-progress").textContent()).includes("Estación 6"), "continue after typed miss");
 check((await page.locator('.powerup[aria-label^="Escudo"]').count()) === 0, "shield hidden in tray when setbacks off");
-// shop: no .shop-item containing "Escudo"; with setbacks: true it is there again
-check(/* ... */ true, "shield hidden in shop when setbacks off");
+await quit(); await page.locator('#screen-menu [data-action="go-shop"]').click();
+check((await page.locator(".shop-item").filter({ hasText: "Escudo" }).count()) === 0, "shield hidden in shop when setbacks off");
+await page.locator('[data-action="close-shop"]').click();
+await setProfileSettings({ setbacks: true }); await page.locator('#screen-menu [data-action="go-shop"]').click();
+check((await page.locator(".shop-item").filter({ hasText: "Escudo" }).count()) === 1, "shield back in shop when setbacks on");
+await page.locator('[data-action="close-shop"]').click();
 ```
 
 - [ ] **Paso 2: Ejecutar** → falla (`#numpad` no tiene teclas porque no existía en el HTML).
@@ -777,7 +796,7 @@ assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
   - `Tables.buildTablesRound`, `scheduleRetry`, `recordTablesAnswer`, `classifyOutcome`, `tablesTrick`, `newlyMastered`, `localDateKey`, `HINT_DELAY_MS`, `ANSWER_DELAY_MS` (Fase B);
   - `state.profile.tables`, `saveProfiles()`.
 - Produce:
-  - **`goHome()`.** Con `mainMode === "tables"` muestra `#screen-tables-home`. Si no, `#screen-menu`, con `state.selectedMode = mainMode` y esa `.mode-card` marcada. `goToMenu` se renombra a `goHome`, y las acciones `go-menu` y `quit` la usan.
+  - **`goHome()`.** Con `mainMode === "tables"` muestra `#screen-tables-home`. Si no, `#screen-menu`, con `state.selectedMode = mainMode` y esa `.mode-card` marcada. Las acciones `go-menu` y `quit` ya la usan desde la Tarea 2.
   - **`#screen-tables-home`**, con:
     - el lorito y `#home-greeting` (`home_greeting` con `{name}`);
     - `#home-coins`;
