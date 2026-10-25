@@ -1,6 +1,6 @@
 # Perfiles y modo para dominar las tablas — diseño
 
-> **Estado: BORRADOR en conversación (no aprobado).** No implementar hasta que el usuario apruebe este documento. Se guarda por partes para poder retomar en otra sesión; la sección "Pendiente de decidir" dice dónde se quedó la conversación.
+> **Estado: BORRADOR COMPLETO, en revisión por un constructor independiente (no aprobado).** No implementar hasta que el usuario apruebe este documento. La sección "Pendiente de decidir" dice dónde se quedó la conversación.
 
 - Fecha de inicio: 2026-10-25
 - Proyecto: Tablas del Tesoro (`app.js`, `index.html`, `styles.css`, PWA sin backend)
@@ -92,6 +92,13 @@ La música motiva; no es el método principal (recordar fija más que cantar).
 - **Todo original y sintetizado** con Web Audio, como los sonidos actuales; sin archivos de audio ni canciones de terceros. Sin voz cantada (limitación aceptada).
 - **Se puede apagar por perfil.**
 
+### Inicio y menú _(opción B del boceto, elegida por el usuario)_
+
+- Tras "¿Quién juega?", la **pantalla de inicio depende del perfil**. Desde la zona de padres se elige el **modo principal** de cada niño.
+- Para un perfil cuyo modo principal es "tablas": saludo con el lorito, **personajes a la vista**, un **botón grande "Seguir aprendiendo"** (ronda de hoy), accesos a Tienda y Mis tesoros, y un enlace discreto a **"Otros juegos"** (suma, resta, multiplicación libre, división, mixto).
+- Motivo: un único botón claro reduce decisiones al empezar (TDAH).
+- Para otros perfiles, el modo principal puede ser cualquiera de los actuales.
+
 ## No metas (de este documento)
 
 - Multiplicación de varias cifras en columnas → trabajo 3, documento aparte.
@@ -114,7 +121,6 @@ La música motiva; no es el método principal (recordar fija más que cantar).
 
 ## Pendiente de decidir (dónde se quedó la conversación)
 
-- Cómo encaja este modo con los modos actuales del menú.
 - Revisión por un constructor independiente (paso final antes de entregar el documento).
 
 ## Lo que queda al constructor
