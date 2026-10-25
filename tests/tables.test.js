@@ -497,81 +497,82 @@ assert.deepEqual(
   let someTables = masterFacts(T.normalizeTables(), ["7-9"]);
   someTables = rec(someTables, "3-4", "fast", "2026-11-01");
   someTables = rec(someTables, "2-2", "slow", "2026-11-01");
-assert.deepEqual(T.tablesTrick(7, 9), {
-  key: "trick_9",
-  vars: { n: 7, tens: 70 },
-}); // spec example "7 × 10 = 70, menos 7"
-assert.deepEqual(T.tablesTrick(9, 7), T.tablesTrick(7, 9));
-assert.deepEqual(T.tablesTrick(2, 9), {
-  key: "trick_9",
-  vars: { n: 2, tens: 20 },
-});
-assert.deepEqual(T.tablesTrick(1, 1), { key: "trick_1", vars: { n: 1 } });
-assert.deepEqual(T.tablesTrick(10, 10), { key: "trick_10", vars: { n: 10 } });
-assert.deepEqual(T.tablesTrick(7, 8), {
-  key: "trick_split",
-  vars: { a: 7, five: 35, rest: 3 },
-});
-assert.deepEqual(T.tablesTrick(8, 7), {
-  key: "trick_split",
-  vars: { a: 8, five: 40, rest: 2 },
-});
-assert.deepEqual(T.tablesTrick(6, 6), {
-  key: "trick_split",
-  vars: { a: 6, five: 30, rest: 1 },
-});
-const app = require("../app.js");
-for (let a = 1; a <= 10; a++)
-  for (let b = 1; b <= 10; b++) {
-    const tr = T.tablesTrick(a, b);
-    check(
-      ["es", "en"].every((l) => typeof app.I18N[l][tr.key] === "string") &&
-        Object.values(tr.vars).every(Number.isFinite),
-      "trick text exists in es and en",
-    );
-    // ×1 inherently names the answer; every other trick leaves the last step to the child
-    check(
-      tr.key === "trick_1" || Object.values(tr.vars).every((v) => v !== a * b),
-      "trick does not give the answer",
-    );
-  }
-const cells = T.albumCells(someTables); // 7-9 mastered, 3-4 practicing fast 1, 2-2 practicing fast 0
-check(
-  cells.length === 100 &&
-    cells[0].a === 1 &&
-    cells[0].b === 1 &&
-    cells[99].a === 10,
-  "100 cells row-major",
-);
-const cell = (a, b) => cells[(a - 1) * 10 + (b - 1)];
-check(
-  cell(7, 9).state === "mastered" && cell(9, 7).state === "mastered",
-  "both cells of one fact",
-);
-check(
-  cell(3, 4).state === "almost" &&
-    cell(2, 2).state === "practicing" &&
-    cell(5, 5).state === "new",
-  "album states",
-);
-// fill: 7-7 counts once for table 7; 1-7 counts for 1 and 7; never decreases
-let f = masterFacts(T.normalizeTables(), ["7-7", "1-7"]);
-check(
-  T.characterFill(f, 7) === 2 && T.characterFill(f, 1) === 1,
-  "fill counts",
-);
-f = rec(f, "1-7", "hint", "2026-11-02");
-check(T.characterFill(f, 7) === 2, "fill never drops");
-check(
-  T.fillMilestone(0, 1) === "first" &&
-    T.fillMilestone(4, 5) === "half" &&
-    T.fillMilestone(7, 9) === "almost" &&
-    T.fillMilestone(9, 10) === "full" &&
-    T.fillMilestone(5, 5) === null &&
-    T.fillMilestone(2, 3) === null,
-  "milestones",
-);
-assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
+  assert.deepEqual(T.tablesTrick(7, 9), {
+    key: "trick_9",
+    vars: { n: 7, tens: 70 },
+  }); // spec example "7 × 10 = 70, menos 7"
+  assert.deepEqual(T.tablesTrick(9, 7), T.tablesTrick(7, 9));
+  assert.deepEqual(T.tablesTrick(2, 9), {
+    key: "trick_9",
+    vars: { n: 2, tens: 20 },
+  });
+  assert.deepEqual(T.tablesTrick(1, 1), { key: "trick_1", vars: { n: 1 } });
+  assert.deepEqual(T.tablesTrick(10, 10), { key: "trick_10", vars: { n: 10 } });
+  assert.deepEqual(T.tablesTrick(7, 8), {
+    key: "trick_split",
+    vars: { a: 7, five: 35, rest: 3 },
+  });
+  assert.deepEqual(T.tablesTrick(8, 7), {
+    key: "trick_split",
+    vars: { a: 8, five: 40, rest: 2 },
+  });
+  assert.deepEqual(T.tablesTrick(6, 6), {
+    key: "trick_split",
+    vars: { a: 6, five: 30, rest: 1 },
+  });
+  const app = require("../app.js");
+  for (let a = 1; a <= 10; a++)
+    for (let b = 1; b <= 10; b++) {
+      const tr = T.tablesTrick(a, b);
+      check(
+        ["es", "en"].every((l) => typeof app.I18N[l][tr.key] === "string") &&
+          Object.values(tr.vars).every(Number.isFinite),
+        "trick text exists in es and en",
+      );
+      // ×1 inherently names the answer; every other trick leaves the last step to the child
+      check(
+        tr.key === "trick_1" ||
+          Object.values(tr.vars).every((v) => v !== a * b),
+        "trick does not give the answer",
+      );
+    }
+  const cells = T.albumCells(someTables); // 7-9 mastered, 3-4 practicing fast 1, 2-2 practicing fast 0
+  check(
+    cells.length === 100 &&
+      cells[0].a === 1 &&
+      cells[0].b === 1 &&
+      cells[99].a === 10,
+    "100 cells row-major",
+  );
+  const cell = (a, b) => cells[(a - 1) * 10 + (b - 1)];
+  check(
+    cell(7, 9).state === "mastered" && cell(9, 7).state === "mastered",
+    "both cells of one fact",
+  );
+  check(
+    cell(3, 4).state === "almost" &&
+      cell(2, 2).state === "practicing" &&
+      cell(5, 5).state === "new",
+    "album states",
+  );
+  // fill: 7-7 counts once for table 7; 1-7 counts for 1 and 7; never decreases
+  let f = masterFacts(T.normalizeTables(), ["7-7", "1-7"]);
+  check(
+    T.characterFill(f, 7) === 2 && T.characterFill(f, 1) === 1,
+    "fill counts",
+  );
+  f = rec(f, "1-7", "hint", "2026-11-02");
+  check(T.characterFill(f, 7) === 2, "fill never drops");
+  check(
+    T.fillMilestone(0, 1) === "first" &&
+      T.fillMilestone(4, 5) === "half" &&
+      T.fillMilestone(7, 9) === "almost" &&
+      T.fillMilestone(9, 10) === "full" &&
+      T.fillMilestone(5, 5) === null &&
+      T.fillMilestone(2, 3) === null,
+    "milestones",
+  );
+  assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
 }
 
 console.log(checks + " tables engine checks passed.");

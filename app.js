@@ -279,7 +279,8 @@ var I18N = {
     trick_9: "{n} \u00d7 10 = {tens}, menos {n}.",
     trick_2: "Es el doble: {n} + {n}.",
     trick_5: "{n} \u00d7 10 = {tens}, y luego la mitad.",
-    trick_4: "El doble del doble: {n} \u00d7 2 = {double}, y otra vez el doble.",
+    trick_4:
+      "El doble del doble: {n} \u00d7 2 = {double}, y otra vez el doble.",
     trick_3: "{n} \u00d7 2 = {double}, m\u00e1s {n}.",
     trick_split: "{a} \u00d7 5 = {five}, m\u00e1s {a} \u00d7 {rest}.",
   },
