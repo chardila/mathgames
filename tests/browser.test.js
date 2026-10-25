@@ -81,6 +81,46 @@ const server = http.createServer((request, response) => {
       );
       await p.reload();
     };
+    // Change settings of the lastId profile in storage, reload and pick it.
+    const setProfileSettings = async (changes, p = page) => {
+      const name = await p.evaluate((value) => {
+        const s = JSON.parse(localStorage.getItem("ms_profiles"));
+        const profile = s.profiles.find((item) => item.id === s.lastId);
+        Object.assign(profile.settings, value);
+        localStorage.setItem("ms_profiles", JSON.stringify(s));
+        return profile.name;
+      }, changes);
+      await p.reload();
+      await pickProfile(name, p);
+    };
+    // Answer the open parent gate with the product it asks for.
+    const passGate = async (p = page) => {
+      const [a, b] = (await p.locator("#gate-question").textContent())
+        .match(/\d+/g)
+        .map(Number);
+      await p.locator("#gate-input").fill(String(a * b));
+      await p.locator('[data-action="gate-ok"]').click();
+    };
+    const openParents = async (p = page) => {
+      await p.locator('[data-action="open-parents"]').click();
+      await passGate(p);
+    };
+    const editProfile = (name, p = page) =>
+      p
+        .locator("#parent-profiles .parent-profile")
+        .filter({
+          has: p.locator(".parent-profile-name", {
+            hasText: new RegExp("^" + name + "$"),
+          }),
+        })
+        .locator("[data-edit-id]")
+        .click();
+    const isActive = (selector, p = page) =>
+      p.locator(selector).evaluate((el) => el.classList.contains("is-active"));
+    const noOverflow = (p = page) =>
+      p.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      );
     await page.goto(url);
     await page
       .locator("#language-grid button")
@@ -156,12 +196,40 @@ const server = http.createServer((request, response) => {
       (await saved()).learning.add.level === 1.5,
       "raised initial adaptive level",
     );
-    await page.locator('#screen-menu [data-action="go-settings"]').click();
+    check(
+      (await page
+        .locator('#screen-menu [data-action="go-settings"]')
+        .count()) === 0 &&
+        (await page.locator("#screen-modes .switch-row").count()) === 0,
+      "no settings on child screens",
+    );
+    await page.locator('#screen-menu [data-action="switch-player"]').click();
+    // gate: wrong answer keeps it closed
+    await page.locator('[data-action="open-parents"]').click();
+    await page.locator("#gate-input").fill("1");
+    await page.locator('[data-action="gate-ok"]').click();
+    check(
+      (await page.locator("#parent-gate").isVisible()) &&
+        (await page.locator("#gate-input").inputValue()) === "" &&
+        !(await page
+          .locator("#screen-parents")
+          .evaluate((el) => el.classList.contains("is-active"))),
+      "gate rejects wrong answer",
+    );
+    await passGate(); // -> #screen-parents active
+    check(
+      (await isActive("#screen-parents")) &&
+        (await page.locator("#parent-gate").isHidden()),
+      "gate opens parents area",
+    );
+    await editProfile("Jugador 1");
     check(
       !(await page.locator("#toggle-timer").isChecked()) &&
         !(await page.locator("#toggle-blitz").isChecked()),
       "optional timing",
     );
+    await page.locator('[data-action="back-parents"]').click();
+    check(await isActive("#screen-parents"), "back to parents without gate");
     await page
       .locator("#settings-language-grid button")
       .filter({ hasText: "English" })
@@ -174,7 +242,40 @@ const server = http.createServer((request, response) => {
       .locator("#settings-language-grid button")
       .filter({ hasText: "Español" })
       .click();
-    await page.locator('#screen-settings [data-action="go-menu"]').click();
+    // add + rename + avatar
+    await page.locator('[data-action="add-profile"]').click();
+    await page.locator("#edit-name").fill("Ana");
+    await page.locator("#edit-name").blur();
+    await page.locator('#edit-avatars [data-avatar="🐼"]').click();
+    await page
+      .locator("#toggle-timer")
+      .locator("xpath=ancestor::label")
+      .click();
+    const ana = (await store()).profiles.find((p) => p.name === "Ana");
+    check(
+      ana.avatar === "🐼" && ana.settings.timer === true,
+      "editor saves to edited profile",
+    );
+    check(
+      (await store()).profiles.find((p) => p.name === "Jugador 1").settings
+        .timer === false,
+      "other profile untouched",
+    );
+    await page.locator("#edit-stations").selectOption("20");
+    await page.locator("#edit-main-mode").selectOption("mul");
+    const anaEdited = (await store()).profiles.find((p) => p.name === "Ana");
+    check(
+      anaEdited.settings.tableStations === 20 &&
+        anaEdited.settings.mainMode === "mul",
+      "editor selects save",
+    );
+    await page.locator('[data-action="back-parents"]').click();
+    await page.locator('#screen-parents [data-action="go-profiles"]').click();
+    check(
+      (await page.locator("#profile-grid .profile-btn").count()) === 2,
+      "added profile listed in who plays",
+    );
+    await pickProfile("Jugador 1");
     await page.locator('#screen-menu [data-action="go-shop"]').click();
     const oldCoins = (await saved()).coins;
     await page
@@ -191,6 +292,10 @@ const server = http.createServer((request, response) => {
     await page.locator('[data-action="close-shop"]').click();
 
     async function start(mode, quick, diff = "adaptive", timer = false) {
+      const s = await store();
+      const active = s.profiles.find((p) => p.id === s.lastId).settings;
+      if (active.quick !== quick || active.timer !== timer)
+        await setProfileSettings({ quick, timer });
       if (
         await page
           .locator("#screen-summary")
@@ -200,16 +305,6 @@ const server = http.createServer((request, response) => {
       await page.locator('#screen-menu [data-action="go-modes"]').click();
       await page.locator('[data-mode="' + mode + '"]').click();
       await page.locator('[data-diff="' + diff + '"]').click();
-      if ((await page.locator("#toggle-quick-modes").isChecked()) !== quick)
-        await page
-          .locator("#toggle-quick-modes")
-          .locator("xpath=ancestor::label")
-          .click();
-      if ((await page.locator("#toggle-timer-modes").isChecked()) !== timer)
-        await page
-          .locator("#toggle-timer-modes")
-          .locator("xpath=ancestor::label")
-          .click();
       await page.locator('#screen-modes [data-action="start-run"]').click();
     }
     async function current() {
@@ -525,6 +620,74 @@ const server = http.createServer((request, response) => {
       path: path.join(root, ".cache", "mobile-modes.png"),
       fullPage: true,
     });
+    // delete every profile -> who-plays shows the empty hint and the parents button still works
+    await page.locator('#screen-modes [data-action="go-menu"]').click();
+    await page.locator('#screen-menu [data-action="switch-player"]').click();
+    await page.locator('[data-action="open-parents"]').click();
+    check(await noOverflow(), "no mobile overflow in parent gate");
+    await passGate();
+    check(await noOverflow(), "no mobile overflow in parents area");
+    await page.screenshot({
+      path: path.join(root, ".cache", "mobile-parents.png"),
+      fullPage: true,
+    });
+    let deleteRounds = 0;
+    while (
+      (await page.locator("#parent-profiles [data-edit-id]").count()) > 0
+    ) {
+      await page.locator("#parent-profiles [data-edit-id]").first().click();
+      if (deleteRounds++ === 0) {
+        check(await noOverflow(), "no mobile overflow in profile editor");
+        await page.screenshot({
+          path: path.join(root, ".cache", "mobile-profile-edit.png"),
+          fullPage: true,
+        });
+      }
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.locator('[data-action="delete-profile"]').click();
+    }
+    const emptied = await store();
+    check(
+      emptied.profiles.length === 0 && emptied.lastId === "",
+      "deleting profiles clears lastId",
+    );
+    await page.locator('#screen-parents [data-action="go-profiles"]').click();
+    check(
+      (await page.locator("#who-empty").isVisible()) &&
+        (await page.locator('[data-action="open-parents"]').isVisible()),
+      "empty who-plays usable",
+    );
+    // switching player during a pending transition writes nothing into the next profile
+    await seedProfiles(
+      [
+        { id: "p1", name: "A", progress: { coins: 10 } },
+        { id: "p2", name: "B", progress: { coins: 99 } },
+      ],
+      "p1",
+    );
+    await pickProfile("A");
+    await start("add", true);
+    const pending = await current();
+    await page
+      .locator("#choices .choice")
+      .filter({ hasText: new RegExp("^" + pending.answer + "$") })
+      .click();
+    await quit();
+    await page.locator('[data-action="switch-player"]').click();
+    await pickProfile("B");
+    const bBefore = JSON.stringify(
+      (await store()).profiles.find((p) => p.name === "B").progress,
+    );
+    await page.clock.runFor(1000);
+    check(
+      JSON.stringify(
+        (await store()).profiles.find((p) => p.name === "B").progress,
+      ) === bBefore &&
+        !(await page
+          .locator("#screen-game")
+          .evaluate((el) => el.classList.contains("is-active"))),
+      "no cross-profile writes after switch",
+    );
     check(errors.length === 0, "no browser errors: " + errors.join("; "));
     await context.close();
     // Fresh installation uses untimed practice by default.
@@ -535,8 +698,8 @@ const server = http.createServer((request, response) => {
       .locator("#language-grid button")
       .filter({ hasText: "Español" })
       .click();
-    await pickProfile("Jugador 1", freshPage);
-    await freshPage.locator('#screen-menu [data-action="go-settings"]').click();
+    await openParents(freshPage);
+    await editProfile("Jugador 1", freshPage);
     check(
       !(await freshPage.locator("#toggle-timer").isChecked()) &&
         !(await freshPage.locator("#toggle-blitz").isChecked()),
@@ -552,7 +715,11 @@ const server = http.createServer((request, response) => {
     });
     await freshPage.reload();
     await pickProfile("Jugador 1", freshPage);
-    await freshPage.locator('#screen-menu [data-action="go-settings"]').click();
+    await freshPage
+      .locator('#screen-menu [data-action="switch-player"]')
+      .click();
+    await openParents(freshPage);
+    await editProfile("Jugador 1", freshPage);
     check(
       (await freshPage.locator("#toggle-timer").isChecked()) &&
         (await freshPage.locator("#toggle-blitz").isChecked()),

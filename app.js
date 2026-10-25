@@ -97,6 +97,24 @@ var I18N = {
     new_badge: "New badge!",
     set_blitz: "Lightning tasks with timer",
     set_choices: "Answer buttons instead of typing",
+    btn_parents: "Parents",
+    gate_title: "Grown-ups only",
+    gate_wrong: "Not quite. Try this one.",
+    btn_ok: "Enter",
+    btn_cancel: "Cancel",
+    parents_title: "Parents area",
+    add_profile: "Add player",
+    btn_edit: "Edit",
+    edit_title: "Player",
+    edit_name: "Name",
+    edit_avatar: "Avatar",
+    edit_main_mode: "Home screen",
+    mode_tables: "Learn the tables",
+    set_music: "Music",
+    set_setbacks: "Go back stations on a miss",
+    set_stations: "Stations in tables mode",
+    delete_profile: "Delete player",
+    delete_confirm: "Delete {name} and all their progress?",
     choose_answer: "Tap the correct answer",
     blitz_tag: "Blitz!",
     combo_tag: "Combo ×{x}",
@@ -193,6 +211,24 @@ var I18N = {
     new_badge: "\u00a1Nueva insignia!",
     set_blitz: "Tareas rel\u00e1mpago con cron\u00f3metro",
     set_choices: "Botones de respuesta en lugar de escribir",
+    btn_parents: "Zona de padres",
+    gate_title: "Solo para adultos",
+    gate_wrong: "No es correcto. Prueba con esta.",
+    btn_ok: "Entrar",
+    btn_cancel: "Cancelar",
+    parents_title: "Zona de padres",
+    add_profile: "A\u00f1adir jugador",
+    btn_edit: "Editar",
+    edit_title: "Jugador",
+    edit_name: "Nombre",
+    edit_avatar: "Avatar",
+    edit_main_mode: "Pantalla de inicio",
+    mode_tables: "Aprender las tablas",
+    set_music: "M\u00fasica",
+    set_setbacks: "Retroceder estaciones al fallar",
+    set_stations: "Estaciones en modo tablas",
+    delete_profile: "Borrar jugador",
+    delete_confirm: "\u00bfBorrar a {name} y todo su progreso?",
     choose_answer: "Toca la respuesta correcta",
     blitz_tag: "\u00a1Rel\u00e1mpago!",
     combo_tag: "Combo \u00d7{x}",
@@ -1397,6 +1433,8 @@ function startApp() {
     progress: defaultProgress(),
     selectedMode: "add",
     selectedDiff: "adaptive",
+    editingId: "",
+    gate: null,
     run: null,
     timerId: null,
   };
@@ -1486,13 +1524,21 @@ function startApp() {
     fxLayer: document.getElementById("fx-layer"),
     howtoBody: document.querySelector(".howto-body"),
     toggleSound: document.getElementById("toggle-sound"),
+    toggleMusic: document.getElementById("toggle-music"),
     toggleTimer: document.getElementById("toggle-timer"),
-    toggleQuick: document.getElementById("toggle-quick"),
-    toggleQuickModes: document.getElementById("toggle-quick-modes"),
-    toggleTimerModes: document.getElementById("toggle-timer-modes"),
     toggleBlitz: document.getElementById("toggle-blitz"),
+    toggleQuick: document.getElementById("toggle-quick"),
     toggleChoices: document.getElementById("toggle-choices"),
-    toggleBlitzModes: document.getElementById("toggle-blitz-modes"),
+    toggleSetbacks: document.getElementById("toggle-setbacks"),
+    parentGate: document.getElementById("parent-gate"),
+    gateQuestion: document.getElementById("gate-question"),
+    gateInput: document.getElementById("gate-input"),
+    gateFeedback: document.getElementById("gate-feedback"),
+    parentProfiles: document.getElementById("parent-profiles"),
+    editName: document.getElementById("edit-name"),
+    editAvatars: document.getElementById("edit-avatars"),
+    editMainMode: document.getElementById("edit-main-mode"),
+    editStations: document.getElementById("edit-stations"),
     numpadWrap: document.getElementById("numpad-wrap"),
     choices: document.getElementById("choices"),
     powerups: document.getElementById("powerups"),
@@ -2806,53 +2852,213 @@ function startApp() {
     });
   }
 
-  /* ---------------- Settings toggles ---------------- */
-  function syncToggles() {
-    els.toggleSound.checked = state.settings.sound;
-    els.toggleTimer.checked = state.settings.timer;
-    els.toggleQuick.checked = state.settings.quick;
-    els.toggleTimerModes.checked = state.settings.timer;
-    els.toggleQuickModes.checked = state.settings.quick;
-    if (els.toggleBlitz) els.toggleBlitz.checked = state.settings.blitz;
-    if (els.toggleChoices) els.toggleChoices.checked = state.settings.choices;
-    if (els.toggleBlitzModes)
-      els.toggleBlitzModes.checked = state.settings.blitz;
+  /* ---------------- Parents area ---------------- */
+  // A grown-up gate guards the parents area; it opens only from who-plays.
+  function openGate() {
+    state.gate = parentChallenge();
+    els.gateQuestion.textContent = state.gate.a + " × " + state.gate.b + " = ?";
+    els.gateInput.value = "";
+    els.gateFeedback.hidden = true;
+    els.parentGate.hidden = false;
+    els.gateInput.focus();
   }
-  function persistSettings() {
-    saveProfiles();
+  function closeGate() {
+    els.parentGate.hidden = true;
+    state.gate = null;
   }
-  function wireToggles() {
-    function bind(input, key, mirror) {
-      if (!input) return;
-      input.addEventListener("change", function () {
-        state.settings[key] = input.checked;
-        persistSettings();
-        if (mirror) mirror.checked = input.checked;
-      });
+  function checkGate() {
+    if (!state.gate) return;
+    if (parseInt(els.gateInput.value, 10) === state.gate.answer) {
+      closeGate();
+      goToParents();
+      return;
     }
-    bind(els.toggleSound, "sound");
-    bind(els.toggleTimer, "timer", els.toggleTimerModes);
-    bind(els.toggleQuick, "quick", els.toggleQuickModes);
-    bind(els.toggleTimerModes, "timer", els.toggleTimer);
-    bind(els.toggleQuickModes, "quick", els.toggleQuick);
-    bind(els.toggleBlitz, "blitz", els.toggleBlitzModes);
-    bind(els.toggleBlitzModes, "blitz", els.toggleBlitz);
-    bind(els.toggleChoices, "choices");
+    state.gate = parentChallenge();
+    els.gateQuestion.textContent = state.gate.a + " × " + state.gate.b + " = ?";
+    els.gateFeedback.hidden = false;
+    els.gateInput.value = "";
+    els.gateInput.focus();
+  }
+  function goToParents() {
+    state.editingId = "";
+    renderParentProfiles();
+    renderLanguageGrids();
+    showScreen("screen-parents");
+  }
+  function renderParentProfiles() {
+    els.parentProfiles.innerHTML = "";
+    state.store.profiles.forEach(function (profile) {
+      var row = document.createElement("li");
+      row.className = "parent-profile";
+      var avatar = document.createElement("span");
+      avatar.className = "profile-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = profile.avatar;
+      var name = document.createElement("span");
+      name.className = "parent-profile-name";
+      name.textContent = profile.name;
+      var edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "btn btn--secondary parent-edit";
+      edit.setAttribute("data-edit-id", profile.id);
+      edit.setAttribute("data-i18n", "btn_edit");
+      edit.textContent = t("btn_edit");
+      edit.addEventListener("click", function () {
+        openEditor(profile.id);
+      });
+      row.appendChild(avatar);
+      row.appendChild(name);
+      row.appendChild(edit);
+      els.parentProfiles.appendChild(row);
+    });
+  }
+  function addProfile() {
+    var fallback = t("profile_default_name", {
+      n: state.store.profiles.length + 1,
+    });
+    var profile = createProfile(
+      fallback,
+      PROFILE_AVATARS[0],
+      state.store.profiles.map(function (p) {
+        return p.id;
+      }),
+      fallback,
+    );
+    state.store.profiles.push(profile);
+    saveProfiles();
+    openEditor(profile.id);
+  }
+  function editingProfile() {
+    return state.store.profiles.filter(function (p) {
+      return p.id === state.editingId;
+    })[0];
+  }
+  function openEditor(id) {
+    state.editingId = id;
+    var profile = editingProfile();
+    if (!profile) return;
+    els.editName.value = profile.name;
+    renderAvatarPicker(profile);
+    syncToggles();
+    showScreen("screen-profile-edit");
+  }
+  function renderAvatarPicker(profile) {
+    els.editAvatars.innerHTML = "";
+    PROFILE_AVATARS.forEach(function (emoji) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "avatar-btn";
+      btn.setAttribute("data-avatar", emoji);
+      var selected = emoji === profile.avatar;
+      btn.classList.toggle("is-selected", selected);
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+      btn.textContent = emoji;
+      btn.addEventListener("click", function () {
+        var current = editingProfile();
+        if (!current) return;
+        current.avatar = emoji;
+        saveProfiles();
+        renderAvatarPicker(current);
+      });
+      els.editAvatars.appendChild(btn);
+    });
+  }
+  function deleteEditingProfile() {
+    var profile = editingProfile();
+    if (!profile) return;
+    if (!window.confirm(t("delete_confirm", { name: profile.name }))) return;
+    state.store.profiles = state.store.profiles.filter(function (p) {
+      return p !== profile;
+    });
+    if (state.store.lastId === profile.id) state.store.lastId = "";
+    saveProfiles();
+    goToParents();
   }
 
+  /* ---------------- Profile editor controls ---------------- */
+  var SETTING_TOGGLES = [
+    ["toggleSound", "sound"],
+    ["toggleMusic", "music"],
+    ["toggleTimer", "timer"],
+    ["toggleBlitz", "blitz"],
+    ["toggleQuick", "quick"],
+    ["toggleChoices", "choices"],
+    ["toggleSetbacks", "setbacks"],
+  ];
+  // Copy the edited profile's settings into the editor controls.
+  function syncToggles() {
+    var profile = editingProfile();
+    if (!profile) return;
+    SETTING_TOGGLES.forEach(function (pair) {
+      els[pair[0]].checked = profile.settings[pair[1]];
+    });
+    els.editMainMode.value = profile.settings.mainMode;
+    els.editStations.value = String(profile.settings.tableStations);
+  }
+  function buildEditorSelects() {
+    MAIN_MODES.forEach(function (mode) {
+      var option = document.createElement("option");
+      var key = mode === "tables" ? "mode_tables" : "m_" + mode;
+      option.value = mode;
+      option.setAttribute("data-i18n", key);
+      option.textContent = t(key);
+      els.editMainMode.appendChild(option);
+    });
+    TABLE_STATION_OPTIONS.forEach(function (count) {
+      var option = document.createElement("option");
+      option.value = String(count);
+      option.textContent = String(count);
+      els.editStations.appendChild(option);
+    });
+  }
+  // Every control writes straight into the edited profile and saves.
+  function wireToggles() {
+    function update(key, value) {
+      var profile = editingProfile();
+      if (!profile) return;
+      profile.settings[key] = value;
+      saveProfiles();
+    }
+    SETTING_TOGGLES.forEach(function (pair) {
+      var input = els[pair[0]];
+      input.addEventListener("change", function () {
+        update(pair[1], input.checked);
+      });
+    });
+    els.editMainMode.addEventListener("change", function () {
+      update("mainMode", els.editMainMode.value);
+    });
+    els.editStations.addEventListener("change", function () {
+      update("tableStations", parseInt(els.editStations.value, 10));
+    });
+    els.editName.addEventListener("blur", function () {
+      var profile = editingProfile();
+      if (!profile) return;
+      profile.name = cleanProfileName(els.editName.value, profile.name);
+      els.editName.value = profile.name;
+      saveProfiles();
+    });
+    els.gateInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        checkGate();
+      }
+    });
+  }
+
+  // Reset the progress of the profile being edited (after confirmation).
   function resetProgress() {
+    var profile = editingProfile();
+    if (!profile) return;
     if (!window.confirm(t("reset_confirm"))) return;
-    state.progress = defaultProgress();
-    if (state.profile) state.profile.progress = state.progress;
+    profile.progress = defaultProgress();
     saveProfiles();
-    refreshMenuStats();
   }
 
   /* ---------------- Global action handling ---------------- */
   function handleAction(action) {
     switch (action) {
       case "go-modes":
-        syncToggles();
         showScreen("screen-modes");
         break;
       case "go-menu":
@@ -2861,10 +3067,26 @@ function startApp() {
       case "switch-player":
         goToProfiles();
         break;
-      case "go-settings":
-        syncToggles();
-        renderLanguageGrids();
-        showScreen("screen-settings");
+      case "open-parents":
+        openGate();
+        break;
+      case "gate-ok":
+        checkGate();
+        break;
+      case "gate-cancel":
+        closeGate();
+        break;
+      case "go-profiles":
+        goToProfiles();
+        break;
+      case "back-parents":
+        goToParents();
+        break;
+      case "add-profile":
+        addProfile();
+        break;
+      case "delete-profile":
+        deleteEditingProfile();
         break;
       case "go-howto":
         showScreen("screen-howto");
@@ -2969,6 +3191,7 @@ function startApp() {
   function init() {
     buildNumpad();
     wireModeSelection();
+    buildEditorSelects();
     wireToggles();
     wireActions();
     renderLanguageGrids();

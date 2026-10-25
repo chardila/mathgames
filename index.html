@@ -79,6 +79,13 @@
           <p id="who-empty" class="muted" data-i18n="who_empty" hidden>
             Todavía no hay jugadores. Pide a un adulto que cree uno.
           </p>
+          <button
+            class="btn btn--ghost btn--parents"
+            data-action="open-parents"
+          >
+            <span aria-hidden="true">🔒</span>
+            <span data-i18n="btn_parents">Zona de padres</span>
+          </button>
         </div>
       </section>
 
@@ -115,10 +122,6 @@
             <button class="btn btn--secondary" data-action="go-shop">
               <span class="btn-emoji" aria-hidden="true">🛒</span>
               <span data-i18n="btn_shop">Tienda</span>
-            </button>
-            <button class="btn btn--secondary" data-action="go-settings">
-              <span class="btn-emoji" aria-hidden="true">⚙️</span>
-              <span data-i18n="btn_settings">Ajustes</span>
             </button>
             <button class="btn btn--ghost" data-action="switch-player">
               <span class="btn-emoji" aria-hidden="true">👥</span>
@@ -247,28 +250,6 @@
               Difícil
             </button>
           </div>
-
-          <label class="switch-row">
-            <span data-i18n="set_quick">Ronda rápida (10 tareas)</span>
-            <span class="switch">
-              <input type="checkbox" id="toggle-quick-modes" />
-              <span class="switch-track" aria-hidden="true"></span>
-            </span>
-          </label>
-          <label class="switch-row">
-            <span data-i18n="set_timer">Modo tiempo</span>
-            <span class="switch">
-              <input type="checkbox" id="toggle-timer-modes" />
-              <span class="switch-track" aria-hidden="true"></span>
-            </span>
-          </label>
-          <label class="switch-row">
-            <span data-i18n="set_blitz">Tareas relámpago con cronómetro</span>
-            <span class="switch">
-              <input type="checkbox" id="toggle-blitz-modes" />
-              <span class="switch-track" aria-hidden="true"></span>
-            </span>
-          </label>
 
           <button class="btn btn--primary btn--xl" data-action="start-run">
             <span class="btn-emoji" aria-hidden="true">🧭</span>
@@ -511,23 +492,92 @@
         </div>
       </section>
 
-      <!-- ============ SETTINGS ============ -->
+      <!-- ============ PARENTS AREA ============ -->
       <section
-        id="screen-settings"
-        class="screen screen--settings"
-        aria-labelledby="settings-title"
+        id="screen-parents"
+        class="screen screen--parents"
+        aria-labelledby="parents-title"
       >
         <div class="card">
-          <button class="btn btn--ghost btn--back" data-action="go-menu">
+          <button class="btn btn--ghost btn--back" data-action="go-profiles">
             <span aria-hidden="true">←</span>
             <span data-i18n="btn_back">Atrás</span>
           </button>
-          <h2 id="settings-title" data-i18n="set_title">Ajustes</h2>
+          <h2 id="parents-title" data-i18n="parents_title">Zona de padres</h2>
+
+          <ul id="parent-profiles" class="parent-profiles"></ul>
+          <button
+            class="btn btn--secondary btn--wide"
+            data-action="add-profile"
+          >
+            <span class="btn-emoji" aria-hidden="true">➕</span>
+            <span data-i18n="add_profile">Añadir jugador</span>
+          </button>
+
+          <h3 class="section-label" data-i18n="set_lang">Idioma</h3>
+          <div
+            id="settings-language-grid"
+            class="language-grid language-grid--compact"
+          ></div>
+        </div>
+      </section>
+
+      <!-- ============ PROFILE EDITOR ============ -->
+      <section
+        id="screen-profile-edit"
+        class="screen screen--settings"
+        aria-labelledby="edit-title"
+      >
+        <div class="card">
+          <button class="btn btn--ghost btn--back" data-action="back-parents">
+            <span aria-hidden="true">←</span>
+            <span data-i18n="btn_back">Atrás</span>
+          </button>
+          <h2 id="edit-title" data-i18n="edit_title">Jugador</h2>
+
+          <label class="field" for="edit-name">
+            <span class="field-label" data-i18n="edit_name">Nombre</span>
+            <input
+              type="text"
+              id="edit-name"
+              class="field-input"
+              maxlength="20"
+              autocomplete="off"
+            />
+          </label>
+
+          <h3
+            class="section-label"
+            id="edit-avatar-label"
+            data-i18n="edit_avatar"
+          >
+            Avatar
+          </h3>
+          <div
+            id="edit-avatars"
+            class="avatar-grid"
+            role="group"
+            aria-labelledby="edit-avatar-label"
+          ></div>
+
+          <label class="field" for="edit-main-mode">
+            <span class="field-label" data-i18n="edit_main_mode"
+              >Pantalla de inicio</span
+            >
+            <select id="edit-main-mode" class="field-input"></select>
+          </label>
 
           <label class="switch-row">
             <span data-i18n="set_sound">Sonidos</span>
             <span class="switch">
               <input type="checkbox" id="toggle-sound" />
+              <span class="switch-track" aria-hidden="true"></span>
+            </span>
+          </label>
+          <label class="switch-row">
+            <span data-i18n="set_music">Música</span>
+            <span class="switch">
+              <input type="checkbox" id="toggle-music" />
               <span class="switch-track" aria-hidden="true"></span>
             </span>
           </label>
@@ -539,6 +589,13 @@
             </span>
           </label>
           <label class="switch-row">
+            <span data-i18n="set_blitz">Tareas relámpago con cronómetro</span>
+            <span class="switch">
+              <input type="checkbox" id="toggle-blitz" />
+              <span class="switch-track" aria-hidden="true"></span>
+            </span>
+          </label>
+          <label class="switch-row">
             <span data-i18n="set_quick">Ronda rápida (10 tareas)</span>
             <span class="switch">
               <input type="checkbox" id="toggle-quick" />
@@ -546,18 +603,30 @@
             </span>
           </label>
           <label class="switch-row">
-            <span data-i18n="set_blitz">Tareas relámpago con cronómetro</span>
+            <span data-i18n="set_choices"
+              >Botones de respuesta en lugar de escribir</span
+            >
             <span class="switch">
-              <input type="checkbox" id="toggle-blitz" />
+              <input type="checkbox" id="toggle-choices" />
+              <span class="switch-track" aria-hidden="true"></span>
+            </span>
+          </label>
+          <label class="switch-row">
+            <span data-i18n="set_setbacks"
+              >Retroceder estaciones al fallar</span
+            >
+            <span class="switch">
+              <input type="checkbox" id="toggle-setbacks" />
               <span class="switch-track" aria-hidden="true"></span>
             </span>
           </label>
 
-          <h3 class="section-label" data-i18n="set_lang">Idioma</h3>
-          <div
-            id="settings-language-grid"
-            class="language-grid language-grid--compact"
-          ></div>
+          <label class="field" for="edit-stations">
+            <span class="field-label" data-i18n="set_stations"
+              >Estaciones en modo tablas</span
+            >
+            <select id="edit-stations" class="field-input"></select>
+          </label>
 
           <button
             class="btn btn--danger"
@@ -565,6 +634,13 @@
             data-i18n="set_reset"
           >
             Reiniciar progreso
+          </button>
+          <button
+            class="btn btn--danger"
+            data-action="delete-profile"
+            data-i18n="delete_profile"
+          >
+            Borrar jugador
           </button>
         </div>
       </section>
@@ -629,6 +705,54 @@
             data-i18n="btn_quit"
           >
             Salir
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parent gate overlay -->
+    <div
+      id="parent-gate"
+      class="overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="gate-title"
+      hidden
+    >
+      <div class="card card--centered overlay-card">
+        <h2 id="gate-title" data-i18n="gate_title">Solo para adultos</h2>
+        <p id="gate-question" class="gate-question">12 × 12 = ?</p>
+        <input
+          type="text"
+          id="gate-input"
+          class="field-input gate-input"
+          inputmode="numeric"
+          autocomplete="off"
+          aria-labelledby="gate-question"
+        />
+        <p
+          id="gate-feedback"
+          class="gate-feedback"
+          role="status"
+          data-i18n="gate_wrong"
+          hidden
+        >
+          No es correcto. Prueba con esta.
+        </p>
+        <div class="menu-buttons">
+          <button
+            class="btn btn--primary"
+            data-action="gate-ok"
+            data-i18n="btn_ok"
+          >
+            Entrar
+          </button>
+          <button
+            class="btn btn--ghost"
+            data-action="gate-cancel"
+            data-i18n="btn_cancel"
+          >
+            Cancelar
           </button>
         </div>
       </div>
