@@ -60,6 +60,17 @@ Fuentes en la conversación del 2026-10-25 (Brady y Kubina 2010; Open Universite
 - El **retroceso de estaciones** al fallar no le sirve a ella, pero puede servir a otros niños: queda como **ajuste por perfil**. _(decidido)_
 - La **opción múltiple y el cronómetro** siguen disponibles como ajustes para otros perfiles (p. ej. su hermano). _(decidido)_
 
+### Estructura de una sesión (~10 min) _(aprobada por el usuario)_
+
+Contexto: la niña ya probó la versión actual (aventura básica sin tiempo, acompañante "niño"). Le gustó en general y en especial **los ánimos del lorito**; lo que quiso comprar en la tienda fue el **escudo** (no ser penalizada al fallar).
+
+- **Se mantiene el viaje por el mapa**: estaciones, tesoro al final, monedas y tienda. Cambia _qué_ operaciones salen: las elige el modo de tablas.
+- **El lorito es el guía**: da la pista visual cuando tarda, celebra y anuncia logros de la colección ("¡Ya casi llenas al personaje de la tabla del 7!").
+- **Sin castigo en su perfil**: fallar no hace retroceder; se muestra la respuesta, la escribe y la operación vuelve más tarde en la ronda.
+- El **escudo se oculta en la tienda** cuando el retroceso está apagado en el perfil.
+- **15 estaciones por defecto**, ajustable por perfil desde la zona de padres (hoy: 10 rápida / 25 normal). Afinar con los tiempos medidos.
+- **Final**: tesoro y resumen como ahora, pero el resumen destaca el avance ("hoy dominaste 2 operaciones nuevas") en lugar del porcentaje de aciertos.
+
 ## No metas (de este documento)
 
 - Multiplicación de varias cifras en columnas → trabajo 3, documento aparte.
@@ -82,7 +93,6 @@ Fuentes en la conversación del 2026-10-25 (Brady y Kubina 2010; Open Universite
 
 ## Pendiente de decidir (dónde se quedó la conversación)
 
-- Estructura de una sesión de ~10 min: ¿se mantiene el mapa de estaciones? ¿cuántas operaciones por ronda? ¿cómo termina?
 - Umbrales de "dominada" (cuántos aciertos, qué tan rápido, en cuántos días).
 - Orden en que se introducen las tablas nuevas y qué pasa con las ya dominadas (repaso espaciado).
 - Música o sonidos: ¿melodías propias para enganchar?
