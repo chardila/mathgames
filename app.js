@@ -160,6 +160,15 @@ var I18N = {
     trick_4: "Double, then double again: {n} \u00d7 2 = {double}, then again.",
     trick_3: "{n} \u00d7 2 = {double}, plus {n}.",
     trick_split: "{a} \u00d7 5 = {five}, plus {a} \u00d7 {rest}.",
+    home_greeting: "Hi, {name}! Shall we keep going?",
+    btn_continue_learning: "Keep learning",
+    btn_other_games: "Other games",
+    tables_hint_intro: "Look at the blocks. You can do it!",
+    tables_write_it: "{q} = {answer}. Type it in!",
+    lbl_mastered_today: "Mastered today",
+    sum_mastered_one: "Today you mastered 1 new fact!",
+    sum_mastered: "Today you mastered {n} new facts!",
+    sum_practiced: "Today you practised {n} facts! Every round counts.",
   },
   es: {
     lang_title: "Elige tu idioma",
@@ -283,6 +292,15 @@ var I18N = {
       "El doble del doble: {n} \u00d7 2 = {double}, y otra vez el doble.",
     trick_3: "{n} \u00d7 2 = {double}, m\u00e1s {n}.",
     trick_split: "{a} \u00d7 5 = {five}, m\u00e1s {a} \u00d7 {rest}.",
+    home_greeting: "\u00a1Hola, {name}! \u00bfSeguimos?",
+    btn_continue_learning: "Seguir aprendiendo",
+    btn_other_games: "Otros juegos",
+    tables_hint_intro: "Mira los bloques. \u00a1T\u00fa puedes!",
+    tables_write_it: "{q} = {answer}. \u00a1Escr\u00edbelo!",
+    lbl_mastered_today: "Dominadas hoy",
+    sum_mastered_one: "\u00a1Hoy dominaste 1 operaci\u00f3n nueva!",
+    sum_mastered: "\u00a1Hoy dominaste {n} operaciones nuevas!",
+    sum_practiced: "\u00a1Hoy practicaste {n} operaciones! Cada ronda cuenta.",
   },
 };
 
@@ -1458,6 +1476,11 @@ function startApp() {
     gate: null,
     run: null,
     timerId: null,
+    stageTimerId: null,
+    stageDeadline: 0,
+    stageFn: null,
+    pausedStage: null,
+    lastRunKind: "classic",
   };
 
   var bootDict = I18N[state.lang] || I18N.es;
@@ -1520,6 +1543,8 @@ function startApp() {
     menuCoins: document.getElementById("menu-coins"),
     menuTreasures: document.getElementById("menu-treasures"),
     menuBadges: document.getElementById("menu-badges"),
+    homeCoins: document.getElementById("home-coins"),
+    homeGreeting: document.getElementById("home-greeting"),
     gameStreak: document.getElementById("game-streak"),
     gameCoins: document.getElementById("game-coins"),
     gameTimer: document.getElementById("game-timer"),
@@ -1536,6 +1561,8 @@ function startApp() {
     sumStars: document.getElementById("sum-stars"),
     sumCoins: document.getElementById("sum-coins"),
     sumAccuracy: document.getElementById("sum-accuracy"),
+    sumAccuracyLbl: document.getElementById("sum-accuracy-lbl"),
+    sumProgressLine: document.getElementById("sum-progress-line"),
     sumStreak: document.getElementById("sum-streak"),
     badgeShelf: document.getElementById("badge-shelf"),
     treasureLine: document.getElementById("treasure-line"),
@@ -1608,6 +1635,7 @@ function startApp() {
     els.menuCoins.textContent = state.progress.coins;
     els.menuTreasures.textContent = state.progress.treasures;
     els.menuBadges.textContent = state.progress.badges.length;
+    els.homeCoins.textContent = state.progress.coins;
   }
 
   /* ---------------- Language grids ---------------- */
@@ -1664,6 +1692,7 @@ function startApp() {
       .querySelector('[data-action="pause"]')
       .setAttribute("aria-label", t("paused"));
     if (state.run) updateMapProgressLabel();
+    if (state.profile) renderHomeGreeting();
   }
 
   /* ---------------- Number pad ---------------- */
@@ -1736,16 +1765,10 @@ function startApp() {
     adaptive: START_LEVEL,
   };
 
-  function startRun() {
-    stopTimer();
-    window.clearTimeout(state.nextTaskId);
-    state.awaitingNext = false;
-    var total = state.settings.quick ? 10 : 25;
-    state.run = {
-      mode: state.selectedMode,
-      diff: state.selectedDiff,
-      level: DIFF_START_LEVEL[state.selectedDiff] || START_LEVEL,
-      modes: createRoundModes(state.selectedMode, total),
+  // Fields shared by classic and tables rounds.
+  function newRun(kind, total) {
+    return {
+      kind: kind,
       milestones: [],
       index: 0,
       total: total,
@@ -1764,13 +1787,212 @@ function startApp() {
       taskStart: 0,
       newBadges: [],
     };
+  }
+
+  // Stop every timer and pending transition before a new round starts.
+  function resetRunTimers() {
+    stopTimer();
+    clearStageTimer();
+    state.pausedStage = null;
+    window.clearTimeout(state.nextTaskId);
+    state.awaitingNext = false;
+  }
+
+  function startRun() {
+    resetRunTimers();
+    state.lastRunKind = "classic";
+    var total = state.settings.quick ? 10 : 25;
+    state.run = newRun("classic", total);
+    state.run.mode = state.selectedMode;
+    state.run.diff = state.selectedDiff;
+    state.run.level = DIFF_START_LEVEL[state.selectedDiff] || START_LEVEL;
+    state.run.modes = createRoundModes(state.selectedMode, total);
     grantDailyBonus();
     hideComboTag();
     buildMap(total);
     applyBuddy();
+    if (els.powerups) els.powerups.hidden = false;
     renderPowerups();
     showScreen("screen-game");
     nextTask();
+  }
+
+  // Tables mode: a per-fact round from the engine, always typed, no tray.
+  function startTablesRun() {
+    resetRunTimers();
+    state.lastRunKind = "tables";
+    var total = state.settings.tableStations;
+    var today = Tables.localDateKey(new Date());
+    state.run = newRun("tables", total);
+    state.run.round = Tables.buildTablesRound(
+      state.profile.tables,
+      today,
+      total,
+    );
+    state.run.cursor = 0;
+    state.run.tablesBefore = JSON.parse(JSON.stringify(state.profile.tables));
+    state.run.stage = "ask";
+    grantDailyBonus();
+    hideComboTag();
+    buildMap(total);
+    applyBuddy();
+    if (els.powerups) els.powerups.hidden = true;
+    showScreen("screen-game");
+    nextTablesStation();
+  }
+
+  // Next station of whichever kind of round is running.
+  function nextStation() {
+    if (!state.run) return;
+    if (state.run.kind === "tables") nextTablesStation();
+    else nextTask();
+  }
+
+  function nextTablesStation() {
+    var run = state.run;
+    if (!run) return;
+    // run.cursor walks run.round; run.index is the map station.
+    if (run.cursor >= run.round.length || run.index >= run.total) {
+      finishRun();
+      return;
+    }
+    var item = run.round[run.cursor];
+    var a = item.a;
+    var b = item.b;
+    run.attemptsOnCurrent = 0;
+    run.stage = "ask";
+    activeTask = {
+      type: "mul",
+      operands: [a, b],
+      text: a + " \u00d7 " + b + " =",
+      answer: a * b,
+      choice: false,
+      timed: false,
+      item: item,
+    };
+    currentInput = "";
+    els.question.textContent = activeTask.text;
+    els.feedback.textContent = "";
+    els.feedback.className = "feedback";
+    els.hint.className = "hint";
+    els.hint.onclick = null;
+    els.hint.hidden = true;
+    els.hint.textContent = "";
+    els.hint.setAttribute("data-stage", "ask");
+    stopTimer();
+    renderAnswer();
+    setupAnswerMode();
+    moveWalker(run.index);
+    updateMapProgressLabel();
+    run.taskStart = now();
+    startStageTimer(Tables.HINT_DELAY_MS, enterHintStage);
+  }
+
+  // One pending stage change (hint, then answer) of the tables cycle.
+  function startStageTimer(ms, fn) {
+    clearStageTimer();
+    state.stageFn = fn;
+    state.stageDeadline = Date.now() + ms;
+    state.stageTimerId = window.setTimeout(function () {
+      state.stageTimerId = null;
+      state.stageFn = null;
+      fn();
+    }, ms);
+  }
+  function clearStageTimer() {
+    if (state.stageTimerId) window.clearTimeout(state.stageTimerId);
+    state.stageTimerId = null;
+    state.stageFn = null;
+    state.stageDeadline = 0;
+  }
+
+  // Hint stage: a × b blocks plus a trick that never names the result.
+  function enterHintStage() {
+    if (!state.run || state.run.kind !== "tables" || !activeTask) return;
+    var a = activeTask.operands[0];
+    var b = activeTask.operands[1];
+    state.run.stage = "hint";
+    currentInput = "";
+    renderAnswer();
+    els.hint.textContent = "";
+    var grid = document.createElement("div");
+    grid.className = "blocks";
+    grid.setAttribute("aria-hidden", "true");
+    grid.style.gridTemplateColumns = "repeat(" + b + ", 18px)";
+    for (var i = 0; i < a * b; i++) {
+      var block = document.createElement("span");
+      block.className = "block";
+      grid.appendChild(block);
+    }
+    var trick = Tables.tablesTrick(a, b);
+    var line = document.createElement("p");
+    line.className = "hint-trick";
+    line.textContent = t(trick.key, trick.vars);
+    els.hint.appendChild(grid);
+    els.hint.appendChild(line);
+    els.hint.setAttribute("data-stage", "hint");
+    els.hint.hidden = false;
+    mascotSay(t("tables_hint_intro"), "\uD83E\uDD9C");
+    startStageTimer(Tables.ANSWER_DELAY_MS, enterAnswerStage);
+  }
+
+  // Answer stage: show the result; she types it to move on (no timer).
+  function enterAnswerStage() {
+    if (!state.run || state.run.kind !== "tables" || !activeTask) return;
+    clearStageTimer();
+    state.run.stage = "answer";
+    var line = document.createElement("p");
+    line.className = "hint-answer";
+    line.textContent = t("tables_write_it", {
+      q: activeTask.operands[0] + " \u00d7 " + activeTask.operands[1],
+      answer: activeTask.answer,
+    });
+    els.hint.appendChild(line);
+    els.hint.setAttribute("data-stage", "answer");
+    els.hint.hidden = false;
+  }
+
+  function submitTablesAnswer(value) {
+    var run = state.run;
+    if (value === activeTask.answer) {
+      clearStageTimer();
+      var elapsed = run.taskStart ? Math.max(0, now() - run.taskStart) : 0;
+      var outcome = Tables.classifyOutcome(run.stage, elapsed);
+      state.profile.tables = Tables.recordTablesAnswer(
+        state.profile.tables,
+        activeTask.item,
+        outcome,
+        Math.round(elapsed),
+        Tables.localDateKey(new Date()),
+      );
+      saveProfiles();
+      // Needed help: the fact comes back a few stations later (if it fits).
+      if (outcome === "hint" || outcome === "answer") {
+        run.round = Tables.scheduleRetry(run.round, run.cursor);
+      }
+      if (els.answerDisplay) els.answerDisplay.classList.add("is-correct");
+      rewardCorrect(outcome === "fast" || outcome === "slow");
+      run.index++;
+      run.cursor++;
+      moveWalker(run.index);
+      activeTask = null;
+      state.nextTaskId = window.setTimeout(nextStation, 750);
+      return;
+    }
+    // Wrong: no setback and no general learning record; just more help.
+    run.streak = 0;
+    run.combo = 1;
+    hideComboTag();
+    els.gameStreak.textContent = 0;
+    els.feedback.textContent = t("feedback_wrong");
+    els.feedback.className = "feedback is-wrong";
+    mascotSay(pickEncourage(), "\uD83E\uDD9C");
+    haptic([8, 40, 8]);
+    beep(180, 220, "sawtooth");
+    currentInput = "";
+    renderAnswer();
+    if (run.stage === "ask") enterHintStage();
+    else if (run.stage === "hint") enterAnswerStage();
   }
 
   // The first run of each calendar day grants a small welcome bonus, to gently
@@ -1862,6 +2084,7 @@ function startApp() {
       total: state.run.total,
     });
     els.mapProgress.setAttribute("data-station", String(n));
+    els.mapProgress.setAttribute("data-total", String(state.run.total));
   }
 
   var activeTask = null;
@@ -1958,6 +2181,10 @@ function startApp() {
     )
       return;
     state.run.attemptsOnCurrent++;
+    if (state.run.kind === "tables") {
+      submitTablesAnswer(value);
+      return;
+    }
     if (value === activeTask.answer) {
       if (sourceBtn) markChoice(true, sourceBtn);
       onCorrect();
@@ -1979,6 +2206,23 @@ function startApp() {
   function onCorrect() {
     var firstTry = state.run.attemptsOnCurrent === 1;
     var elapsed = state.run.taskStart ? now() - state.run.taskStart : 0;
+    // Learn the child's pace so the adaptive timer evolves with them.
+    if (firstTry && elapsed > 0) {
+      state.progress.avgMs = updateAvgMs(state.progress.avgMs, elapsed);
+      state.progress.totalCorrect = (state.progress.totalCorrect || 0) + 1;
+    }
+    recordLearning(firstTry, elapsed);
+    rewardCorrect(firstTry);
+    stopTimer();
+    state.run.index++;
+    moveWalker(state.run.index);
+    activeTask = null;
+    state.nextTaskId = window.setTimeout(nextStation, 750);
+  }
+
+  // Streak, combo, stars, coins, bonuses, messages and effects of a right
+  // answer (shared by classic and tables rounds).
+  function rewardCorrect(firstTry) {
     state.run.correct++;
     if (firstTry) {
       state.run.firstTry++;
@@ -1993,13 +2237,6 @@ function startApp() {
 
     // Combo multiplier grows with the streak (x1 .. x4).
     state.run.combo = clamp(1 + Math.floor(state.run.streak / 3), 1, 4);
-
-    // Learn the child's pace so the adaptive timer evolves with them.
-    if (firstTry && elapsed > 0) {
-      state.progress.avgMs = updateAvgMs(state.progress.avgMs, elapsed);
-      state.progress.totalCorrect = (state.progress.totalCorrect || 0) + 1;
-    }
-    recordLearning(firstTry, elapsed);
 
     // Modest, predictable economy: roughly one Joker per successful run, two
     // when a strong streak is earned, and a new buddy after about 4-5 runs.
@@ -2033,7 +2270,6 @@ function startApp() {
     mascotSay(pickPraise(), "\uD83E\uDD9C");
     haptic(vibrationForTask(activeTask, state.run.level, firstTry));
     beep(660, 140, "triangle");
-    stopTimer();
 
     if (
       state.run.correct % 5 === 0 &&
@@ -2042,11 +2278,6 @@ function startApp() {
       state.run.milestones.push(state.run.correct);
       mascotSay(t("milestone", { n: state.run.correct }), "🌟");
     }
-
-    state.run.index++;
-    moveWalker(state.run.index);
-    activeTask = null;
-    state.nextTaskId = window.setTimeout(nextTask, 750);
   }
 
   function recordLearning(correct, elapsed) {
@@ -2153,7 +2384,7 @@ function startApp() {
     }
     state.run.index++;
     moveWalker(state.run.index);
-    nextTask();
+    nextStation();
   }
 
   /* ---------------- Juicy feedback helpers ---------------- */
@@ -2321,6 +2552,7 @@ function startApp() {
 
   function finishRun() {
     stopTimer();
+    clearStageTimer();
     // Persist progress.
     state.progress.coins += state.run.coins;
     state.progress.treasures += 1;
@@ -2336,23 +2568,56 @@ function startApp() {
     saveProfiles();
 
     // Fill summary screen.
-    var accuracy =
-      state.run.total > 0
-        ? Math.round((state.run.correct / state.run.total) * 100)
-        : 0;
     els.sumStars.textContent = state.run.stars;
     els.sumCoins.textContent = state.run.coins;
-    els.sumAccuracy.textContent = accuracy + "%";
     els.sumStreak.textContent = state.run.bestStreak;
+    if (state.run.kind === "tables") {
+      renderTablesSummary();
+    } else {
+      var accuracy =
+        state.run.total > 0
+          ? Math.round((state.run.correct / state.run.total) * 100)
+          : 0;
+      els.sumAccuracy.textContent = accuracy + "%";
+      setSummaryLabel("lbl_accuracy");
+      els.sumProgressLine.hidden = true;
+      els.sumProgressLine.textContent = "";
+      renderReview();
+    }
     prepareChestReveal();
 
-    renderReview();
     renderBadges();
     showScreen("screen-summary");
     els.chest.classList.add("is-shaking");
     playVictoryMelody();
     haptic([60, 40, 60, 40, 140]);
     refreshMenuStats();
+  }
+
+  function setSummaryLabel(key) {
+    els.sumAccuracyLbl.setAttribute("data-i18n", key);
+    els.sumAccuracyLbl.textContent = t(key);
+  }
+
+  // Tables summary: facts mastered today instead of accuracy, no review.
+  function renderTablesSummary() {
+    var run = state.run;
+    var n = Tables.newlyMastered(run.tablesBefore, state.profile.tables).length;
+    els.sumAccuracy.textContent = String(n);
+    setSummaryLabel("lbl_mastered_today");
+    var line;
+    if (n === 1) line = t("sum_mastered_one");
+    else if (n > 1) line = t("sum_mastered", { n: n });
+    else {
+      var keys = [];
+      run.round.slice(0, run.cursor).forEach(function (item) {
+        if (keys.indexOf(item.key) === -1) keys.push(item.key);
+      });
+      line = t("sum_practiced", { n: keys.length });
+    }
+    els.sumProgressLine.textContent = line;
+    els.sumProgressLine.hidden = false;
+    if (els.reviewBox) els.reviewBox.hidden = true;
   }
 
   // Show up to six missed tasks so the child can practise them again.
@@ -2584,6 +2849,8 @@ function startApp() {
   }
 
   function usePowerup(id) {
+    // The tray is hidden in tables mode; power-ups never apply there.
+    if (state.run && state.run.kind === "tables") return;
     if (inventoryCount(id) <= 0) {
       showToast(t("no_powerup"), "🛒");
       return;
@@ -2620,7 +2887,7 @@ function startApp() {
     state.run.index++;
     moveWalker(state.run.index);
     activeTask = null;
-    state.nextTaskId = window.setTimeout(nextTask, 750);
+    state.nextTaskId = window.setTimeout(nextStation, 750);
     return true;
   }
 
@@ -2804,15 +3071,30 @@ function startApp() {
   // Stop timers and any pending task transition before leaving a round.
   function leaveRun() {
     stopTimer();
+    clearStageTimer();
+    state.pausedStage = null;
     window.clearTimeout(state.nextTaskId);
     activeTask = null;
     state.awaitingNext = false;
     state.run = null;
   }
+  // Home depends on the profile: tables home, or the classic menu with the
+  // profile's main mode preselected.
   function goHome() {
     leaveRun();
     refreshMenuStats();
+    if (state.settings.mainMode === "tables") {
+      renderHomeGreeting();
+      showScreen("screen-tables-home");
+      return;
+    }
+    selectModeCard(state.settings.mainMode);
     showScreen("screen-menu");
+  }
+  function renderHomeGreeting() {
+    els.homeGreeting.textContent = t("home_greeting", {
+      name: state.profile ? state.profile.name : "",
+    });
   }
 
   /* ---------------- Profiles ---------------- */
@@ -2863,15 +3145,18 @@ function startApp() {
   }
 
   /* ---------------- Mode + difficulty selection ---------------- */
+  function selectModeCard(mode) {
+    state.selectedMode = mode;
+    document.querySelectorAll(".mode-card").forEach(function (c) {
+      var selected = c.dataset.mode === mode;
+      c.classList.toggle("is-selected", selected);
+      c.setAttribute("aria-checked", selected ? "true" : "false");
+    });
+  }
   function wireModeSelection() {
     document.querySelectorAll(".mode-card").forEach(function (card) {
       card.addEventListener("click", function () {
-        state.selectedMode = card.dataset.mode;
-        document.querySelectorAll(".mode-card").forEach(function (c) {
-          var selected = c === card;
-          c.classList.toggle("is-selected", selected);
-          c.setAttribute("aria-checked", selected ? "true" : "false");
-        });
+        selectModeCard(card.dataset.mode);
       });
     });
     document.querySelectorAll(".chip[data-diff]").forEach(function (chip) {
@@ -3129,6 +3414,9 @@ function startApp() {
       case "start-run":
         startRun();
         break;
+      case "start-tables":
+        startTablesRun();
+        break;
       case "check":
         checkAnswer();
         break;
@@ -3138,6 +3426,14 @@ function startApp() {
           ? Math.max(0, (state.timerDeadline - Date.now()) / 1000)
           : 0;
         state.pausedAt = now();
+        // Keep what is left of a pending hint/answer wait.
+        state.pausedStage = state.stageTimerId
+          ? {
+              fn: state.stageFn,
+              ms: Math.max(0, state.stageDeadline - Date.now()),
+            }
+          : null;
+        clearStageTimer();
         window.clearTimeout(state.nextTaskId);
         stopTimer();
         els.pauseOverlay.hidden = false;
@@ -3146,8 +3442,13 @@ function startApp() {
         els.pauseOverlay.hidden = true;
         if (state.run) {
           state.run.taskStart += now() - state.pausedAt;
-          if (activeTask) restartTimer(true);
-          else nextTask();
+          if (activeTask) {
+            restartTimer(true);
+            if (state.pausedStage) {
+              startStageTimer(state.pausedStage.ms, state.pausedStage.fn);
+            }
+          } else nextStation();
+          state.pausedStage = null;
           renderPowerups();
         }
         break;
@@ -3156,7 +3457,8 @@ function startApp() {
         goHome();
         break;
       case "play-again":
-        startRun();
+        if (state.lastRunKind === "tables") startTablesRun();
+        else startRun();
         break;
       case "reset":
         resetProgress();

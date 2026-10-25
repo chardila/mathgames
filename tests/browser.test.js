@@ -117,6 +117,9 @@ const server = http.createServer((request, response) => {
         .click();
     const isActive = (selector, p = page) =>
       p.locator(selector).evaluate((el) => el.classList.contains("is-active"));
+    // The visible button for an action on whichever screen is active.
+    const activeAction = (action, p = page) =>
+      p.locator('.screen.is-active [data-action="' + action + '"]');
     const noOverflow = (p = page) =>
       p.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -192,6 +195,8 @@ const server = http.createServer((request, response) => {
       "unknown progress retained",
     );
     check((await saved()).learning.div.level === 3, "learning retained");
+    // The classic blocks below play from the classic menu.
+    await setProfileSettings({ mainMode: "mix" });
     check(
       (await saved()).learning.add.level === 1.5,
       "raised initial adaptive level",
@@ -302,7 +307,7 @@ const server = http.createServer((request, response) => {
           .evaluate((el) => el.classList.contains("is-active"))
       )
         await page.locator('#screen-summary [data-action="go-menu"]').click();
-      await page.locator('#screen-menu [data-action="go-modes"]').click();
+      await activeAction("go-modes").click();
       await page.locator('[data-mode="' + mode + '"]').click();
       await page.locator('[data-diff="' + diff + '"]').click();
       await page.locator('#screen-modes [data-action="start-run"]').click();
@@ -325,7 +330,7 @@ const server = http.createServer((request, response) => {
             : type === "sub"
               ? numbers[0] - numbers[1]
               : numbers.reduce((sum, n) => sum + n, 0);
-      return { type, numbers, answer };
+      return { type, numbers, answer, text };
     }
     async function solve() {
       const q = await current();
@@ -733,6 +738,242 @@ const server = http.createServer((request, response) => {
         (await page.locator('[data-action="open-parents"]').isVisible()),
       "empty who-plays usable",
     );
+
+    // ---- tables mode ----
+    {
+      await page.setViewportSize({ width: 1024, height: 768 });
+      await seedProfiles(
+        [
+          {
+            id: "p1",
+            name: "Ana",
+            settings: {
+              mainMode: "tables",
+              setbacks: false,
+              tableStations: 10,
+              sound: false,
+              timer: false,
+            },
+          },
+        ],
+        "p1",
+      );
+      await pickProfile("Ana");
+      // Stop natural time flow: only runFor moves the clock from here on.
+      await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
+      // On-screen keys + Check.
+      const typeAnswer = async (n) => {
+        for (const d of String(n))
+          await page
+            .locator("#numpad .key", { hasText: new RegExp("^" + d + "$") })
+            .click();
+        await page.locator('[data-action="check"]').click();
+      };
+      // Physical keyboard + Enter.
+      const pressAnswer = async (n) => {
+        await page.keyboard.type(String(n));
+        await page.keyboard.press("Enter");
+      };
+      const factOf = (q) =>
+        Math.min(q.numbers[0], q.numbers[1]) +
+        "-" +
+        Math.max(q.numbers[0], q.numbers[1]);
+      const fact = async (key) => {
+        const s = await store();
+        return s.profiles.find((p) => p.id === s.lastId).tables.facts[key];
+      };
+      const station = async () =>
+        Number(
+          await page.locator("#map-progress").getAttribute("data-station"),
+        );
+      const hintStage = () => page.locator("#hint").getAttribute("data-stage");
+      check(
+        (await isActive("#screen-tables-home")) &&
+          (await page.locator("#home-greeting").textContent()).includes("Ana"),
+        "tables home for tables profile",
+      );
+      await page.locator('[data-action="start-tables"]').click();
+      check(
+        (await page.locator("#numpad .key").count()) === 12 &&
+          !(await page.locator("#choices").isVisible()) &&
+          !(await page.locator("#powerups").isVisible()) &&
+          !(await page.locator("#timer-ring").isVisible()),
+        "typing, no tray, no timer",
+      );
+      check(
+        (await page.locator("#map-progress").getAttribute("data-total")) ===
+          "10" && (await station()) === 1,
+        "profile station count",
+      );
+      // 1) fast answer is recorded as fast
+      let q = await current();
+      await pressAnswer(q.answer);
+      await page.clock.runFor(800);
+      check((await fact(factOf(q))).fast === 1, "fast answer recorded");
+      // 2) silence: no hint before 5 s, hint at 5 s with a×b blocks
+      q = await current();
+      await page.clock.runFor(4900);
+      check(!(await page.locator("#hint").isVisible()), "no hint before 5 s");
+      await page.clock.runFor(200);
+      check(
+        (await page.locator("#hint").isVisible()) &&
+          (await hintStage()) === "hint" &&
+          (await page.locator("#hint .block").count()) === q.answer,
+        "hint blocks at 5 s",
+      );
+      // pausing during the 10 s wait freezes it
+      await page.clock.runFor(4000);
+      await page.locator('[data-action="pause"]').click();
+      await page.clock.runFor(20000);
+      await page.locator('[data-action="resume"]').click();
+      check(
+        (await hintStage()) === "hint" &&
+          (await page.locator("#hint .hint-answer").count()) === 0,
+        "pause freezes answer wait",
+      );
+      // 3) answer shown 10 s after the hint; a wrong entry there costs nothing;
+      // then the fact returns 3-4 stations later
+      await page.clock.runFor(6100);
+      check(
+        (await hintStage()) === "answer" &&
+          (await page.locator("#hint .hint-answer").textContent()).includes(
+            String(q.answer),
+          ),
+        "answer after +10 s",
+      );
+      const stationBefore = await station();
+      await pressAnswer(q.answer === 1 ? 2 : 1);
+      check(
+        (await station()) === stationBefore &&
+          (await page.locator("#game-question").textContent()) === q.text &&
+          (await hintStage()) === "answer",
+        "wrong in answer stage: same station",
+      );
+      await pressAnswer(q.answer);
+      await page.clock.runFor(800);
+      check(
+        (await fact(factOf(q))).fast === 0,
+        "needed answer resets fast count",
+      );
+      const upcoming = [];
+      for (let i = 0; i < 4; i++) {
+        const n = await current();
+        upcoming.push(factOf(n));
+        await pressAnswer(n.answer);
+        await page.clock.runFor(800);
+      }
+      check(
+        upcoming.slice(2).includes(factOf(q)),
+        "missed fact returns 3-4 stations later",
+      );
+      // 4) wrong before the hint -> hint at once; no auto-submit
+      q = await current();
+      await pressAnswer(q.answer === 1 ? 2 : 1);
+      check(
+        (await page.locator("#hint").isVisible()) &&
+          (await hintStage()) === "hint",
+        "wrong answer shows hint immediately",
+      );
+      for (const d of String(q.answer))
+        await page
+          .locator("#numpad .key", { hasText: new RegExp("^" + d + "$") })
+          .click();
+      await page.clock.runFor(3000);
+      check((await current()).text === q.text, "no auto-submit");
+      await page.locator('[data-action="check"]').click();
+      await page.clock.runFor(800);
+      // 5) pause freezes the 5 s wait and is not counted as slowness
+      q = await current();
+      await page.clock.runFor(1000);
+      await page.locator('[data-action="pause"]').click();
+      await page.clock.runFor(20000);
+      await page.locator('[data-action="resume"]').click();
+      check(
+        !(await page.locator("#hint").isVisible()),
+        "pause freezes hint wait",
+      );
+      const fastBefore = (await fact(factOf(q))).fast;
+      await pressAnswer(q.answer);
+      await page.clock.runFor(800);
+      check(
+        (await fact(factOf(q))).fast === fastBefore + 1,
+        "paused time not counted",
+      );
+      // 5b) pausing during the 750 ms transition resumes into the tables round
+      const stationAtPause = await station();
+      q = await current();
+      await pressAnswer(q.answer);
+      await page.locator('[data-action="pause"]').click();
+      await page.clock.runFor(2000);
+      await page.locator('[data-action="resume"]').click();
+      await page.clock.runFor(100);
+      check(
+        (await page.locator("#game-question").textContent()).includes("×") &&
+          (await page.locator("#numpad .key").count()) === 12 &&
+          (await station()) === stationAtPause + 1 &&
+          (await hintStage()) === "ask",
+        "resume after transition stays in tables mode",
+      );
+      // 6) quitting during a wait leaves no timer behind
+      await page.clock.runFor(1000);
+      await quit();
+      check(await isActive("#screen-tables-home"), "quit goes to tables home");
+      await page.locator('[data-action="start-tables"]').click();
+      await page.clock.runFor(4500);
+      check(
+        !(await page.locator("#hint").isVisible()) &&
+          (await hintStage()) === "ask",
+        "no stray timers after quit",
+      );
+      await quit();
+      // 7) a full round: never moves back, summary shows progress not accuracy
+      await page.locator('[data-action="start-tables"]').click();
+      let lastStation = 0;
+      let neverBack = true;
+      for (let i = 0; i < 40 && (await isActive("#screen-game")); i++) {
+        const s = await station();
+        if (s < lastStation) neverBack = false;
+        lastStation = s;
+        const n = await current();
+        if (i % 4 === 1) await page.clock.runFor(5100);
+        if (i % 2) await pressAnswer(n.answer);
+        else await typeAnswer(n.answer);
+        await page.clock.runFor(800);
+      }
+      check(
+        neverBack && lastStation === 10 && (await isActive("#screen-summary")),
+        "tables round completes without moving back",
+      );
+      check(
+        (await page.locator("#sum-accuracy-lbl").getAttribute("data-i18n")) ===
+          "lbl_mastered_today" &&
+          /^\d+$/.test(await page.locator("#sum-accuracy").textContent()) &&
+          !(await page.locator("#review-box").isVisible()) &&
+          (await page.locator("#sum-progress-line").isVisible()),
+        "tables summary",
+      );
+      // 8) phone width, with the hint blocks on screen
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.locator('[data-action="play-again"]').click();
+      check(
+        (await isActive("#screen-game")) &&
+          (await page.locator("#numpad .key").count()) === 12 &&
+          (await noOverflow()),
+        "tables game fits 390 px",
+      );
+      await page.clock.runFor(5100);
+      check(
+        (await page.locator("#hint .block").count()) > 0 &&
+          (await noOverflow()),
+        "hint blocks fit 390 px",
+      );
+      await page.screenshot({
+        path: path.join(root, ".cache", "mobile-tables.png"),
+        fullPage: true,
+      });
+      await quit();
+      await page.clock.resume();
+    }
     // switching player during a pending transition writes nothing into the next profile
     await seedProfiles(
       [
@@ -749,7 +990,7 @@ const server = http.createServer((request, response) => {
       .filter({ hasText: new RegExp("^" + pending.answer + "$") })
       .click();
     await quit();
-    await page.locator('[data-action="switch-player"]').click();
+    await activeAction("switch-player").click();
     await pickProfile("B");
     const bBefore = JSON.stringify(
       (await store()).profiles.find((p) => p.name === "B").progress,
@@ -791,9 +1032,7 @@ const server = http.createServer((request, response) => {
     });
     await freshPage.reload();
     await pickProfile("Jugador 1", freshPage);
-    await freshPage
-      .locator('#screen-menu [data-action="switch-player"]')
-      .click();
+    await activeAction("switch-player", freshPage).click();
     await openParents(freshPage);
     await editProfile("Jugador 1", freshPage);
     check(
@@ -828,9 +1067,7 @@ const server = http.createServer((request, response) => {
       (await freshPage.locator("#menu-coins").textContent()) === "10",
       "profile A coins",
     );
-    await freshPage
-      .locator('#screen-menu [data-action="switch-player"]')
-      .click();
+    await activeAction("switch-player", freshPage).click();
     check(
       (await freshPage.locator("#profile-grid .profile-btn").count()) === 2,
       "switch player shows who plays",
@@ -841,7 +1078,7 @@ const server = http.createServer((request, response) => {
       "profile B coins",
     );
     // buy a joker as B -> A still has 10 coins in the store
-    await freshPage.locator('#screen-menu [data-action="go-shop"]').click();
+    await activeAction("go-shop", freshPage).click();
     await freshPage
       .locator('.shop-item[data-powerup="joker"] .shop-buy')
       .click();
@@ -895,7 +1132,7 @@ const server = http.createServer((request, response) => {
       .filter({ hasText: "Español" })
       .click();
     await pickProfile("Jugador 1", privatePage);
-    await privatePage.locator('#screen-menu [data-action="go-modes"]').click();
+    await activeAction("go-modes", privatePage).click();
     await privatePage
       .locator('#screen-modes [data-action="start-run"]')
       .click();

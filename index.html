@@ -131,6 +131,42 @@
         </div>
       </section>
 
+      <!-- ============ TABLES HOME ============ -->
+      <section
+        id="screen-tables-home"
+        class="screen screen--tables-home"
+        aria-labelledby="home-greeting"
+      >
+        <div class="card card--centered tables-home">
+          <div class="tables-home-hero">
+            <span class="tables-home-mascot" aria-hidden="true">🦜</span>
+            <h1 id="home-greeting" class="tables-home-greeting"></h1>
+          </div>
+          <div class="stat-strip" aria-live="polite">
+            <span class="stat-chip">🪙 <b id="home-coins">0</b></span>
+          </div>
+          <div class="home-characters" id="home-characters"></div>
+          <div class="menu-buttons">
+            <button class="btn btn--primary btn--xl" data-action="start-tables">
+              <span class="btn-emoji" aria-hidden="true">✖️</span>
+              <span data-i18n="btn_continue_learning">Seguir aprendiendo</span>
+            </button>
+            <button class="btn btn--secondary" data-action="go-shop">
+              <span class="btn-emoji" aria-hidden="true">🛒</span>
+              <span data-i18n="btn_shop">Tienda</span>
+            </button>
+            <button class="btn btn--ghost" data-action="go-modes">
+              <span class="btn-emoji" aria-hidden="true">🎲</span>
+              <span data-i18n="btn_other_games">Otros juegos</span>
+            </button>
+            <button class="btn btn--ghost" data-action="switch-player">
+              <span class="btn-emoji" aria-hidden="true">👥</span>
+              <span data-i18n="btn_switch_player">Cambiar jugador</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
       <!-- ============ MODE + DIFFICULTY ============ -->
       <section
         id="screen-modes"
@@ -456,7 +492,10 @@
             </div>
             <div class="summary-tile">
               <span class="summary-num" id="sum-accuracy">0%</span
-              ><span class="summary-lbl" data-i18n="lbl_accuracy"
+              ><span
+                class="summary-lbl"
+                id="sum-accuracy-lbl"
+                data-i18n="lbl_accuracy"
                 >Aciertos</span
               >
             </div>
@@ -467,6 +506,7 @@
               >
             </div>
           </div>
+          <p class="sum-progress-line" id="sum-progress-line" hidden></p>
 
           <div class="badge-shelf" id="badge-shelf" aria-live="polite"></div>
 

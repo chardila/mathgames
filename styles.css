@@ -1527,6 +1527,55 @@ h3 {
   font-weight: 800;
 }
 
+/* Tables home */
+.tables-home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.tables-home-mascot {
+  font-size: clamp(3rem, 12vw, 4.5rem);
+  line-height: 1;
+  animation: bob 3s ease-in-out infinite;
+}
+.tables-home-greeting {
+  font-size: clamp(1.4rem, 5.5vw, 2rem);
+  text-align: start;
+}
+.home-characters:empty {
+  display: none;
+}
+
+/* Tables hint: a rows x b columns of blocks, then the trick */
+.blocks {
+  display: grid;
+  gap: 3px;
+  justify-content: center;
+  margin: 0 auto 8px;
+}
+.block {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--c-gold);
+  box-shadow: inset 0 -2px 0 rgba(122, 90, 0, 0.25);
+}
+.hint-trick,
+.hint-answer {
+  margin: 0;
+  text-align: center;
+}
+.hint-answer {
+  margin-top: 6px;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+.sum-progress-line {
+  font-weight: 700;
+  margin: 0.4em 0 0;
+}
+
 /* The worked-solution panel (reuses #hint) after a wrong answer */
 .hint.solution {
   display: block;
