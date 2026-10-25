@@ -62,7 +62,7 @@ const server = http.createServer((request, response) => {
     await page.goto(url);
     await page
       .locator("#language-grid button")
-      .filter({ hasText: "Deutsch" })
+      .filter({ hasText: "Español" })
       .click();
     await page.evaluate(() => {
       localStorage.setItem(
@@ -135,21 +135,21 @@ const server = http.createServer((request, response) => {
     );
     await page
       .locator("#settings-language-grid button")
-      .filter({ hasText: "Deutsch" })
+      .filter({ hasText: "Español" })
       .click();
     await page.locator('#screen-settings [data-action="go-menu"]').click();
     await page.locator('#screen-menu [data-action="go-shop"]').click();
     const oldCoins = (await saved()).coins;
     await page
       .locator(".shop-item")
-      .filter({ hasText: "Joker" })
+      .filter({ hasText: "Comodín" })
       .locator(".shop-buy")
       .click();
     check(
       (await saved()).coins < oldCoins && (await saved()).inventory.joker === 3,
       "shop purchase",
     );
-    await page.locator(".buddy-card").filter({ hasText: "Fuchs" }).click();
+    await page.locator(".buddy-card").filter({ hasText: "Zorro" }).click();
     check((await saved()).buddy === "fox", "buddy purchase and equip");
     await page.locator('[data-action="close-shop"]').click();
 
@@ -226,7 +226,7 @@ const server = http.createServer((request, response) => {
       const total = quick ? 10 : 25;
       check(
         (await page.locator("#map-progress").textContent()).includes(
-          "von " + total,
+          " de " + total,
         ),
         "round length",
       );
@@ -302,7 +302,9 @@ const server = http.createServer((request, response) => {
       .first()
       .click();
     check(
-      (await page.locator("#map-progress").textContent()).includes("Station 2"),
+      (await page.locator("#map-progress").textContent()).includes(
+        "Estación 2",
+      ),
       "three-station setback",
     );
     check(
@@ -321,11 +323,13 @@ const server = http.createServer((request, response) => {
     );
     await page.locator(".choice--continue").click();
     check(
-      (await page.locator("#map-progress").textContent()).includes("Station 3"),
+      (await page.locator("#map-progress").textContent()).includes(
+        "Estación 3",
+      ),
       "continue after explanation",
     );
     for (let i = 0; i < 2; i++) await solve();
-    await page.locator('.powerup[aria-label^="Schutzschild"]').click();
+    await page.locator('.powerup[aria-label^="Escudo"]').click();
     const beforeShield = await page.locator("#map-progress").textContent();
     const shieldQ = await current();
     await page
@@ -339,7 +343,7 @@ const server = http.createServer((request, response) => {
     );
     await page.locator(".choice--continue").click();
     const beforeJoker = (await saved()).learning.div.attempts;
-    await page.locator('.powerup[aria-label^="Joker"]').click();
+    await page.locator('.powerup[aria-label^="Comodín"]').click();
     await page.clock.runFor(800);
     check(
       (await saved()).learning.div.attempts === beforeJoker,
@@ -397,7 +401,7 @@ const server = http.createServer((request, response) => {
         initialTime + 10,
       "star extra time",
     );
-    await page.locator('.powerup[aria-label^="Extra-Zeit"]').click();
+    await page.locator('.powerup[aria-label^="Tiempo extra"]').click();
     await page.clock.runFor(100);
     check(
       Number(await page.locator("#timer-num").textContent()) ===
@@ -485,7 +489,7 @@ const server = http.createServer((request, response) => {
     await freshPage.goto(url);
     await freshPage
       .locator("#language-grid button")
-      .filter({ hasText: "Deutsch" })
+      .filter({ hasText: "Español" })
       .click();
     await freshPage.locator('#screen-menu [data-action="go-settings"]').click();
     check(
@@ -536,7 +540,7 @@ const server = http.createServer((request, response) => {
     await privatePage.goto(url);
     await privatePage
       .locator("#language-grid button")
-      .filter({ hasText: "Deutsch" })
+      .filter({ hasText: "Español" })
       .click();
     await privatePage.locator('#screen-menu [data-action="go-modes"]').click();
     await privatePage

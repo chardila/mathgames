@@ -1,11 +1,11 @@
 /*
- * Service worker for Mathe-Schatzreise.
+ * Service worker for Tablas del Tesoro.
  * Implements an offline-first cache so the game works without a network
  * connection after the first successful load. No tracking, no external calls.
  */
 
 // Bump this version whenever cached assets change to invalidate old caches.
-const CACHE_VERSION = "mathe-schatzreise-v5";
+const CACHE_VERSION = "tablas-del-tesoro-v1";
 
 // All files required for the app to run fully offline.
 const PRECACHE_URLS = [

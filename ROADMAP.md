@@ -1,6 +1,6 @@
 # Roadmap
 
-This roadmap captures where Mathe-Schatzreise is heading. Nothing here is a
+This roadmap captures where Tablas del Tesoro is heading. Nothing here is a
 promise of a date - it is a shared wish list. Ideas, feedback and pull requests
 are very welcome.
 

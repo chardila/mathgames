@@ -92,8 +92,12 @@ assert(
 );
 
 section("i18n integrity");
-assert(app.LANGUAGES[0].code === "de", "German is the first language");
-Object.keys(app.I18N.de).forEach(function (key) {
+assert(app.LANGUAGES[0].code === "es", "Spanish is the first language");
+assert(app.LANGUAGES.length === 2, "Only Spanish and English are offered");
+Object.keys(app.I18N.en).forEach(function (key) {
+  assert(typeof app.I18N.es[key] === "string", "Spanish has key: " + key);
+});
+Object.keys(app.I18N.es).forEach(function (key) {
   assert(typeof app.I18N.en[key] === "string", "English has key: " + key);
 });
 

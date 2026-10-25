@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="de" dir="ltr">
+<html lang="es" dir="ltr">
   <head>
     <meta charset="utf-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
     />
-    <title>Mathe-Schatzreise</title>
+    <title>Tablas del Tesoro</title>
     <meta
       name="description"
-      content="Mathe-Schatzreise: ein offline-faehiges Mathe-Abenteuer fuer die 3. Klasse."
+      content="Tablas del Tesoro: una aventura para aprenderse de memoria las tablas de multiplicar."
     />
 
     <!-- PWA configuration -->
@@ -25,7 +25,7 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="apple-mobile-web-app-title" content="Schatzreise" />
+    <meta name="apple-mobile-web-app-title" content="Tablas Tesoro" />
 
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -49,11 +49,9 @@
       >
         <div class="card card--centered">
           <div class="brand-badge" aria-hidden="true">💫</div>
-          <h1 id="language-title" data-i18n="lang_title">
-            Wähle deine Sprache
-          </h1>
+          <h1 id="language-title" data-i18n="lang_title">Elige tu idioma</h1>
           <p class="muted" data-i18n="lang_hint">
-            Du kannst sie später in den Einstellungen ändern.
+            Puedes cambiarlo más tarde en los ajustes.
           </p>
           <div
             id="language-grid"
@@ -74,9 +72,9 @@
           <div class="hero-logo" aria-hidden="true">
             <span class="hero-chest">🧰</span>
           </div>
-          <h1 id="menu-title" class="title-xl">Mathe-Schatzreise</h1>
+          <h1 id="menu-title" class="title-xl">Tablas del Tesoro</h1>
           <p class="tagline" data-i18n="tagline">
-            Löse Rechen-Rätsel und finde den großen Schatz!
+            ¡Resuelve acertijos de números y encuentra el gran tesoro!
           </p>
 
           <div class="stat-strip" aria-live="polite">
@@ -88,19 +86,19 @@
           <div class="menu-buttons">
             <button class="btn btn--primary btn--xl" data-action="go-modes">
               <span class="btn-emoji" aria-hidden="true">🏴‍☠️</span>
-              <span data-i18n="btn_play">Abenteuer starten</span>
+              <span data-i18n="btn_play">Empezar aventura</span>
             </button>
             <button class="btn btn--secondary" data-action="go-howto">
               <span class="btn-emoji" aria-hidden="true">📖</span>
-              <span data-i18n="btn_howto">So wird gespielt</span>
+              <span data-i18n="btn_howto">Cómo jugar</span>
             </button>
             <button class="btn btn--secondary" data-action="go-shop">
               <span class="btn-emoji" aria-hidden="true">🛒</span>
-              <span data-i18n="btn_shop">Laden</span>
+              <span data-i18n="btn_shop">Tienda</span>
             </button>
             <button class="btn btn--secondary" data-action="go-settings">
               <span class="btn-emoji" aria-hidden="true">⚙️</span>
-              <span data-i18n="btn_settings">Einstellungen</span>
+              <span data-i18n="btn_settings">Ajustes</span>
             </button>
           </div>
         </div>
@@ -115,9 +113,9 @@
         <div class="card">
           <button class="btn btn--ghost btn--back" data-action="go-menu">
             <span aria-hidden="true">←</span>
-            <span data-i18n="btn_back">Zurück</span>
+            <span data-i18n="btn_back">Atrás</span>
           </button>
-          <h2 id="modes-title" data-i18n="mode_title">Wähle deine Rechenart</h2>
+          <h2 id="modes-title" data-i18n="mode_title">Elige tu cálculo</h2>
 
           <div
             class="mode-grid"
@@ -131,9 +129,9 @@
               aria-checked="true"
             >
               <span class="mode-emoji" aria-hidden="true">➕</span>
-              <span class="mode-name" data-i18n="m_add">Plus-Rechnen</span>
+              <span class="mode-name" data-i18n="m_add">Sumas</span>
               <span class="mode-desc" data-i18n="m_add_desc"
-                >Addiere 2 oder 3 Zahlen bis 100.</span
+                >Suma 2 o 3 números hasta 100.</span
               >
             </button>
             <button
@@ -143,9 +141,9 @@
               aria-checked="false"
             >
               <span class="mode-emoji" aria-hidden="true">➖</span>
-              <span class="mode-name" data-i18n="m_sub">Minus-Rechnen</span>
+              <span class="mode-name" data-i18n="m_sub">Restas</span>
               <span class="mode-desc" data-i18n="m_sub_desc"
-                >Ziehe Zahlen bis 100 ab.</span
+                >Resta números hasta 100.</span
               >
             </button>
             <button
@@ -155,9 +153,9 @@
               aria-checked="false"
             >
               <span class="mode-emoji" aria-hidden="true">✖️</span>
-              <span class="mode-name" data-i18n="m_mul">Mal-Rechnen</span>
+              <span class="mode-name" data-i18n="m_mul">Multiplicación</span>
               <span class="mode-desc" data-i18n="m_mul_desc"
-                >Das kleine Einmaleins.</span
+                >Las tablas de multiplicar.</span
               >
             </button>
             <button
@@ -167,9 +165,9 @@
               aria-checked="false"
             >
               <span class="mode-emoji" aria-hidden="true">➗</span>
-              <span class="mode-name" data-i18n="m_div">Geteilt-Rechnen</span>
+              <span class="mode-name" data-i18n="m_div">División</span>
               <span class="mode-desc" data-i18n="m_div_desc"
-                >Teile ohne Rest: bis 100 durch 1 bis 10.</span
+                >Divide sin resto: hasta 100 entre 1 y 10.</span
               >
             </button>
             <button
@@ -179,15 +177,15 @@
               aria-checked="false"
             >
               <span class="mode-emoji" aria-hidden="true">🌈</span>
-              <span class="mode-name" data-i18n="m_mix">Bunte Mischung</span>
+              <span class="mode-name" data-i18n="m_mix">Mezcla colorida</span>
               <span class="mode-desc" data-i18n="m_mix_desc"
-                >Alle vier Rechenarten ausgewogen gemischt.</span
+                >Las cuatro operaciones equilibradas.</span
               >
             </button>
           </div>
 
-          <h3 class="section-label" data-i18n="diff_title">Schwierigkeit</h3>
-          <div class="chip-row" role="radiogroup" aria-label="Schwierigkeit">
+          <h3 class="section-label" data-i18n="diff_title">Dificultad</h3>
+          <div class="chip-row" role="radiogroup" aria-label="Dificultad">
             <button
               class="chip is-selected"
               data-diff="adaptive"
@@ -195,7 +193,7 @@
               aria-checked="true"
               data-i18n="d_adaptive"
             >
-              Mitwachsend
+              Adaptable
             </button>
             <button
               class="chip"
@@ -204,7 +202,7 @@
               aria-checked="false"
               data-i18n="d_easy"
             >
-              Leicht
+              Fácil
             </button>
             <button
               class="chip"
@@ -213,7 +211,7 @@
               aria-checked="false"
               data-i18n="d_medium"
             >
-              Mittel
+              Media
             </button>
             <button
               class="chip"
@@ -222,26 +220,26 @@
               aria-checked="false"
               data-i18n="d_hard"
             >
-              Schwer
+              Difícil
             </button>
           </div>
 
           <label class="switch-row">
-            <span data-i18n="set_quick">Schnelle Runde (10 Aufgaben)</span>
+            <span data-i18n="set_quick">Ronda rápida (10 tareas)</span>
             <span class="switch">
               <input type="checkbox" id="toggle-quick-modes" />
               <span class="switch-track" aria-hidden="true"></span>
             </span>
           </label>
           <label class="switch-row">
-            <span data-i18n="set_timer">Zeit-Modus</span>
+            <span data-i18n="set_timer">Modo tiempo</span>
             <span class="switch">
               <input type="checkbox" id="toggle-timer-modes" />
               <span class="switch-track" aria-hidden="true"></span>
             </span>
           </label>
           <label class="switch-row">
-            <span data-i18n="set_blitz">Blitz-Aufgaben mit Timer</span>
+            <span data-i18n="set_blitz">Tareas relámpago con cronómetro</span>
             <span class="switch">
               <input type="checkbox" id="toggle-blitz-modes" />
               <span class="switch-track" aria-hidden="true"></span>
@@ -250,7 +248,7 @@
 
           <button class="btn btn--primary btn--xl" data-action="start-run">
             <span class="btn-emoji" aria-hidden="true">🧭</span>
-            <span data-i18n="btn_start">Los geht's!</span>
+            <span data-i18n="btn_start">¡Vamos!</span>
           </button>
         </div>
       </section>
@@ -265,18 +263,18 @@
           <button
             class="btn btn--ghost btn--icon"
             data-action="pause"
-            aria-label="Pause"
+            aria-label="Pausa"
           >
             ⏸️
           </button>
           <div class="game-stats">
-            <span class="stat-chip" title="Serie"
+            <span class="stat-chip" title="Racha"
               >🔥 <b id="game-streak">0</b></span
             >
-            <span class="stat-chip" title="Münzen"
+            <span class="stat-chip" title="Monedas"
               >🪙 <b id="game-coins">0</b></span
             >
-            <span class="stat-chip" id="game-timer-chip" hidden title="Zeit"
+            <span class="stat-chip" id="game-timer-chip" hidden title="Tiempo"
               >⏱️ <b id="game-timer">0</b></span
             >
           </div>
@@ -348,7 +346,7 @@
 
           <div class="task-top">
             <span class="blitz-tag" id="blitz-tag" hidden data-i18n="blitz_tag"
-              >Blitz!</span
+              >¡Relámpago!</span
             >
             <svg
               class="timer-ring"
@@ -394,11 +392,11 @@
             class="choices"
             id="choices"
             role="group"
-            aria-label="Antworten"
+            aria-label="Respuestas"
             hidden
           ></div>
 
-          <div class="powerups" id="powerups" aria-label="Power-ups"></div>
+          <div class="powerups" id="powerups" aria-label="Potenciadores"></div>
         </div>
       </section>
 
@@ -414,38 +412,42 @@
             id="chest"
             role="button"
             tabindex="0"
-            aria-label="Truhe öffnen"
+            aria-label="Abrir el cofre"
           >
             <div class="chest-emoji">🧰</div>
             <span class="chest-shine" aria-hidden="true"></span>
           </div>
           <div class="treasure-reveal" id="treasure-reveal" hidden></div>
-          <h2 id="summary-title" data-i18n="run_complete">Reise geschafft!</h2>
+          <h2 id="summary-title" data-i18n="run_complete">
+            ¡Viaje completado!
+          </h2>
           <p
             class="treasure-line"
             id="treasure-line"
             data-i18n="treasure_found"
           >
-            Du hast den Schatz gefunden!
+            ¡Has encontrado el tesoro!
           </p>
 
           <div class="summary-grid">
             <div class="summary-tile">
               <span class="summary-num" id="sum-stars">0</span
-              ><span class="summary-lbl" data-i18n="lbl_stars">Sterne</span>
+              ><span class="summary-lbl" data-i18n="lbl_stars">Estrellas</span>
             </div>
             <div class="summary-tile">
               <span class="summary-num" id="sum-coins">0</span
-              ><span class="summary-lbl" data-i18n="lbl_coins">Münzen</span>
+              ><span class="summary-lbl" data-i18n="lbl_coins">Monedas</span>
             </div>
             <div class="summary-tile">
               <span class="summary-num" id="sum-accuracy">0%</span
-              ><span class="summary-lbl" data-i18n="lbl_accuracy">Treffer</span>
+              ><span class="summary-lbl" data-i18n="lbl_accuracy"
+                >Aciertos</span
+              >
             </div>
             <div class="summary-tile">
               <span class="summary-num" id="sum-streak">0</span
               ><span class="summary-lbl" data-i18n="lbl_best_streak"
-                >Beste Serie</span
+                >Mejor racha</span
               >
             </div>
           </div>
@@ -454,7 +456,7 @@
 
           <div class="review-box" id="review-box" hidden>
             <h3 class="review-title" data-i18n="review_title">
-              Das üben wir nochmal
+              Practiquemos estas otra vez
             </h3>
             <ul class="review-list" id="review-list"></ul>
           </div>
@@ -465,21 +467,21 @@
               data-action="play-again"
               data-i18n="play_again"
             >
-              Neue Reise
+              Nuevo viaje
             </button>
             <button
               class="btn btn--secondary"
               data-action="go-shop"
               data-i18n="btn_shop"
             >
-              Laden
+              Tienda
             </button>
             <button
               class="btn btn--secondary"
               data-action="go-menu"
               data-i18n="btn_menu"
             >
-              Hauptmenü
+              Menú principal
             </button>
           </div>
         </div>
@@ -494,40 +496,40 @@
         <div class="card">
           <button class="btn btn--ghost btn--back" data-action="go-menu">
             <span aria-hidden="true">←</span>
-            <span data-i18n="btn_back">Zurück</span>
+            <span data-i18n="btn_back">Atrás</span>
           </button>
-          <h2 id="settings-title" data-i18n="set_title">Einstellungen</h2>
+          <h2 id="settings-title" data-i18n="set_title">Ajustes</h2>
 
           <label class="switch-row">
-            <span data-i18n="set_sound">Töne</span>
+            <span data-i18n="set_sound">Sonidos</span>
             <span class="switch">
               <input type="checkbox" id="toggle-sound" />
               <span class="switch-track" aria-hidden="true"></span>
             </span>
           </label>
           <label class="switch-row">
-            <span data-i18n="set_timer">Zeit-Modus</span>
+            <span data-i18n="set_timer">Modo tiempo</span>
             <span class="switch">
               <input type="checkbox" id="toggle-timer" />
               <span class="switch-track" aria-hidden="true"></span>
             </span>
           </label>
           <label class="switch-row">
-            <span data-i18n="set_quick">Schnelle Runde (10 Aufgaben)</span>
+            <span data-i18n="set_quick">Ronda rápida (10 tareas)</span>
             <span class="switch">
               <input type="checkbox" id="toggle-quick" />
               <span class="switch-track" aria-hidden="true"></span>
             </span>
           </label>
           <label class="switch-row">
-            <span data-i18n="set_blitz">Blitz-Aufgaben mit Timer</span>
+            <span data-i18n="set_blitz">Tareas relámpago con cronómetro</span>
             <span class="switch">
               <input type="checkbox" id="toggle-blitz" />
               <span class="switch-track" aria-hidden="true"></span>
             </span>
           </label>
 
-          <h3 class="section-label" data-i18n="set_lang">Sprache</h3>
+          <h3 class="section-label" data-i18n="set_lang">Idioma</h3>
           <div
             id="settings-language-grid"
             class="language-grid language-grid--compact"
@@ -538,7 +540,7 @@
             data-action="reset"
             data-i18n="set_reset"
           >
-            Fortschritt zurücksetzen
+            Reiniciar progreso
           </button>
         </div>
       </section>
@@ -552,26 +554,33 @@
         <div class="card">
           <button class="btn btn--ghost btn--back" data-action="go-menu">
             <span aria-hidden="true">←</span>
-            <span data-i18n="btn_back">Zurück</span>
+            <span data-i18n="btn_back">Atrás</span>
           </button>
-          <h2 id="howto-title" data-i18n="howto_title">So wird gespielt</h2>
-          <p class="howto-body" data-i18n="howto_body"></p>
+          <h2 id="howto-title" data-i18n="howto_title">Cómo jugar</h2>
+          <p class="howto-body" data-i18n="howto_body">
+            Viaja por el mapa y resuelve una tarea en cada estación. Escribe tu
+            respuesta con las teclas grandes y pulsa Comprobar. Reúne estrellas,
+            monedas e insignias. ¡Un cofre del tesoro te espera al final de cada
+            viaje!
+          </p>
           <ul class="howto-list">
             <li>
               <span aria-hidden="true">➕</span>
-              <span data-i18n="m_add_desc"></span>
+              <span data-i18n="m_add_desc">Suma 2 o 3 números hasta 100.</span>
             </li>
             <li>
               <span aria-hidden="true">➖</span>
-              <span data-i18n="m_sub_desc"></span>
+              <span data-i18n="m_sub_desc">Resta números hasta 100.</span>
             </li>
             <li>
               <span aria-hidden="true">✖️</span>
-              <span data-i18n="m_mul_desc"></span>
+              <span data-i18n="m_mul_desc">Las tablas de multiplicar.</span>
             </li>
             <li>
               <span aria-hidden="true">➗</span>
-              <span data-i18n="m_div_desc"></span>
+              <span data-i18n="m_div_desc"
+                >Divide sin resto: hasta 100 entre 1 y 10.</span
+              >
             </li>
           </ul>
         </div>
@@ -581,21 +590,21 @@
     <!-- Pause overlay -->
     <div id="pause-overlay" class="overlay" hidden>
       <div class="card card--centered overlay-card">
-        <h2 data-i18n="paused">Pause</h2>
+        <h2 data-i18n="paused">Pausa</h2>
         <div class="menu-buttons">
           <button
             class="btn btn--primary btn--xl"
             data-action="resume"
             data-i18n="btn_resume"
           >
-            Weiter
+            Continuar
           </button>
           <button
             class="btn btn--secondary"
             data-action="quit"
             data-i18n="btn_quit"
           >
-            Beenden
+            Salir
           </button>
         </div>
       </div>

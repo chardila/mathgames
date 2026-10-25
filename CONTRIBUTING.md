@@ -1,4 +1,4 @@
-# Contributing to Mathe-Schatzreise
+# Contributing to Tablas del Tesoro
 
 First of all: thank you! 💛 Every contribution — code, translations, ideas, bug
 reports — helps make math a little friendlier for children.
@@ -39,13 +39,13 @@ Please keep these in mind for any change:
    normal play, multiplication with both factors 1–10, division with dividend
    ≤100, divisor 1–10 and integer quotient 1–10 (no remainder). Full times tables
    must be available immediately, including Adaptive mode; the new start is 1.5.
-6. **German is the fallback language.** Missing translation keys must fall back
-   to German.
+6. **English is the fallback language.** Missing translation keys must fall back
+   to English. The app ships in Spanish and English only.
 
 ## Adding a translation
 
 1. Find the `I18N` object in `app.js`.
-2. Copy the `de` block and translate every value (keep the keys unchanged).
+2. Copy the `en` block and translate every value (keep the keys unchanged).
 3. Add your language to the `LANGUAGES` array (code, native label, flag, `dir`).
 4. Run `npm test` to make sure nothing broke, then test in the browser.
 

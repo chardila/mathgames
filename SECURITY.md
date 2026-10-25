@@ -2,7 +2,7 @@
 
 ## Our security posture
 
-Mathe-Schatzreise is a fully client-side, static web app. It has:
+Tablas del Tesoro is a fully client-side, static web app. It has:
 
 - **No backend or server-side code**
 - **No user accounts or authentication**

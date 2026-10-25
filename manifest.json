@@ -1,8 +1,8 @@
 {
-  "name": "Mathe-Schatzreise",
-  "short_name": "Schatzreise",
-  "description": "Ein offline-fähiges Mathe-Abenteuer für die 3. Klasse: Plus, Minus, Mal und Geteilt entdecken und Schätze finden.",
-  "lang": "de",
+  "name": "Tablas del Tesoro",
+  "short_name": "Tablas",
+  "description": "Aventura offline para aprenderse de memoria las tablas de multiplicar, en español e inglés.",
+  "lang": "es",
   "dir": "auto",
   "start_url": "./index.html",
   "scope": "./",

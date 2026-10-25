@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Forked from AllesSuper/math-treasure-quest v1.3.0 and renamed to "Tablas del Tesoro".
+- Reduced the language list to Spanish (default) and English; English is the fallback.
+- Completed missing Spanish strings, treasure names, shop items and badge labels.
+- Removed upstream German reports and screenshots.
+
+## [Unreleased]
+
 ### Updated table ranges
 
 - All 100 multiplication pairs from 1×1 to 10×10 are available immediately at

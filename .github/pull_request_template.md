@@ -21,7 +21,7 @@
 - [ ] I ran `npm run format` (Prettier).
 - [ ] Math generation still stays within the allowed ranges.
 - [ ] The app still works offline (service worker unaffected or updated).
-- [ ] Code comments are in English; new UI strings fall back to German.
+- [ ] Code comments are in English; new UI strings fall back to English.
 - [ ] I tested touch and keyboard interaction.
 
 ## Screenshots (if relevant)
