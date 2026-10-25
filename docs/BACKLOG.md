@@ -23,6 +23,21 @@ Un hallazgo pasa al backlog solo cuando alguien lo analiza y lo acepta. Si se de
 - Objetivo del proyecto: que una niña aprenda de memoria las tablas de multiplicar.
 - Las referencias de línea son de `app.js` en el commit `5bd7f7b` y pueden cambiar.
 
+## Hoja de ruta
+
+Trabajos con dirección decidida en la conversación del 2026-10-25 (diseño con niños con TDAH en mente). Cada uno necesita su documento de diseño aprobado y un plan antes de tocar código.
+
+| #   | Trabajo                                                                                                                                                         | Estado                                     | Documento                                                            |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------- |
+| 1   | Perfiles por niño y zona de padres (álbum de 100 casillas para padres)                                                                                          | en diseño (borrador)                       | `docs/superpowers/specs/2026-10-25-perfiles-y-modo-tablas-design.md` |
+| 2   | Modo para dominar las tablas: escribir el resultado, pista visual si tarda, repetición por operación, velocidad medida en silencio, un personaje por tabla      | en diseño (borrador, junto con 1)          | mismo documento                                                      |
+| 3   | Multiplicación de varias cifras **paso a paso en columnas** (como en el cuaderno, con las cifras que se llevan); para el hermano de 6 años y luego para la hija | pendiente: diseñar en una sesión posterior | —                                                                    |
+| —   | Backend / sincronización                                                                                                                                        | futuro, descartado por ahora (todo local)  | —                                                                    |
+
+Lo ya decidido para el trabajo 3: el niño escribe cifra por cifra, de derecha a izquierda, con las llevadas; si falla, se ve en qué paso (opción B del boceto del 2026-10-25). Por decidir: tamaños de números (¿empezar por 2 cifras × 1?), si incluye suma y resta en columnas.
+
+Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12.
+
 ---
 
 ## Hallazgos
