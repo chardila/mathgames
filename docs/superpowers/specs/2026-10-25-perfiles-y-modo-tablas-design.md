@@ -83,6 +83,15 @@ Contexto: la niña ya probó la versión actual (aventura básica sin tiempo, ac
 - **Nunca se quita nada coleccionado**: el personaje no se vacía aunque una operación vuelva a "practicando".
 - Para el hermano, las mismas reglas lo llevan a dominar casi todo en pocos días; su siguiente reto es el trabajo 3.
 
+### Música _(propuesta del diseñador, aprobada por el usuario)_
+
+La música motiva; no es el método principal (recordar fija más que cantar).
+
+- **Melodía corta propia de cada personaje**, que suena cuando avanza o se desbloquea.
+- **Canción de presentación al empezar una tabla nueva**: conteo rítmico (7, 14, 21…) para conocerla antes de practicarla. Solo la primera vez o a pedido, nunca en medio de la práctica.
+- **Todo original y sintetizado** con Web Audio, como los sonidos actuales; sin archivos de audio ni canciones de terceros. Sin voz cantada (limitación aceptada).
+- **Se puede apagar por perfil.**
+
 ## No metas (de este documento)
 
 - Multiplicación de varias cifras en columnas → trabajo 3, documento aparte.
@@ -105,7 +114,6 @@ Contexto: la niña ya probó la versión actual (aventura básica sin tiempo, ac
 
 ## Pendiente de decidir (dónde se quedó la conversación)
 
-- Música o sonidos: ¿melodías propias para enganchar?
 - Cómo encaja este modo con los modos actuales del menú.
 - Revisión por un constructor independiente (paso final antes de entregar el documento).
 
