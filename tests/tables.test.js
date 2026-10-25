@@ -475,6 +475,71 @@ for (let n = 0; n < 300; n++) {
     }
   check(JSON.stringify(round) === before, "scheduleRetry is pure");
 }
+// extending a round: the seam never repeats the same operation
+{
+  const head = r.slice(0, 5);
+  const more = [r[4], r[5], r[6], r[7], r[8]];
+  const headBefore = JSON.stringify(head);
+  const moreBefore = JSON.stringify(more);
+  const joined = T.appendRound(head, more);
+  check(
+    joined.length === 10 &&
+      joined[5].key !== r[4].key &&
+      noRepeats(joined, 10) &&
+      joined.slice(5).filter((it) => it.key === r[4].key).length === 1,
+    "seam clash is swapped away",
+  );
+  check(
+    JSON.stringify(head) === headBefore && JSON.stringify(more) === moreBefore,
+    "appendRound is pure",
+  );
+  assert.deepEqual(T.appendRound([], more), more);
+  // no single swap helps: the whole chunk is reordered
+  const hard = T.appendRound([r[0]], [r[0], r[1], r[0], r[2], r[1]]);
+  assert.deepEqual(
+    hard.map((it) => it.key),
+    [r[0], r[1], r[0], r[2], r[0], r[1]].map((it) => it.key),
+  );
+  assert.deepEqual(
+    T.appendRound(r.slice(0, 3), more),
+    r.slice(0, 3).concat(more),
+  );
+  // a clean order exists: some permutation with no equal neighbours,
+  // starting with a key other than `last`
+  const canSeparate = (last, chunk) => {
+    const permute = (rest, prev) =>
+      rest.length === 0 ||
+      rest.some(
+        (it, i) =>
+          it.key !== prev &&
+          permute(rest.slice(0, i).concat(rest.slice(i + 1)), it.key),
+      );
+    return permute(chunk, last);
+  };
+  for (let n = 0; n < 300; n++) {
+    const tables = randomTables();
+    let round = T.buildTablesRound(tables, "2026-11-01", 5);
+    for (let k = 0; k < 4; k++) {
+      const chunk = T.buildTablesRound(tables, "2026-11-01", 5);
+      // force a clash on half the seams
+      if (n % 2) chunk[0] = { ...round[round.length - 1] };
+      const next = T.appendRound(round, chunk);
+      check(next.length === round.length + 5, "appendRound adds 5");
+      if (canSeparate(round[round.length - 1].key, chunk)) {
+        check(
+          next[round.length].key !== round[round.length - 1].key,
+          "no repeat at the seam",
+        );
+        if (noRepeats(chunk, 5))
+          check(
+            noRepeats(next.slice(round.length), 5),
+            "a clean chunk stays clean",
+          );
+      }
+      round = next;
+    }
+  }
+}
 // presentation
 const tp = T.tablesToPresent(intro, stateWith({ introduce: [2] }));
 assert.deepEqual(tp, [2]);

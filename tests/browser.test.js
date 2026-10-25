@@ -797,7 +797,8 @@ const server = http.createServer((request, response) => {
         (await page.locator("#numpad .key").count()) === 12 &&
           !(await page.locator("#choices").isVisible()) &&
           !(await page.locator("#powerups").isVisible()) &&
-          !(await page.locator("#timer-ring").isVisible()),
+          !(await page.locator("#timer-ring").isVisible()) &&
+          !(await page.locator("#game-timer-chip").isVisible()),
         "typing, no tray, no timer",
       );
       check(
@@ -1044,6 +1045,126 @@ const server = http.createServer((request, response) => {
       await page.screenshot({
         path: path.join(root, ".cache", "mobile-tables-hint.png"),
       });
+      await quit();
+      await page.setViewportSize({ width: 1024, height: 768 });
+      // 10) setbacks: the answer stage sends her back 3 stations, the round
+      // grows past its first 10 facts and still ends at station 10
+      const seedLeo = async (settings) => {
+        await seedProfiles(
+          [
+            {
+              id: "p1",
+              name: "Leo",
+              settings: Object.assign(
+                {
+                  mainMode: "tables",
+                  setbacks: false,
+                  tableStations: 10,
+                  sound: false,
+                  timer: false,
+                },
+                settings,
+              ),
+            },
+          ],
+          "p1",
+        );
+        await pickProfile("Leo");
+        await page.clock.pauseAt(
+          (await page.evaluate(() => Date.now())) + 1000,
+        );
+        await page.locator('[data-action="start-tables"]').click();
+      };
+      const seenTotal = async () => {
+        const s = await store();
+        const facts = s.profiles.find((p) => p.id === s.lastId).tables.facts;
+        return Object.keys(facts).reduce(
+          (sum, k) => sum + (facts[k].seen || 0),
+          0,
+        );
+      };
+      await seedLeo({ setbacks: true });
+      for (let i = 0; i < 4; i++) {
+        await pressAnswer((await current()).answer);
+        await page.clock.runFor(800);
+      }
+      check((await station()) === 5, "setbacks: four stations answered");
+      q = await current();
+      await page.clock.runFor(15100);
+      check(
+        (await hintStage()) === "answer" &&
+          (await station()) === 2 &&
+          (await page.locator("#game-question").textContent()) === q.text,
+        "setback: answer stage sends back to station 2",
+      );
+      // a wrong entry in the answer stage sends her back no further
+      await pressAnswer(q.answer === 1 ? 2 : 1);
+      check((await station()) === 2, "one setback per station");
+      for (let i = 0; i < 60 && (await isActive("#screen-game")); i++) {
+        await pressAnswer((await current()).answer);
+        await page.clock.runFor(800);
+      }
+      check(
+        (await isActive("#screen-summary")) &&
+          (await page
+            .locator("#sum-accuracy-lbl")
+            .getAttribute("data-i18n")) === "lbl_mastered_today",
+        "setbacks round ends with the tables summary",
+      );
+      check((await seenTotal()) > 10, "setbacks round asked more than 10");
+      await page.locator('#screen-summary [data-action="go-menu"]').click();
+      // 11) visible timer: ring and chip; time up only shows the answer
+      await seedLeo({ timer: true });
+      check(
+        (await page.locator("#timer-ring").isVisible()) &&
+          (await page.locator("#game-timer-chip").isVisible()) &&
+          !(await page.locator("#blitz-tag").isVisible()) &&
+          !(await page.locator("#powerups").isVisible()),
+        "timer: ring and chip, no blitz tag, no tray",
+      );
+      q = await current();
+      const budget = Number(await page.locator("#timer-num").textContent());
+      await page.clock.runFor(budget * 1000 + 200);
+      check(
+        (await hintStage()) === "answer" &&
+          (await page.locator("#hint .hint-answer").count()) === 1 &&
+          (await page.locator("#hint .hint-answer").textContent()).includes(
+            String(q.answer),
+          ) &&
+          (await page.locator("#feedback").textContent()) === "" &&
+          (await station()) === 1 &&
+          !(await page.locator("#timer-ring").isVisible()),
+        "time up: answer stage only, ring stops",
+      );
+      // pausing in the answer stage does not restart the ring
+      await page.locator('[data-action="pause"]').click();
+      await page.clock.runFor(1000);
+      await page.locator('[data-action="resume"]').click();
+      await page.clock.runFor(500);
+      check(
+        !(await page.locator("#timer-ring").isVisible()) &&
+          (await page.locator("#hint .hint-answer").count()) === 1,
+        "resume in answer stage keeps the ring off",
+      );
+      await pressAnswer(q.answer);
+      check(
+        !(await page.locator("#timer-ring").isVisible()),
+        "ring stops on a correct answer",
+      );
+      await page.clock.runFor(800);
+      // the 3 s threshold is still measured: a quick answer counts as fast
+      q = await current();
+      check(
+        await page.locator("#timer-ring").isVisible(),
+        "ring restarts on the next station",
+      );
+      const fastWas = (await fact(factOf(q))).fast || 0;
+      await pressAnswer(q.answer);
+      await page.clock.runFor(800);
+      check(
+        (await fact(factOf(q))).fast === fastWas + 1,
+        "timer on: quick answer still fast",
+      );
       await quit();
       await page.clock.resume();
     }

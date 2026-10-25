@@ -515,6 +515,48 @@ function scheduleRetry(round, index) {
   return round.slice();
 }
 
+// Order `chunk` so it starts with a key other than `prev` and has no equal
+// neighbours: always take the most repeated key left (first seen on ties).
+function separatedOrder(chunk, prev) {
+  var left = chunk.slice();
+  var out = [];
+  while (left.length) {
+    var count = {};
+    left.forEach(function (it) {
+      count[it.key] = (count[it.key] || 0) + 1;
+    });
+    var pick = -1;
+    for (var i = 0; i < left.length; i++) {
+      if (left[i].key === prev) continue;
+      if (pick < 0 || count[left[i].key] > count[left[pick].key]) pick = i;
+    }
+    if (pick < 0) return null;
+    prev = left[pick].key;
+    out.push(left.splice(pick, 1)[0]);
+  }
+  return out;
+}
+
+// Append a chunk to a round (a setback ran it out) without the same
+// operation twice in a row at the seam.
+function appendRound(round, chunk) {
+  var out = round.concat(chunk);
+  var at = round.length;
+  if (at === 0 || chunk.length === 0) return out;
+  if (out[at].key !== out[at - 1].key) return out;
+  // First try one swap inside the chunk; else reorder the whole chunk.
+  for (var j = at + 1; j < out.length; j++) {
+    if (swapIsClean(out, at, j)) {
+      var tmp = out[at];
+      out[at] = out[j];
+      out[j] = tmp;
+      return out;
+    }
+  }
+  var ordered = separatedOrder(chunk, out[at - 1].key);
+  return ordered ? round.concat(ordered) : out;
+}
+
 // Home tables of the round's new facts not presented yet, in TABLE_ORDER.
 function tablesToPresent(round, tables) {
   var out = [];
@@ -652,6 +694,7 @@ var TablesEngine = {
   PRACTICE_MAX_REPEATS: PRACTICE_MAX_REPEATS,
   buildTablesRound: buildTablesRound,
   scheduleRetry: scheduleRetry,
+  appendRound: appendRound,
   tablesToPresent: tablesToPresent,
   markPresented: markPresented,
   tablesTrick: tablesTrick,

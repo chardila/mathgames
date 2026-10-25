@@ -1852,22 +1852,35 @@ function startApp() {
     var run = state.run;
     if (!run) return;
     // run.cursor walks run.round; run.index is the map station.
-    if (run.cursor >= run.round.length || run.index >= run.total) {
+    if (run.index >= run.total) {
       finishRun();
       return;
+    }
+    // Setbacks can run the round out before the last station: add more.
+    if (run.cursor >= run.round.length) {
+      run.round = Tables.appendRound(
+        run.round,
+        Tables.buildTablesRound(
+          state.profile.tables,
+          Tables.localDateKey(new Date()),
+          5,
+        ),
+      );
     }
     var item = run.round[run.cursor];
     var a = item.a;
     var b = item.b;
     run.attemptsOnCurrent = 0;
     run.stage = "ask";
+    run.setbackDone = false;
     activeTask = {
       type: "mul",
       operands: [a, b],
       text: a + " \u00d7 " + b + " =",
       answer: a * b,
       choice: false,
-      timed: false,
+      // Visible timer only if the profile asks for it (Blitz is ignored).
+      timed: !!state.settings.timer,
       item: item,
     };
     currentInput = "";
@@ -1879,12 +1892,12 @@ function startApp() {
     els.hint.hidden = true;
     els.hint.textContent = "";
     els.hint.setAttribute("data-stage", "ask");
-    stopTimer();
     renderAnswer();
     setupAnswerMode();
     moveWalker(run.index);
     updateMapProgressLabel();
     run.taskStart = now();
+    restartTimer();
     startStageTimer(Tables.HINT_DELAY_MS, enterHintStage);
   }
 
@@ -1941,8 +1954,16 @@ function startApp() {
   // Answer stage: show the result; she types it to move on (no timer).
   function enterAnswerStage() {
     if (!state.run || state.run.kind !== "tables" || !activeTask) return;
+    if (state.run.stage === "answer") return;
     clearStageTimer();
+    // The visible timer ends here and stays off (also after a pause).
+    stopTimer();
+    activeTask.timed = false;
     state.run.stage = "answer";
+    if (state.settings.setbacks && !state.run.setbackDone) {
+      goBackOnMiss(3);
+      state.run.setbackDone = true;
+    }
     var line = document.createElement("p");
     line.className = "hint-answer";
     line.textContent = t("tables_write_it", {
@@ -1973,6 +1994,7 @@ function startApp() {
         run.round = Tables.scheduleRetry(run.round, run.cursor);
       }
       rewardCorrect(outcome === "fast" || outcome === "slow");
+      stopTimer();
       run.index++;
       run.cursor++;
       moveWalker(run.index);
@@ -2146,7 +2168,10 @@ function startApp() {
     if (els.answerDisplay) els.answerDisplay.hidden = useChoice;
     if (els.choices) els.choices.hidden = !useChoice;
     if (useChoice) renderChoices();
-    if (els.blitzTag) els.blitzTag.hidden = !activeTask.timed;
+    if (els.blitzTag) {
+      els.blitzTag.hidden =
+        !activeTask.timed || !!(state.run && state.run.kind === "tables");
+    }
     renderPowerups();
   }
 
@@ -2324,8 +2349,8 @@ function startApp() {
   // along the path. The walker animates to the earlier station and a small
   // toast shows the setback. Clamped so the journey never goes before start.
   function goBackOnMiss(steps) {
-    // A ready shield absorbs one setback instead of moving the traveller back.
-    if (state.run && state.run.shieldArmed) {
+    // A ready shield absorbs one setback (there is no shield in tables mode).
+    if (state.run && state.run.shieldArmed && state.run.kind !== "tables") {
       state.run.shieldArmed = false;
       renderPowerups();
       showToast(t("shield_saved"), "🛡️");
@@ -2501,6 +2526,11 @@ function startApp() {
     }
   }
   function onTimeout() {
+    // Tables mode: time up just shows the answer; no miss is recorded.
+    if (state.run && state.run.kind === "tables") {
+      enterAnswerStage();
+      return;
+    }
     if (state.run.attemptsOnCurrent === 0) state.run.attemptsOnCurrent = 1;
     els.feedback.textContent = t("timeout_msg");
     els.feedback.className = "feedback is-wrong";
@@ -2784,6 +2814,7 @@ function startApp() {
   }
   // Spend stars during a timed task to gain ten extra seconds of thinking time.
   function buyTimeWithStars() {
+    if (state.run && state.run.kind === "tables") return;
     if (!activeTask || !activeTask.timed || !state.timerId) {
       showToast(t("time_only_timed"), "⏳");
       return;
