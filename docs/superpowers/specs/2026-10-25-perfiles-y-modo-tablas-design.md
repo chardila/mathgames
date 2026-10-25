@@ -1,6 +1,6 @@
 # Perfiles y modo para dominar las tablas — diseño
 
-> **Estado: BORRADOR COMPLETO, en revisión por un constructor independiente (no aprobado).** No implementar hasta que el usuario apruebe este documento. La sección "Pendiente de decidir" dice dónde se quedó la conversación.
+> **Estado: COMPLETO, pendiente de aprobación del usuario.** Revisado por un constructor independiente el 2026-10-25. No implementar hasta que el usuario lo apruebe.
 
 - Fecha de inicio: 2026-10-25
 - Proyecto: Tablas del Tesoro (`app.js`, `index.html`, `styles.css`, PWA sin backend)
@@ -133,9 +133,14 @@ La música motiva; no es el método principal (recordar fija más que cantar).
 5. **Solo el modo tablas actualiza el registro por operación y el álbum.** Las respuestas en "Otros juegos" no cuentan (con opción múltiple, una respuesta rápida no prueba que la recuerde).
 6. **Medición de los 3 s**: desde que aparece la operación hasta que pulsa **confirmar**. Sin envío automático (revelaría cuántas cifras tiene la respuesta). Si en la práctica el umbral resulta inalcanzable en tablet, se ajusta (p. ej. 3,5 s) con los datos medidos.
 
+### Tienda en modo tablas _(decidido por el usuario: opción a)_
+
+- En modo tablas se **ocultan todos los potenciadores** (comodín, 50:50, tiempo extra, escudo): o sabotean el recuerdo o no sirven al escribir sin cronómetro. Siguen disponibles en "Otros juegos" para perfiles que los usen.
+- Se **añaden artículos nuevos, solo cosméticos**, que no afectan el aprendizaje, para que las monedas sigan teniendo valor. Ejemplos: accesorios para los personajes de las tablas, temas de color del mapa, melodías nuevas. Catálogo concreto y precios: al constructor, en línea con la economía actual (acompañantes de 80 a 320 monedas; hoy se gana hasta ~1 moneda por acierto al primer intento más bonos de racha, unas 20 por ronda de 15).
+
 ## Pendiente de decidir (dónde se quedó la conversación)
 
-- **Potenciadores en modo tablas** (pregunta al usuario): el comodín resuelve sin recordar, el 50:50 no sirve al escribir, el tiempo extra no sirve sin cronómetro, y el escudo ya se oculta. Si se ocultan todos, las monedas solo comprarían acompañantes.
+- Nada pendiente de diseño. Falta la **aprobación del documento por el usuario**; después, el plan de implementación (`superpowers:writing-plans`).
 
 ## Lo que queda al constructor
 
