@@ -82,21 +82,21 @@ El diseño las deja al constructor ("Lo que queda al constructor") o no las resu
 
 ## Mapa de archivos
 
-| Archivo                       | Qué cambia                                                                                                              |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `tables.js` (nuevo)           | Motor puro: claves de operación, registro, dominio, repaso, composición de ronda, sondeos, trucos, álbum, personajes.   |
-| `characters.js` (nuevo)       | Datos y dibujo SVG de los 10 personajes, accesorios, melodías propias y secuencia de la canción de presentación.        |
-| `app.js`                      | Modelo de perfiles puro y migración, reto de padres, textos `I18N`, interfaz (perfiles, padres, modo tablas, tienda…).  |
-| `index.html`                  | Pantallas nuevas, teclado numérico en la tarjeta de tarea, `<script defer>` de `tables.js` y `characters.js` antes de `app.js`. |
-| `styles.css`                  | Estilos de las pantallas nuevas, bloques de la pista, álbum, personajes y temas del mapa.                               |
-| `service-worker.js`           | `CACHE_VERSION` v2 y los archivos nuevos en `PRECACHE_URLS`.                                                            |
-| `tests/profiles.test.js` (nuevo)   | Modelo de perfiles, migración, reto de padres.                                                                     |
-| `tests/tables.test.js` (nuevo)     | Motor de tablas.                                                                                                   |
-| `tests/characters.test.js` (nuevo) | Personajes, melodías, secuencia de presentación.                                                                   |
-| `tests/offline.test.js`       | Número de archivos precacheados y versión de caché.                                                                     |
-| `tests/browser.test.js`       | Flujo con perfiles; secciones nuevas por tarea.                                                                         |
-| `package.json`, `.github/workflows/quality.yml` | Pruebas y `node --check` de los archivos nuevos.                                                      |
-| `docs/BACKLOG.md`, `CHANGELOG.md` | Estado de la hoja de ruta y de los hallazgos; entrada de cambios.                                                   |
+| Archivo                                         | Qué cambia                                                                                                                      |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `tables.js` (nuevo)                             | Motor puro: claves de operación, registro, dominio, repaso, composición de ronda, sondeos, trucos, álbum, personajes.           |
+| `characters.js` (nuevo)                         | Datos y dibujo SVG de los 10 personajes, accesorios, melodías propias y secuencia de la canción de presentación.                |
+| `app.js`                                        | Modelo de perfiles puro y migración, reto de padres, textos `I18N`, interfaz (perfiles, padres, modo tablas, tienda…).          |
+| `index.html`                                    | Pantallas nuevas, teclado numérico en la tarjeta de tarea, `<script defer>` de `tables.js` y `characters.js` antes de `app.js`. |
+| `styles.css`                                    | Estilos de las pantallas nuevas, bloques de la pista, álbum, personajes y temas del mapa.                                       |
+| `service-worker.js`                             | `CACHE_VERSION` v2 y los archivos nuevos en `PRECACHE_URLS`.                                                                    |
+| `tests/profiles.test.js` (nuevo)                | Modelo de perfiles, migración, reto de padres.                                                                                  |
+| `tests/tables.test.js` (nuevo)                  | Motor de tablas.                                                                                                                |
+| `tests/characters.test.js` (nuevo)              | Personajes, melodías, secuencia de presentación.                                                                                |
+| `tests/offline.test.js`                         | Número de archivos precacheados y versión de caché.                                                                             |
+| `tests/browser.test.js`                         | Flujo con perfiles; secciones nuevas por tarea.                                                                                 |
+| `package.json`, `.github/workflows/quality.yml` | Pruebas y `node --check` de los archivos nuevos.                                                                                |
+| `docs/BACKLOG.md`, `CHANGELOG.md`               | Estado de la hoja de ruta y de los hallazgos; entrada de cambios.                                                               |
 
 Orden de carga en `index.html`: `tables.js`, `characters.js`, `app.js`, todos con `defer`. Los scripts `defer` se ejecutan en orden.
 
@@ -108,15 +108,15 @@ Cómo se enlazan los módulos:
 
 ## Fases
 
-| Fase | Tareas | Resultado que se puede publicar                                              |
-| ---- | ------ | ---------------------------------------------------------------------------- |
-| A    | 1–4    | Perfiles, zona de padres; "Otros juegos" respeta los ajustes del perfil.     |
-| B    | 5–7    | Motor de tablas puro, probado en Node (sin interfaz todavía).                |
-| C    | 8–9    | Inicio por perfil y ronda de modo tablas completa.                           |
-| D    | 10–11  | Personajes en el inicio con anuncios del lorito; álbum para padres.          |
-| E    | 12     | Música: melodías de personajes y canción de presentación.                    |
-| F    | 13     | Tienda de modo tablas (cosméticos) y "Mis tesoros".                          |
-| G    | 14     | Documentación y verificación final.                                          |
+| Fase | Tareas | Resultado que se puede publicar                                          |
+| ---- | ------ | ------------------------------------------------------------------------ |
+| A    | 1–4    | Perfiles, zona de padres; "Otros juegos" respeta los ajustes del perfil. |
+| B    | 5–7    | Motor de tablas puro, probado en Node (sin interfaz todavía).            |
+| C    | 8–9    | Inicio por perfil y ronda de modo tablas completa.                       |
+| D    | 10–11  | Personajes en el inicio con anuncios del lorito; álbum para padres.      |
+| E    | 12     | Música: melodías de personajes y canción de presentación.                |
+| F    | 13     | Tienda de modo tablas (cosméticos) y "Mis tesoros".                      |
+| G    | 14     | Documentación y verificación final.                                      |
 
 ---
 
@@ -164,52 +164,154 @@ Cómo se enlazan los módulos:
 const app = require("../app.js");
 // normalizeSettings
 assert.deepEqual(app.normalizeSettings({}), app.DEFAULT_SETTINGS);
-const s = app.normalizeSettings({ tableStations: 13, mainMode: "x", timer: "yes", quick: true, extra: 1 });
-check(s.tableStations === 15 && s.mainMode === "tables" && s.timer === false && s.quick === true, "settings coerced");
-check(app.normalizeSettings({ tableStations: 25, mainMode: "div" }).tableStations === 25, "valid stations kept");
+const s = app.normalizeSettings({
+  tableStations: 13,
+  mainMode: "x",
+  timer: "yes",
+  quick: true,
+  extra: 1,
+});
+check(
+  s.tableStations === 15 &&
+    s.mainMode === "tables" &&
+    s.timer === false &&
+    s.quick === true,
+  "settings coerced",
+);
+check(
+  app.normalizeSettings({ tableStations: 25, mainMode: "div" })
+    .tableStations === 25,
+  "valid stations kept",
+);
 // defaultProgress
-const p1 = app.defaultProgress(), p2 = app.defaultProgress();
+const p1 = app.defaultProgress(),
+  p2 = app.defaultProgress();
 check(p1 !== p2 && p1.learning !== p2.learning, "fresh objects");
-check(p1.coins === 0 && p1.buddies[0] === "kid" && p1.learningStartVersion === 1 &&
-  Object.values(p1.learning).every((r) => r.level === 1.5), "default progress");
+check(
+  p1.coins === 0 &&
+    p1.buddies[0] === "kid" &&
+    p1.learningStartVersion === 1 &&
+    Object.values(p1.learning).every((r) => r.level === 1.5),
+  "default progress",
+);
 // createProfile / cleanProfileName
 const ana = app.createProfile("  Ana  ", "🐼", ["p1", "p2"], "Jugador");
-check(ana.name === "Ana" && ana.avatar === "🐼" && !["p1", "p2"].includes(ana.id), "create profile");
+check(
+  ana.name === "Ana" && ana.avatar === "🐼" && !["p1", "p2"].includes(ana.id),
+  "create profile",
+);
 assert.deepEqual(ana.settings, app.DEFAULT_SETTINGS);
 check(app.cleanProfileName("x".repeat(40), "J").length === 20, "name max 20");
-check(app.cleanProfileName("   ", "Jugador 2") === "Jugador 2", "empty name fallback");
-check(app.createProfile("A", "🚀", [], "J").avatar === app.PROFILE_AVATARS[0], "unknown avatar -> first");
+check(
+  app.cleanProfileName("   ", "Jugador 2") === "Jugador 2",
+  "empty name fallback",
+);
+check(
+  app.createProfile("A", "🚀", [], "J").avatar === app.PROFILE_AVATARS[0],
+  "unknown avatar -> first",
+);
 // normalizeProfile
-check(app.normalizeProfile(null) === null && app.normalizeProfile({ name: "x" }) === null, "invalid profile");
-const np = app.normalizeProfile({ id: "p7", name: "", progress: { coins: 5, customFutureField: "keep" } });
-check(np.progress.coins === 5 && np.progress.customFutureField === "keep" && np.progress.learning.add.level === 1.5, "progress kept + learning normalized");
+check(
+  app.normalizeProfile(null) === null &&
+    app.normalizeProfile({ name: "x" }) === null,
+  "invalid profile",
+);
+const np = app.normalizeProfile({
+  id: "p7",
+  name: "",
+  progress: { coins: 5, customFutureField: "keep" },
+});
+check(
+  np.progress.coins === 5 &&
+    np.progress.customFutureField === "keep" &&
+    np.progress.learning.add.level === 1.5,
+  "progress kept + learning normalized",
+);
 check(np.name.length > 0, "nameless profile gets a name");
 // normalizeProfileStore
-assert.deepEqual(app.normalizeProfileStore("garbage"), { version: 1, lastId: "", profiles: [] });
-const st = app.normalizeProfileStore({ lastId: "p9", profiles: [{ id: "p1", name: "A" }, { id: "p1", name: "B" }, 3] });
-check(st.profiles.length === 1 && st.profiles[0].name === "A" && st.lastId === "", "dedupe, drop invalid, reset unknown lastId");
+assert.deepEqual(app.normalizeProfileStore("garbage"), {
+  version: 1,
+  lastId: "",
+  profiles: [],
+});
+const st = app.normalizeProfileStore({
+  lastId: "p9",
+  profiles: [{ id: "p1", name: "A" }, { id: "p1", name: "B" }, 3],
+});
+check(
+  st.profiles.length === 1 && st.profiles[0].name === "A" && st.lastId === "",
+  "dedupe, drop invalid, reset unknown lastId",
+);
 // migrateLegacyStorage
-const legacyProgress = { coins: 500, learning: { div: { level: 3 } }, customFutureField: "keep" };
+const legacyProgress = {
+  coins: 500,
+  learning: { div: { level: 3 } },
+  customFutureField: "keep",
+};
 const legacySettings = { timer: true, sound: false, quick: true };
 const frozen = JSON.stringify([legacyProgress, legacySettings]);
-const m = app.migrateLegacyStorage(null, legacyProgress, legacySettings, "Jugador 1");
-check(m.profiles.length === 1 && m.profiles[0].name === "Jugador 1" && m.lastId === m.profiles[0].id, "one migrated profile");
+const m = app.migrateLegacyStorage(
+  null,
+  legacyProgress,
+  legacySettings,
+  "Jugador 1",
+);
+check(
+  m.profiles.length === 1 &&
+    m.profiles[0].name === "Jugador 1" &&
+    m.lastId === m.profiles[0].id,
+  "one migrated profile",
+);
 const mp = m.profiles[0];
-check(mp.progress.coins === 500 && mp.progress.learning.div.level === 3 && mp.progress.learning.add.level === 1.5 &&
-  mp.progress.customFutureField === "keep", "legacy progress migrated");
-check(mp.settings.timer === true && mp.settings.sound === false && mp.settings.quick === true &&
-  mp.settings.setbacks === false && mp.settings.mainMode === "tables" && mp.settings.tableStations === 15, "legacy settings migrated");
-check(JSON.stringify([legacyProgress, legacySettings]) === frozen, "legacy inputs not mutated");
-assert.deepEqual(app.migrateLegacyStorage(m, { coins: 1 }, null, "X"), app.normalizeProfileStore(m)); // idempotent
+check(
+  mp.progress.coins === 500 &&
+    mp.progress.learning.div.level === 3 &&
+    mp.progress.learning.add.level === 1.5 &&
+    mp.progress.customFutureField === "keep",
+  "legacy progress migrated",
+);
+check(
+  mp.settings.timer === true &&
+    mp.settings.sound === false &&
+    mp.settings.quick === true &&
+    mp.settings.setbacks === false &&
+    mp.settings.mainMode === "tables" &&
+    mp.settings.tableStations === 15,
+  "legacy settings migrated",
+);
+check(
+  JSON.stringify([legacyProgress, legacySettings]) === frozen,
+  "legacy inputs not mutated",
+);
+assert.deepEqual(
+  app.migrateLegacyStorage(m, { coins: 1 }, null, "X"),
+  app.normalizeProfileStore(m),
+); // idempotent
 const empty = app.migrateLegacyStorage(null, null, null, "Jugador 1");
-check(empty.profiles.length === 1 && empty.profiles[0].progress.coins === 0, "fresh install default profile");
-check(app.migrateLegacyStorage(null, 42, [], "J").profiles[0].progress.coins === 0, "non-object legacy ignored");
-check(app.migrateLegacyStorage({ version: 1, lastId: "", profiles: [] }, legacyProgress, null, "J").profiles.length === 0,
-  "an existing empty store stays empty (all profiles deleted)");
+check(
+  empty.profiles.length === 1 && empty.profiles[0].progress.coins === 0,
+  "fresh install default profile",
+);
+check(
+  app.migrateLegacyStorage(null, 42, [], "J").profiles[0].progress.coins === 0,
+  "non-object legacy ignored",
+);
+check(
+  app.migrateLegacyStorage(
+    { version: 1, lastId: "", profiles: [] },
+    legacyProgress,
+    null,
+    "J",
+  ).profiles.length === 0,
+  "an existing empty store stays empty (all profiles deleted)",
+);
 // parentChallenge
 for (let i = 0; i < 1000; i++) {
   const c = app.parentChallenge();
-  check(c.a >= 12 && c.a <= 19 && c.b >= 12 && c.b <= 19 && c.answer === c.a * c.b, "parent challenge range");
+  check(
+    c.a >= 12 && c.a <= 19 && c.b >= 12 && c.b <= 19 && c.answer === c.a * c.b,
+    "parent challenge range",
+  );
 }
 ```
 
@@ -274,20 +376,46 @@ Al arrancar:
   - Comprobaciones nuevas:
 
 ```js
-check((await page.locator("#profile-grid .profile-btn").count()) === 1 &&
-  (await page.locator("#profile-grid").textContent()).includes("Jugador 1"), "who plays lists migrated profile");
-check((await page.evaluate(() => JSON.parse(localStorage.getItem("ms_progress")))).coins === 500, "legacy keys untouched");
+check(
+  (await page.locator("#profile-grid .profile-btn").count()) === 1 &&
+    (await page.locator("#profile-grid").textContent()).includes("Jugador 1"),
+  "who plays lists migrated profile",
+);
+check(
+  (await page.evaluate(() => JSON.parse(localStorage.getItem("ms_progress"))))
+    .coins === 500,
+  "legacy keys untouched",
+);
 // Two seeded profiles: A (coins 10), B (coins 99)
-await pickProfile("A"); check((await page.locator("#menu-coins").textContent()) === "10", "profile A coins");
+await pickProfile("A");
+check(
+  (await page.locator("#menu-coins").textContent()) === "10",
+  "profile A coins",
+);
 await page.locator('#screen-menu [data-action="switch-player"]').click();
-await pickProfile("B"); check((await page.locator("#menu-coins").textContent()) === "99", "profile B coins");
+await pickProfile("B");
+check(
+  (await page.locator("#menu-coins").textContent()) === "99",
+  "profile B coins",
+);
 // buy a joker as B -> A still has 10 coins in the store
-check((await store()).profiles.find((p) => p.name === "A").progress.coins === 10, "profiles isolated");
+check(
+  (await store()).profiles.find((p) => p.name === "A").progress.coins === 10,
+  "profiles isolated",
+);
 // ms_profiles = "{broken" and no legacy keys -> one "Jugador 1" with 0 coins
-await page.evaluate(() => { localStorage.clear(); localStorage.setItem("ms_lang", '"es"'); localStorage.setItem("ms_profiles", "{broken"); });
+await page.evaluate(() => {
+  localStorage.clear();
+  localStorage.setItem("ms_lang", '"es"');
+  localStorage.setItem("ms_profiles", "{broken");
+});
 await page.reload();
-check((await page.locator("#profile-grid .profile-btn").count()) === 1 &&
-  (await store()).profiles[0].name === "Jugador 1" && (await store()).profiles[0].progress.coins === 0, "corrupt profile store recovers");
+check(
+  (await page.locator("#profile-grid .profile-btn").count()) === 1 &&
+    (await store()).profiles[0].name === "Jugador 1" &&
+    (await store()).profiles[0].progress.coins === 0,
+  "corrupt profile store recovers",
+);
 ```
 
 - [ ] **Paso 2: Ejecutar** `npm run test:browser` → falla porque no existe `#profile-grid`.
@@ -364,34 +492,70 @@ check((await page.locator("#profile-grid .profile-btn").count()) === 1 &&
   - Comprobaciones:
 
 ```js
-check((await page.locator('#screen-menu [data-action="go-settings"]').count()) === 0 &&
-  (await page.locator("#screen-modes .switch-row").count()) === 0, "no settings on child screens");
+check(
+  (await page.locator('#screen-menu [data-action="go-settings"]').count()) ===
+    0 && (await page.locator("#screen-modes .switch-row").count()) === 0,
+  "no settings on child screens",
+);
 // gate: wrong answer keeps it closed
 await page.locator('[data-action="open-parents"]').click();
-await page.locator("#gate-input").fill("1"); await page.locator('[data-action="gate-ok"]').click();
-check(await page.locator("#parent-gate").isVisible() && (await page.locator("#gate-input").inputValue()) === "" &&
-  !(await page.locator("#screen-parents").evaluate((el) => el.classList.contains("is-active"))), "gate rejects wrong answer");
+await page.locator("#gate-input").fill("1");
+await page.locator('[data-action="gate-ok"]').click();
+check(
+  (await page.locator("#parent-gate").isVisible()) &&
+    (await page.locator("#gate-input").inputValue()) === "" &&
+    !(await page
+      .locator("#screen-parents")
+      .evaluate((el) => el.classList.contains("is-active"))),
+  "gate rejects wrong answer",
+);
 await passGate(); // -> #screen-parents active
 // add + rename + avatar
 await page.locator('[data-action="add-profile"]').click();
-await page.locator("#edit-name").fill("Ana"); await page.locator("#edit-name").blur();
+await page.locator("#edit-name").fill("Ana");
+await page.locator("#edit-name").blur();
 await page.locator('#edit-avatars [data-avatar="🐼"]').click();
 await page.locator("#toggle-timer").locator("xpath=ancestor::label").click();
 const ana = (await store()).profiles.find((p) => p.name === "Ana");
-check(ana.avatar === "🐼" && ana.settings.timer === true, "editor saves to edited profile");
-check((await store()).profiles.find((p) => p.name === "Jugador 1").settings.timer === false, "other profile untouched");
+check(
+  ana.avatar === "🐼" && ana.settings.timer === true,
+  "editor saves to edited profile",
+);
+check(
+  (await store()).profiles.find((p) => p.name === "Jugador 1").settings
+    .timer === false,
+  "other profile untouched",
+);
 // delete every profile -> who-plays shows the empty hint and the parents button still works
-check(await page.locator("#who-empty").isVisible() &&
-  await page.locator('[data-action="open-parents"]').isVisible(), "empty who-plays usable");
+check(
+  (await page.locator("#who-empty").isVisible()) &&
+    (await page.locator('[data-action="open-parents"]').isVisible()),
+  "empty who-plays usable",
+);
 // switching player during a pending transition writes nothing into the next profile
-await pickProfile("A"); await start("add", true);
+await pickProfile("A");
+await start("add", true);
 const pending = await current();
-await page.locator("#choices .choice").filter({ hasText: new RegExp("^" + pending.answer + "$") }).click();
-await quit(); await page.locator('[data-action="switch-player"]').click(); await pickProfile("B");
-const bBefore = JSON.stringify((await store()).profiles.find((p) => p.name === "B").progress);
+await page
+  .locator("#choices .choice")
+  .filter({ hasText: new RegExp("^" + pending.answer + "$") })
+  .click();
+await quit();
+await page.locator('[data-action="switch-player"]').click();
+await pickProfile("B");
+const bBefore = JSON.stringify(
+  (await store()).profiles.find((p) => p.name === "B").progress,
+);
 await page.clock.runFor(1000);
-check(JSON.stringify((await store()).profiles.find((p) => p.name === "B").progress) === bBefore &&
-  !(await page.locator("#screen-game").evaluate((el) => el.classList.contains("is-active"))), "no cross-profile writes after switch");
+check(
+  JSON.stringify(
+    (await store()).profiles.find((p) => p.name === "B").progress,
+  ) === bBefore &&
+    !(await page
+      .locator("#screen-game")
+      .evaluate((el) => el.classList.contains("is-active"))),
+  "no cross-profile writes after switch",
+);
 ```
 
 - [ ] **Paso 2: Ejecutar** `npm run test:browser` → falla (no existe `open-parents`).
@@ -414,6 +578,7 @@ check(JSON.stringify((await store()).profiles.find((p) => p.name === "B").progre
   - `<div id="numpad-wrap" hidden>` con `<div class="numpad" id="numpad"></div>` y `<button class="btn btn--primary btn--xl" data-action="check" data-i18n="btn_check">Comprobar</button>`
 
   El CSS de `.answer-display`, `.numpad` y `.key` ya existe.
+
 - Modificar: `app.js` (`nextTask`, `showSolution`, `onWrong`, `onTimeout`, `renderPowerups`, `renderShop`)
 - Modificar: `tests/browser.test.js`
 
@@ -436,29 +601,71 @@ check(JSON.stringify((await store()).profiles.find((p) => p.name === "B").progre
 ```js
 await setProfileSettings({ choices: false, setbacks: false });
 await start("mul", true);
-check((await page.locator("#numpad .key").count()) === 12 && !(await page.locator("#choices").isVisible()), "typing mode");
-for (let i = 0; i < 10; i++) { // half with on-screen keys + Check, half with keyboard digits + Enter
+check(
+  (await page.locator("#numpad .key").count()) === 12 &&
+    !(await page.locator("#choices").isVisible()),
+  "typing mode",
+);
+for (let i = 0; i < 10; i++) {
+  // half with on-screen keys + Check, half with keyboard digits + Enter
   const q = await current();
-  if (i % 2) { await page.keyboard.type(String(q.answer)); await page.keyboard.press("Enter"); }
-  else { for (const d of String(q.answer)) await page.locator("#numpad .key", { hasText: new RegExp("^" + d + "$") }).click();
-         await page.locator('[data-action="check"]').click(); }
+  if (i % 2) {
+    await page.keyboard.type(String(q.answer));
+    await page.keyboard.press("Enter");
+  } else {
+    for (const d of String(q.answer))
+      await page
+        .locator("#numpad .key", { hasText: new RegExp("^" + d + "$") })
+        .click();
+    await page.locator('[data-action="check"]').click();
+  }
   await page.clock.runFor(800);
 }
-check((await page.locator("#sum-accuracy").textContent()) === "100%", "typed round completes");
+check(
+  (await page.locator("#sum-accuracy").textContent()) === "100%",
+  "typed round completes",
+);
 // wrong typed answer at station 5 with setbacks off: stays on 5, continue -> 6
-await page.locator('#screen-summary [data-action="go-menu"]').click(); await start("mul", true);
-for (let i = 0; i < 4; i++) { const q = await current(); await page.keyboard.type(String(q.answer)); await page.keyboard.press("Enter"); await page.clock.runFor(800); }
-const miss = await current(); await page.keyboard.type(String(miss.answer === 1 ? 2 : 1)); await page.keyboard.press("Enter");
-check((await page.locator("#map-progress").textContent()).includes("Estación 5") && await page.locator(".choice--continue").isVisible(),
-  "no setback when off; continue button shown while typing");
+await page.locator('#screen-summary [data-action="go-menu"]').click();
+await start("mul", true);
+for (let i = 0; i < 4; i++) {
+  const q = await current();
+  await page.keyboard.type(String(q.answer));
+  await page.keyboard.press("Enter");
+  await page.clock.runFor(800);
+}
+const miss = await current();
+await page.keyboard.type(String(miss.answer === 1 ? 2 : 1));
+await page.keyboard.press("Enter");
+check(
+  (await page.locator("#map-progress").textContent()).includes("Estación 5") &&
+    (await page.locator(".choice--continue").isVisible()),
+  "no setback when off; continue button shown while typing",
+);
 await page.locator(".choice--continue").click();
-check((await page.locator("#map-progress").textContent()).includes("Estación 6"), "continue after typed miss");
-check((await page.locator('.powerup[aria-label^="Escudo"]').count()) === 0, "shield hidden in tray when setbacks off");
-await quit(); await page.locator('#screen-menu [data-action="go-shop"]').click();
-check((await page.locator(".shop-item").filter({ hasText: "Escudo" }).count()) === 0, "shield hidden in shop when setbacks off");
+check(
+  (await page.locator("#map-progress").textContent()).includes("Estación 6"),
+  "continue after typed miss",
+);
+check(
+  (await page.locator('.powerup[aria-label^="Escudo"]').count()) === 0,
+  "shield hidden in tray when setbacks off",
+);
+await quit();
+await page.locator('#screen-menu [data-action="go-shop"]').click();
+check(
+  (await page.locator(".shop-item").filter({ hasText: "Escudo" }).count()) ===
+    0,
+  "shield hidden in shop when setbacks off",
+);
 await page.locator('[data-action="close-shop"]').click();
-await setProfileSettings({ setbacks: true }); await page.locator('#screen-menu [data-action="go-shop"]').click();
-check((await page.locator(".shop-item").filter({ hasText: "Escudo" }).count()) === 1, "shield back in shop when setbacks on");
+await setProfileSettings({ setbacks: true });
+await page.locator('#screen-menu [data-action="go-shop"]').click();
+check(
+  (await page.locator(".shop-item").filter({ hasText: "Escudo" }).count()) ===
+    1,
+  "shield back in shop when setbacks on",
+);
 await page.locator('[data-action="close-shop"]').click();
 ```
 
@@ -539,51 +746,165 @@ Reglas de `recordTablesAnswer`, copiadas del diseño:
 
 ```js
 const T = require("../tables.js");
-check(T.factKeys().length === 55 && new Set(T.factKeys()).size === 55, "55 unique facts");
-check(T.factKey(9, 7) === "7-9" && T.factKey(7, 9) === "7-9", "7×9 and 9×7 are one fact");
-const homes = {}; T.factKeys().forEach((k) => (homes[T.homeTable(k)] = (homes[T.homeTable(k)] || 0) + 1));
-assert.deepEqual(homes, { 1: 10, 2: 9, 5: 8, 10: 7, 3: 6, 4: 5, 9: 4, 6: 3, 7: 2, 8: 1 });
-check(T.homeTable("7-9") === 9 && T.homeTable("2-7") === 2 && T.homeTable("6-8") === 6, "home table");
-assert.deepEqual(T.factTables("7-7"), [7]); assert.deepEqual(T.factTables("1-7"), [1, 7]);
-check(T.localDateKey(new Date(2026, 9, 25, 23, 30)) === "2026-10-25", "local date, not UTC");
-check(T.addDays("2026-10-31", 1) === "2026-11-01" && T.addDays("2026-12-31", 14) === "2027-01-14", "addDays");
+check(
+  T.factKeys().length === 55 && new Set(T.factKeys()).size === 55,
+  "55 unique facts",
+);
+check(
+  T.factKey(9, 7) === "7-9" && T.factKey(7, 9) === "7-9",
+  "7×9 and 9×7 are one fact",
+);
+const homes = {};
+T.factKeys().forEach(
+  (k) => (homes[T.homeTable(k)] = (homes[T.homeTable(k)] || 0) + 1),
+);
+assert.deepEqual(homes, {
+  1: 10,
+  2: 9,
+  5: 8,
+  10: 7,
+  3: 6,
+  4: 5,
+  9: 4,
+  6: 3,
+  7: 2,
+  8: 1,
+});
+check(
+  T.homeTable("7-9") === 9 &&
+    T.homeTable("2-7") === 2 &&
+    T.homeTable("6-8") === 6,
+  "home table",
+);
+assert.deepEqual(T.factTables("7-7"), [7]);
+assert.deepEqual(T.factTables("1-7"), [1, 7]);
+check(
+  T.localDateKey(new Date(2026, 9, 25, 23, 30)) === "2026-10-25",
+  "local date, not UTC",
+);
+check(
+  T.addDays("2026-10-31", 1) === "2026-11-01" &&
+    T.addDays("2026-12-31", 14) === "2027-01-14",
+  "addDays",
+);
 const fresh = T.normalizeTables();
-check(Object.values(fresh.facts).every((f) => f.state === "new" && f.seen === 0 && !f.everMastered), "fresh facts");
-check(Object.keys(fresh.probes).length === 10 && fresh.presented.length === 0, "fresh probes");
-check(T.normalizeTables({ facts: { "7-9": { state: "weird", seen: -3 } } }).facts["7-9"].state === "new", "invalid fact recovers");
+check(
+  Object.values(fresh.facts).every(
+    (f) => f.state === "new" && f.seen === 0 && !f.everMastered,
+  ),
+  "fresh facts",
+);
+check(
+  Object.keys(fresh.probes).length === 10 && fresh.presented.length === 0,
+  "fresh probes",
+);
+check(
+  T.normalizeTables({ facts: { "7-9": { state: "weird", seen: -3 } } }).facts[
+    "7-9"
+  ].state === "new",
+  "invalid fact recovers",
+);
 assert.deepEqual(T.normalizeTables(JSON.parse(JSON.stringify(fresh))), fresh);
-check(T.classifyOutcome("ask", 2999) === "fast" && T.classifyOutcome("ask", 3000) === "slow" &&
-  T.classifyOutcome("hint", 100) === "hint" && T.classifyOutcome("answer", 100) === "answer", "outcome thresholds");
+check(
+  T.classifyOutcome("ask", 2999) === "fast" &&
+    T.classifyOutcome("ask", 3000) === "slow" &&
+    T.classifyOutcome("hint", 100) === "hint" &&
+    T.classifyOutcome("answer", 100) === "answer",
+  "outcome thresholds",
+);
 // mastery: 3 fast on >= 2 different days
 let t = fresh;
 for (let i = 0; i < 3; i++) t = rec(t, "7-9", "fast", "2026-10-25");
-check(t.facts["7-9"].state === "practicing" && t.facts["7-9"].fast === 3, "3 fast on one day is not mastery");
+check(
+  t.facts["7-9"].state === "practicing" && t.facts["7-9"].fast === 3,
+  "3 fast on one day is not mastery",
+);
 t = rec(t, "7-9", "fast", "2026-10-26");
 const m = t.facts["7-9"];
-check(m.state === "mastered" && m.everMastered && m.reviewStep === 0 && m.nextReview === "2026-10-27", "mastered");
+check(
+  m.state === "mastered" &&
+    m.everMastered &&
+    m.reviewStep === 0 &&
+    m.nextReview === "2026-10-27",
+  "mastered",
+);
 // slow keeps the count; hint/answer reset it
-let u = rec(rec(rec(rec(fresh, "3-4", "fast", "2026-10-25"), "3-4", "slow", "2026-10-25"), "3-4", "fast", "2026-10-26"), "3-4", "fast", "2026-10-26");
-check(u.facts["3-4"].state === "mastered", "slow answers don't reset fast count");
-u = rec(rec(rec(fresh, "3-4", "fast", "2026-10-25"), "3-4", "hint", "2026-10-25"), "3-4", "fast", "2026-10-26");
-check(u.facts["3-4"].fast === 1 && u.facts["3-4"].fastDays.join() === "2026-10-26", "hint resets fast count");
+let u = rec(
+  rec(
+    rec(rec(fresh, "3-4", "fast", "2026-10-25"), "3-4", "slow", "2026-10-25"),
+    "3-4",
+    "fast",
+    "2026-10-26",
+  ),
+  "3-4",
+  "fast",
+  "2026-10-26",
+);
+check(
+  u.facts["3-4"].state === "mastered",
+  "slow answers don't reset fast count",
+);
+u = rec(
+  rec(rec(fresh, "3-4", "fast", "2026-10-25"), "3-4", "hint", "2026-10-25"),
+  "3-4",
+  "fast",
+  "2026-10-26",
+);
+check(
+  u.facts["3-4"].fast === 1 && u.facts["3-4"].fastDays.join() === "2026-10-26",
+  "hint resets fast count",
+);
 // spaced review 1, 3, 7, 14, 14
 t = rec(t, "7-9", "fast", "2026-10-26"); // same day, not due
-check(t.facts["7-9"].nextReview === "2026-10-27", "not due: schedule unchanged");
-for (const [day, next] of [["2026-10-27", "2026-10-30"], ["2026-10-30", "2026-11-06"], ["2026-11-06", "2026-11-20"], ["2026-11-20", "2026-12-04"]]) {
-  t = rec(t, "7-9", "fast", day); check(t.facts["7-9"].nextReview === next, "review step -> " + next);
+check(
+  t.facts["7-9"].nextReview === "2026-10-27",
+  "not due: schedule unchanged",
+);
+for (const [day, next] of [
+  ["2026-10-27", "2026-10-30"],
+  ["2026-10-30", "2026-11-06"],
+  ["2026-11-06", "2026-11-20"],
+  ["2026-11-20", "2026-12-04"],
+]) {
+  t = rec(t, "7-9", "fast", day);
+  check(t.facts["7-9"].nextReview === next, "review step -> " + next);
 }
-check(rec(t, "7-9", "slow", "2026-12-04").facts["7-9"].nextReview === "2026-12-18", "slow review keeps interval");
+check(
+  rec(t, "7-9", "slow", "2026-12-04").facts["7-9"].nextReview === "2026-12-18",
+  "slow review keeps interval",
+);
 const failed = rec(t, "7-9", "hint", "2026-12-04").facts["7-9"];
-check(failed.state === "practicing" && failed.everMastered && failed.nextReview === "" && failed.fast === 0, "failed review demotes");
+check(
+  failed.state === "practicing" &&
+    failed.everMastered &&
+    failed.nextReview === "" &&
+    failed.fast === 0,
+  "failed review demotes",
+);
 // probes
 let p = rec(fresh, "7-9", "hint", "2026-10-25", "probe");
 check(p.probes["9"].fail === 1 && !p.probes["9"].introduce, "one failed probe");
 p = rec(p, "4-9", "answer", "2026-10-25", "probe");
 check(p.probes["9"].introduce, "two failed probes -> table to introduce");
-check(rec(fresh, "7-9", "hint", "2026-10-25", "practice").probes["9"].fail === 0, "non-probe leaves probes alone");
-check(rec(fresh, "2-5", "fast", "2026-10-25", "probe").probes["2"].fast === 1, "fast probe counted on home table");
-const before = JSON.stringify(fresh); rec(fresh, "7-9", "fast", "2026-10-25"); check(JSON.stringify(fresh) === before, "pure");
-const avg = rec(rec(fresh, "2-2", "slow", "2026-10-25", "practice", 2000), "2-2", "slow", "2026-10-25", "practice", 4000);
+check(
+  rec(fresh, "7-9", "hint", "2026-10-25", "practice").probes["9"].fail === 0,
+  "non-probe leaves probes alone",
+);
+check(
+  rec(fresh, "2-5", "fast", "2026-10-25", "probe").probes["2"].fast === 1,
+  "fast probe counted on home table",
+);
+const before = JSON.stringify(fresh);
+rec(fresh, "7-9", "fast", "2026-10-25");
+check(JSON.stringify(fresh) === before, "pure");
+const avg = rec(
+  rec(fresh, "2-2", "slow", "2026-10-25", "practice", 2000),
+  "2-2",
+  "slow",
+  "2026-10-25",
+  "practice",
+  4000,
+);
 check(avg.facts["2-2"].avgMs === 2600, "moving average");
 ```
 
@@ -644,52 +965,153 @@ El ayudante es `rec(t, key, outcome, day, kind = "practice", elapsedMs = 1000)`,
 - [ ] **Paso 1: Pruebas que fallan** (semilla de azar como en `learning.test.js`; un ayudante `stateWith(spec)` arma un `tables` con los hechos en los estados indicados):
 
 ```js
-const valid = (r, total) => r.length === total && r.every((it, i) =>
-  T.factKey(it.a, it.b) === it.key && ["review", "new", "probe", "practice", "known"].includes(it.kind) &&
-  (i === 0 || r[i - 1].key !== it.key));
+const valid = (r, total) =>
+  r.length === total &&
+  r.every(
+    (it, i) =>
+      T.factKey(it.a, it.b) === it.key &&
+      ["review", "new", "probe", "practice", "known"].includes(it.kind) &&
+      (i === 0 || r[i - 1].key !== it.key),
+  );
 // random states x totals
-for (let n = 0; n < 300; n++) for (const total of [10, 15, 20, 25])
-  check(valid(T.buildTablesRound(randomTables(), "2026-11-01", total), total), "valid round");
+for (let n = 0; n < 300; n++)
+  for (const total of [10, 15, 20, 25])
+    check(
+      valid(T.buildTablesRound(randomTables(), "2026-11-01", total), total),
+      "valid round",
+    );
 // cold start
 const cold = T.buildTablesRound(T.normalizeTables(), "2026-11-01", 15);
-check(cold.every((it) => it.kind === "probe") && new Set(cold.map((i) => i.key)).size === 15, "cold start: 15 distinct probes");
-assert.deepEqual(new Set(cold.map((i) => i.key)), new Set(T.factKeys().slice(0, 15)));
+check(
+  cold.every((it) => it.kind === "probe") &&
+    new Set(cold.map((i) => i.key)).size === 15,
+  "cold start: 15 distinct probes",
+);
+assert.deepEqual(
+  new Set(cold.map((i) => i.key)),
+  new Set(T.factKeys().slice(0, 15)),
+);
 // introductions: table 2 to introduce, nothing practicing
-const intro = T.buildTablesRound(stateWith({ seen: "table1", introduce: [2] }), "2026-11-01", 15);
+const intro = T.buildTablesRound(
+  stateWith({ seen: "table1", introduce: [2] }),
+  "2026-11-01",
+  15,
+);
 const news = intro.filter((i) => i.kind === "new");
-check(news.length === 6 && ["2-2", "2-3"].every((k) => news.filter((i) => i.key === k).length === 3), "2 new facts × 3");
+check(
+  news.length === 6 &&
+    ["2-2", "2-3"].every((k) => news.filter((i) => i.key === k).length === 3),
+  "2 new facts × 3",
+);
 for (const k of ["2-2", "2-3"]) {
-  const pos = intro.map((it, i) => (it.key === k ? i : -1)).filter((i) => i >= 0);
+  const pos = intro
+    .map((it, i) => (it.key === k ? i : -1))
+    .filter((i) => i >= 0);
   check(pos[1] - pos[0] >= 2 && pos[2] - pos[1] >= 2, "new fact copies spaced");
 }
-check(intro.every((it) => it.kind !== "probe" || T.homeTable(it.key) !== 2), "introduced tables are not probed");
-check(T.buildTablesRound(stateWith({ practicing: 10, introduce: [2] }), "2026-11-01", 15).every((i) => i.kind !== "new"), "too many practicing -> no new");
+check(
+  intro.every((it) => it.kind !== "probe" || T.homeTable(it.key) !== 2),
+  "introduced tables are not probed",
+);
+check(
+  T.buildTablesRound(
+    stateWith({ practicing: 10, introduce: [2] }),
+    "2026-11-01",
+    15,
+  ).every((i) => i.kind !== "new"),
+  "too many practicing -> no new",
+);
 // reviews capped at 3, oldest first
-const rv = T.buildTablesRound(stateWith({ dueMastered: ["1-2@2026-10-01", "1-3@2026-10-02", "1-4@2026-10-03", "1-5@2026-10-04", "1-6@2026-10-05"] }), "2026-11-01", 15);
-assert.deepEqual(rv.filter((i) => i.kind === "review").map((i) => i.key).sort(), ["1-2", "1-3", "1-4"]);
+const rv = T.buildTablesRound(
+  stateWith({
+    dueMastered: [
+      "1-2@2026-10-01",
+      "1-3@2026-10-02",
+      "1-4@2026-10-03",
+      "1-5@2026-10-04",
+      "1-6@2026-10-05",
+    ],
+  }),
+  "2026-11-01",
+  15,
+);
+assert.deepEqual(
+  rv
+    .filter((i) => i.kind === "review")
+    .map((i) => i.key)
+    .sort(),
+  ["1-2", "1-3", "1-4"],
+);
 // fast table probed first
-const pri = T.buildTablesRound(stateWith({ seen: "table1", probes: { 5: { fast: 2, fail: 0 } } }), "2026-11-01", 15);
-check(T.homeTable(pri.find((i) => i.kind === "probe").key) === 5, "fast table probed first");
+const pri = T.buildTablesRound(
+  stateWith({ seen: "table1", probes: { 5: { fast: 2, fail: 0 } } }),
+  "2026-11-01",
+  15,
+);
+check(
+  T.homeTable(pri.find((i) => i.kind === "probe").key) === 5,
+  "fast table probed first",
+);
 // brother: everything mastered, nothing due / everything due
-check(valid(T.buildTablesRound(stateWith({ allMastered: true }), "2026-11-01", 15), 15), "all mastered round");
-check(T.buildTablesRound(stateWith({ allMastered: true, allDue: true }), "2026-11-01", 15).filter((i) => i.kind === "review").length === 3, "all due -> 3 reviews + known");
+check(
+  valid(
+    T.buildTablesRound(stateWith({ allMastered: true }), "2026-11-01", 15),
+    15,
+  ),
+  "all mastered round",
+);
+check(
+  T.buildTablesRound(
+    stateWith({ allMastered: true, allDue: true }),
+    "2026-11-01",
+    15,
+  ).filter((i) => i.kind === "review").length === 3,
+  "all due -> 3 reviews + known",
+);
 // orientation
 const seenOrient = new Set();
-for (let n = 0; n < 300; n++) T.buildTablesRound(stateWith({ practicing: ["7-9"] }), "2026-11-01", 15)
-  .filter((i) => i.key === "7-9").forEach((i) => seenOrient.add(i.a + "x" + i.b));
+for (let n = 0; n < 300; n++)
+  T.buildTablesRound(stateWith({ practicing: ["7-9"] }), "2026-11-01", 15)
+    .filter((i) => i.key === "7-9")
+    .forEach((i) => seenOrient.add(i.a + "x" + i.b));
 check(seenOrient.has("7x9") && seenOrient.has("9x7"), "asked both ways");
 // retries
-const r = T.factKeys().slice(0, 15).map((key) => ({ key, a: +key.split("-")[0], b: +key.split("-")[1], kind: "practice" }));
+const r = T.factKeys()
+  .slice(0, 15)
+  .map((key) => ({
+    key,
+    a: +key.split("-")[0],
+    b: +key.split("-")[1],
+    kind: "practice",
+  }));
 const r2 = T.scheduleRetry(r, 2);
-check(r2.length === 15 && r2[5].key === r[2].key && r2[5].retry && r2[6] === r[5] && r.length === 15 && !r[5].retry, "retry 3 later");
-const clash = r.slice(); clash[4] = r[2];
-check(T.scheduleRetry(clash, 2)[6].key === r[2].key, "retry 4 later when 3 would sit next to itself");
-check(T.scheduleRetry(r, 12)[14].key === r[12].key, "late retry clamps to last station");
+check(
+  r2.length === 15 &&
+    r2[5].key === r[2].key &&
+    r2[5].retry &&
+    r2[6] === r[5] &&
+    r.length === 15 &&
+    !r[5].retry,
+  "retry 3 later",
+);
+const clash = r.slice();
+clash[4] = r[2];
+check(
+  T.scheduleRetry(clash, 2)[6].key === r[2].key,
+  "retry 4 later when 3 would sit next to itself",
+);
+check(
+  T.scheduleRetry(r, 12)[14].key === r[12].key,
+  "late retry clamps to last station",
+);
 assert.deepEqual(T.scheduleRetry(r, 14), r);
 // presentation
 const tp = T.tablesToPresent(intro, stateWith({ introduce: [2] }));
 assert.deepEqual(tp, [2]);
-assert.deepEqual(T.tablesToPresent(intro, T.markPresented(stateWith({ introduce: [2] }), 2)), []);
+assert.deepEqual(
+  T.tablesToPresent(intro, T.markPresented(stateWith({ introduce: [2] }), 2)),
+  [],
+);
 ```
 
 - [ ] **Paso 2: Ejecutar** → falla (`T.buildTablesRound is not a function`).
@@ -713,16 +1135,16 @@ assert.deepEqual(T.tablesToPresent(intro, T.markPresented(stateWith({ introduce:
   - Si ninguno está en la lista (los dos son 6, 7 u 8), se usa `trick_split` con `a` tal como se muestra.
   - **El truco nunca dice el resultado.**
 
-| `key`         | `vars`                            | `es`                                                              | `en`                                                         |
-| ------------- | --------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------ |
-| `trick_1`     | `{ n }`                           | "{n} × 1 es un solo grupo de {n}."                                | "{n} × 1 is just one group of {n}."                          |
-| `trick_10`    | `{ n }`                           | "Por 10: pon un cero detrás del {n}."                             | "Times 10: put a zero after {n}."                            |
-| `trick_9`     | `{ n, tens: n*10 }`               | "{n} × 10 = {tens}, menos {n}."                                   | "{n} × 10 = {tens}, minus {n}."                              |
-| `trick_2`     | `{ n }`                           | "Es el doble: {n} + {n}."                                         | "It's double: {n} + {n}."                                    |
-| `trick_5`     | `{ n, tens: n*10 }`               | "{n} × 10 = {tens}, y luego la mitad."                            | "{n} × 10 = {tens}, then half of it."                        |
-| `trick_4`     | `{ n, double: n*2 }`              | "El doble del doble: {n} × 2 = {double}, y otra vez el doble."    | "Double, then double again: {n} × 2 = {double}, then again." |
-| `trick_3`     | `{ n, double: n*2 }`              | "{n} × 2 = {double}, más {n}."                                    | "{n} × 2 = {double}, plus {n}."                              |
-| `trick_split` | `{ a, five: a*5, rest: b-5 }`     | "{a} × 5 = {five}, más {a} × {rest}."                             | "{a} × 5 = {five}, plus {a} × {rest}."                       |
+| `key`         | `vars`                        | `es`                                                           | `en`                                                         |
+| ------------- | ----------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
+| `trick_1`     | `{ n }`                       | "{n} × 1 es un solo grupo de {n}."                             | "{n} × 1 is just one group of {n}."                          |
+| `trick_10`    | `{ n }`                       | "Por 10: pon un cero detrás del {n}."                          | "Times 10: put a zero after {n}."                            |
+| `trick_9`     | `{ n, tens: n*10 }`           | "{n} × 10 = {tens}, menos {n}."                                | "{n} × 10 = {tens}, minus {n}."                              |
+| `trick_2`     | `{ n }`                       | "Es el doble: {n} + {n}."                                      | "It's double: {n} + {n}."                                    |
+| `trick_5`     | `{ n, tens: n*10 }`           | "{n} × 10 = {tens}, y luego la mitad."                         | "{n} × 10 = {tens}, then half of it."                        |
+| `trick_4`     | `{ n, double: n*2 }`          | "El doble del doble: {n} × 2 = {double}, y otra vez el doble." | "Double, then double again: {n} × 2 = {double}, then again." |
+| `trick_3`     | `{ n, double: n*2 }`          | "{n} × 2 = {double}, más {n}."                                 | "{n} × 2 = {double}, plus {n}."                              |
+| `trick_split` | `{ a, five: a*5, rest: b-5 }` | "{a} × 5 = {five}, más {a} × {rest}."                          | "{a} × 5 = {five}, plus {a} × {rest}."                       |
 
 - `albumCells(tables) -> cell[100]`: por filas, `a` de 1 a 10 y `b` de 1 a 10. Cada casilla es `{ a, b, key, state }`, y `state` vale:
   - `"mastered"` si la operación está dominada;
@@ -737,34 +1159,80 @@ assert.deepEqual(T.tablesToPresent(intro, T.markPresented(stateWith({ introduce:
 - [ ] **Paso 1: Pruebas que fallan:**
 
 ```js
-assert.deepEqual(T.tablesTrick(7, 9), { key: "trick_9", vars: { n: 7, tens: 70 } }); // spec example "7 × 10 = 70, menos 7"
+assert.deepEqual(T.tablesTrick(7, 9), {
+  key: "trick_9",
+  vars: { n: 7, tens: 70 },
+}); // spec example "7 × 10 = 70, menos 7"
 assert.deepEqual(T.tablesTrick(9, 7), T.tablesTrick(7, 9));
-assert.deepEqual(T.tablesTrick(2, 9), { key: "trick_9", vars: { n: 2, tens: 20 } });
+assert.deepEqual(T.tablesTrick(2, 9), {
+  key: "trick_9",
+  vars: { n: 2, tens: 20 },
+});
 assert.deepEqual(T.tablesTrick(1, 1), { key: "trick_1", vars: { n: 1 } });
 assert.deepEqual(T.tablesTrick(10, 10), { key: "trick_10", vars: { n: 10 } });
-assert.deepEqual(T.tablesTrick(7, 8), { key: "trick_split", vars: { a: 7, five: 35, rest: 3 } });
-assert.deepEqual(T.tablesTrick(8, 7), { key: "trick_split", vars: { a: 8, five: 40, rest: 2 } });
-assert.deepEqual(T.tablesTrick(6, 6), { key: "trick_split", vars: { a: 6, five: 30, rest: 1 } });
+assert.deepEqual(T.tablesTrick(7, 8), {
+  key: "trick_split",
+  vars: { a: 7, five: 35, rest: 3 },
+});
+assert.deepEqual(T.tablesTrick(8, 7), {
+  key: "trick_split",
+  vars: { a: 8, five: 40, rest: 2 },
+});
+assert.deepEqual(T.tablesTrick(6, 6), {
+  key: "trick_split",
+  vars: { a: 6, five: 30, rest: 1 },
+});
 const app = require("../app.js");
-for (let a = 1; a <= 10; a++) for (let b = 1; b <= 10; b++) {
-  const tr = T.tablesTrick(a, b);
-  check(["es", "en"].every((l) => typeof app.I18N[l][tr.key] === "string") &&
-    Object.values(tr.vars).every(Number.isFinite), "trick text exists in es and en");
-  // ×1 inherently names the answer; every other trick leaves the last step to the child
-  check(tr.key === "trick_1" || Object.values(tr.vars).every((v) => v !== a * b), "trick does not give the answer");
-}
+for (let a = 1; a <= 10; a++)
+  for (let b = 1; b <= 10; b++) {
+    const tr = T.tablesTrick(a, b);
+    check(
+      ["es", "en"].every((l) => typeof app.I18N[l][tr.key] === "string") &&
+        Object.values(tr.vars).every(Number.isFinite),
+      "trick text exists in es and en",
+    );
+    // ×1 inherently names the answer; every other trick leaves the last step to the child
+    check(
+      tr.key === "trick_1" || Object.values(tr.vars).every((v) => v !== a * b),
+      "trick does not give the answer",
+    );
+  }
 const cells = T.albumCells(someTables); // 7-9 mastered, 3-4 practicing fast 1, 2-2 practicing fast 0
-check(cells.length === 100 && cells[0].a === 1 && cells[0].b === 1 && cells[99].a === 10, "100 cells row-major");
+check(
+  cells.length === 100 &&
+    cells[0].a === 1 &&
+    cells[0].b === 1 &&
+    cells[99].a === 10,
+  "100 cells row-major",
+);
 const cell = (a, b) => cells[(a - 1) * 10 + (b - 1)];
-check(cell(7, 9).state === "mastered" && cell(9, 7).state === "mastered", "both cells of one fact");
-check(cell(3, 4).state === "almost" && cell(2, 2).state === "practicing" && cell(5, 5).state === "new", "album states");
+check(
+  cell(7, 9).state === "mastered" && cell(9, 7).state === "mastered",
+  "both cells of one fact",
+);
+check(
+  cell(3, 4).state === "almost" &&
+    cell(2, 2).state === "practicing" &&
+    cell(5, 5).state === "new",
+  "album states",
+);
 // fill: 7-7 counts once for table 7; 1-7 counts for 1 and 7; never decreases
 let f = masterFacts(T.normalizeTables(), ["7-7", "1-7"]);
-check(T.characterFill(f, 7) === 2 && T.characterFill(f, 1) === 1, "fill counts");
+check(
+  T.characterFill(f, 7) === 2 && T.characterFill(f, 1) === 1,
+  "fill counts",
+);
 f = rec(f, "1-7", "hint", "2026-11-02");
 check(T.characterFill(f, 7) === 2, "fill never drops");
-check(T.fillMilestone(0, 1) === "first" && T.fillMilestone(4, 5) === "half" && T.fillMilestone(7, 9) === "almost" &&
-  T.fillMilestone(9, 10) === "full" && T.fillMilestone(5, 5) === null && T.fillMilestone(2, 3) === null, "milestones");
+check(
+  T.fillMilestone(0, 1) === "first" &&
+    T.fillMilestone(4, 5) === "half" &&
+    T.fillMilestone(7, 9) === "almost" &&
+    T.fillMilestone(9, 10) === "full" &&
+    T.fillMilestone(5, 5) === null &&
+    T.fillMilestone(2, 3) === null,
+  "milestones",
+);
 assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
 ```
 
@@ -807,6 +1275,7 @@ assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
     - `[data-action="switch-player"]`.
 
     `refreshMenuStats` también rellena `#home-coins`.
+
   - **`startTablesRun()`.** Crea `state.run` con los mismos campos que `startRun` y además:
     - `kind: "tables"`;
     - `round: Tables.buildTablesRound(state.profile.tables, today, state.settings.tableStations)`;
@@ -815,6 +1284,7 @@ assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
     - `stage: "ask"`.
 
     `total` es `state.settings.tableStations`. Oculta `#powerups` (`startRun` lo vuelve a mostrar) y llama a `nextTablesStation()`. `state.lastRunKind` guarda `"tables"` o `"classic"`, y `play-again` repite el mismo tipo.
+
   - **Posiciones.** `run.cursor` es la posición en `run.round` y `run.index` es la estación del mapa. Sin retroceso avanzan juntos; la Tarea 9 los separa.
   - **`nextTablesStation()`:**
     - Arma `activeTask = { type: "mul", operands: [a, b], text: a + " × " + b + " =", answer: a * b, choice: false, timed: false, item }`.
@@ -835,6 +1305,7 @@ assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
       - en `answer`, solo se vacía la entrada.
 
       **No se llama a `recordLearning`.** El registro antiguo por operación general no se toca en modo tablas.
+
   - **`rewardCorrect(firstTry)`.** Se extrae de `onCorrect`: racha, combo, estrellas, monedas, bonos, mensajes, lorito, vibración, sonido e hitos cada 5. El cálculo no cambia. `onCorrect` la llama.
   - **`enterHintStage()`:**
     - Pone `stage = "hint"` y limpia la entrada.
@@ -849,6 +1320,7 @@ assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
     - `#review-box` se oculta.
 
     En las rondas clásicas se restauran `lbl_accuracy` y la línea oculta.
+
 - Textos nuevos (`es` / `en`):
   - `home_greeting`: "¡Hola, {name}! ¿Seguimos?" / "Hi, {name}! Shall we keep going?"
   - `btn_continue_learning`: "Seguir aprendiendo" / "Keep learning"
@@ -873,56 +1345,128 @@ assert.deepEqual(T.newlyMastered(T.normalizeTables(), f).sort(), ["7-7"]);
 
 ```js
 await pickProfile("Ana");
-check(await page.locator("#screen-tables-home").evaluate((el) => el.classList.contains("is-active")) &&
-  (await page.locator("#home-greeting").textContent()).includes("Ana"), "tables home for tables profile");
+check(
+  (await page
+    .locator("#screen-tables-home")
+    .evaluate((el) => el.classList.contains("is-active"))) &&
+    (await page.locator("#home-greeting").textContent()).includes("Ana"),
+  "tables home for tables profile",
+);
 await page.locator('[data-action="start-tables"]').click();
-check((await page.locator("#numpad .key").count()) === 12 && !(await page.locator("#choices").isVisible()) &&
-  !(await page.locator("#powerups").isVisible()) && !(await page.locator("#timer-ring").isVisible()), "typing, no tray, no timer");
-check((await page.locator("#map-progress").textContent()).includes(" de 10"), "profile station count");
+check(
+  (await page.locator("#numpad .key").count()) === 12 &&
+    !(await page.locator("#choices").isVisible()) &&
+    !(await page.locator("#powerups").isVisible()) &&
+    !(await page.locator("#timer-ring").isVisible()),
+  "typing, no tray, no timer",
+);
+check(
+  (await page.locator("#map-progress").textContent()).includes(" de 10"),
+  "profile station count",
+);
 // 1) fast answer is recorded as fast
-let q = await current(); await pressAnswer(q.answer); await page.clock.runFor(800);
+let q = await current();
+await pressAnswer(q.answer);
+await page.clock.runFor(800);
 check((await fact(factOf(q))).fast === 1, "fast answer recorded");
 // 2) silence: no hint before 5 s, hint at 5 s with a×b blocks
-q = await current(); await page.clock.runFor(4900);
+q = await current();
+await page.clock.runFor(4900);
 check(!(await page.locator("#hint").isVisible()), "no hint before 5 s");
 await page.clock.runFor(200);
-check(await page.locator("#hint").isVisible() && (await page.locator("#hint .block").count()) === q.answer, "hint blocks at 5 s");
+check(
+  (await page.locator("#hint").isVisible()) &&
+    (await page.locator("#hint .block").count()) === q.answer,
+  "hint blocks at 5 s",
+);
 // 3) answer shown 10 s later; a wrong entry there costs nothing; then the fact returns 3-4 stations later
 await page.clock.runFor(10000);
-check((await page.locator("#hint").textContent()).includes("= " + q.answer), "answer after +10 s");
+check(
+  (await page.locator("#hint").textContent()).includes("= " + q.answer),
+  "answer after +10 s",
+);
 const progressBefore = await page.locator("#map-progress").textContent();
 await pressAnswer(q.answer === 1 ? 2 : 1);
-check((await page.locator("#map-progress").textContent()) === progressBefore, "wrong in answer stage: same station");
-await pressAnswer(q.answer); await page.clock.runFor(800);
+check(
+  (await page.locator("#map-progress").textContent()) === progressBefore,
+  "wrong in answer stage: same station",
+);
+await pressAnswer(q.answer);
+await page.clock.runFor(800);
 check((await fact(factOf(q))).fast === 0, "needed answer resets fast count");
-const upcoming = []; for (let i = 0; i < 4; i++) { const n = await current(); upcoming.push(factOf(n)); await pressAnswer(n.answer); await page.clock.runFor(800); }
-check(upcoming.slice(2).includes(factOf(q)), "missed fact returns 3-4 stations later");
+const upcoming = [];
+for (let i = 0; i < 4; i++) {
+  const n = await current();
+  upcoming.push(factOf(n));
+  await pressAnswer(n.answer);
+  await page.clock.runFor(800);
+}
+check(
+  upcoming.slice(2).includes(factOf(q)),
+  "missed fact returns 3-4 stations later",
+);
 // 4) wrong before the hint -> hint at once; no auto-submit
-q = await current(); await pressAnswer(q.answer === 1 ? 2 : 1);
-check(await page.locator("#hint").isVisible(), "wrong answer shows hint immediately");
-for (const d of String(q.answer)) await page.locator("#numpad .key", { hasText: new RegExp("^" + d + "$") }).click();
+q = await current();
+await pressAnswer(q.answer === 1 ? 2 : 1);
+check(
+  await page.locator("#hint").isVisible(),
+  "wrong answer shows hint immediately",
+);
+for (const d of String(q.answer))
+  await page
+    .locator("#numpad .key", { hasText: new RegExp("^" + d + "$") })
+    .click();
 await page.clock.runFor(3000);
 check((await current()).text === q.text, "no auto-submit");
-await page.locator('[data-action="check"]').click(); await page.clock.runFor(800);
+await page.locator('[data-action="check"]').click();
+await page.clock.runFor(800);
 // 5) pause freezes the 5 s wait and is not counted as slowness
-q = await current(); await page.clock.runFor(1000);
-await page.locator('[data-action="pause"]').click(); await page.clock.runFor(20000); await page.locator('[data-action="resume"]').click();
+q = await current();
+await page.clock.runFor(1000);
+await page.locator('[data-action="pause"]').click();
+await page.clock.runFor(20000);
+await page.locator('[data-action="resume"]').click();
 check(!(await page.locator("#hint").isVisible()), "pause freezes hint wait");
-const fastBefore = (await fact(factOf(q))).fast; await pressAnswer(q.answer); await page.clock.runFor(800);
-check((await fact(factOf(q))).fast === fastBefore + 1, "paused time not counted");
+const fastBefore = (await fact(factOf(q))).fast;
+await pressAnswer(q.answer);
+await page.clock.runFor(800);
+check(
+  (await fact(factOf(q))).fast === fastBefore + 1,
+  "paused time not counted",
+);
 // 6) quitting during a wait leaves no timer behind
-await page.clock.runFor(1000); await quit(); await page.clock.runFor(30000);
-check(await page.locator("#screen-tables-home").evaluate((el) => el.classList.contains("is-active")) &&
-  !(await page.locator("#hint").isVisible()), "no stray timers after quit");
+await page.clock.runFor(1000);
+await quit();
+await page.clock.runFor(30000);
+check(
+  (await page
+    .locator("#screen-tables-home")
+    .evaluate((el) => el.classList.contains("is-active"))) &&
+    !(await page.locator("#hint").isVisible()),
+  "no stray timers after quit",
+);
 // 7) a full round: never moves back, summary shows progress not accuracy
 await page.locator('[data-action="start-tables"]').click();
 // answer all 10 stations correctly (some after the hint); "Estación n" never decreases
-check((await page.locator("#sum-accuracy-lbl").textContent()) === "Dominadas hoy" &&
-  !(await page.locator("#review-box").isVisible()) && await page.locator("#sum-progress-line").isVisible(), "tables summary");
+check(
+  (await page.locator("#sum-accuracy-lbl").textContent()) === "Dominadas hoy" &&
+    !(await page.locator("#review-box").isVisible()) &&
+    (await page.locator("#sum-progress-line").isVisible()),
+  "tables summary",
+);
 // 8) phone width
-await page.setViewportSize({ width: 390, height: 844 }); await page.locator('[data-action="play-again"]').click();
-check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "tables game fits 390 px");
-await page.screenshot({ path: path.join(root, ".cache", "mobile-tables.png"), fullPage: true });
+await page.setViewportSize({ width: 390, height: 844 });
+await page.locator('[data-action="play-again"]').click();
+check(
+  await page.evaluate(
+    () => document.documentElement.scrollWidth <= window.innerWidth,
+  ),
+  "tables game fits 390 px",
+);
+await page.screenshot({
+  path: path.join(root, ".cache", "mobile-tables.png"),
+  fullPage: true,
+});
 ```
 
 `current()` debe devolver también `text`, la pregunta tal como se ve.
@@ -1009,20 +1553,74 @@ await page.screenshot({ path: path.join(root, ".cache", "mobile-tables.png"), fu
 
 ```js
 const C = require("../characters.js");
-check(C.CHARACTERS.length === 10 && C.CHARACTERS.every((c, i) => c.table === i + 1), "one character per table 1-10");
-check(new Set(C.CHARACTERS.map((c) => c.name)).size === 10 && new Set(C.CHARACTERS.map((c) => c.color)).size === 10, "unique names and colours");
-const numberWords = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
-  "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez"];
-check(C.CHARACTERS.every((c) => !numberWords.includes(c.name.toLowerCase())), "own names, not number names");
-check(new Set(C.CHARACTERS.map((c) => JSON.stringify(c.melody))).size === 10 &&
-  C.CHARACTERS.every((c) => c.melody.length >= 3 && c.melody.length <= 6 &&
-    c.melody.every(([f, ms]) => f >= 200 && f <= 1200 && ms >= 80 && ms <= 400)), "own short melodies");
+check(
+  C.CHARACTERS.length === 10 && C.CHARACTERS.every((c, i) => c.table === i + 1),
+  "one character per table 1-10",
+);
+check(
+  new Set(C.CHARACTERS.map((c) => c.name)).size === 10 &&
+    new Set(C.CHARACTERS.map((c) => c.color)).size === 10,
+  "unique names and colours",
+);
+const numberWords = [
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "uno",
+  "dos",
+  "tres",
+  "cuatro",
+  "cinco",
+  "seis",
+  "siete",
+  "ocho",
+  "nueve",
+  "diez",
+];
+check(
+  C.CHARACTERS.every((c) => !numberWords.includes(c.name.toLowerCase())),
+  "own names, not number names",
+);
+check(
+  new Set(C.CHARACTERS.map((c) => JSON.stringify(c.melody))).size === 10 &&
+    C.CHARACTERS.every(
+      (c) =>
+        c.melody.length >= 3 &&
+        c.melody.length <= 6 &&
+        c.melody.every(
+          ([f, ms]) => f >= 200 && f <= 1200 && ms >= 80 && ms <= 400,
+        ),
+    ),
+  "own short melodies",
+);
 const svg = C.characterSvg(7, 4, "none");
 const count = (s, needle) => s.split(needle).length - 1;
-check(svg.startsWith("<svg") && svg.includes('aria-hidden="true"') && count(svg, "cb cb--empty") === 7 &&
-  count(svg, "cb cb--fill") === 7 && svg.includes('data-fill="4"') && !svg.includes("acc-"), "character svg");
-check(C.characterSvg(3, 99).includes('data-fill="10"') && C.characterSvg(3, -1).includes('data-fill="0"'), "fill clamped");
-check(C.characterSvg(1, 0, "crown").includes('class="acc acc-crown"') && !C.characterSvg(1, 0, "cape").includes("acc-"), "accessories");
+check(
+  svg.startsWith("<svg") &&
+    svg.includes('aria-hidden="true"') &&
+    count(svg, "cb cb--empty") === 7 &&
+    count(svg, "cb cb--fill") === 7 &&
+    svg.includes('data-fill="4"') &&
+    !svg.includes("acc-"),
+  "character svg",
+);
+check(
+  C.characterSvg(3, 99).includes('data-fill="10"') &&
+    C.characterSvg(3, -1).includes('data-fill="0"'),
+  "fill clamped",
+);
+check(
+  C.characterSvg(1, 0, "crown").includes('class="acc acc-crown"') &&
+    !C.characterSvg(1, 0, "cape").includes("acc-"),
+  "accessories",
+);
 ```
 
 - [ ] **Paso 2: Prueba de navegador que falla** (contexto aparte, con `page.clock.install({ time: new Date(2026, 9, 25, 10, 0) })`):
@@ -1114,9 +1712,11 @@ check(C.characterSvg(1, 0, "crown").includes('class="acc acc-crown"') && !C.char
     - los botones `[data-action="intro-replay"]` y `[data-action="intro-done"]` (`btn_start`).
 
     Los pasos avanzan con temporizadores según `ms`, aunque la música esté apagada (el conteo visual siempre se ve). `intro-done` limpia los temporizadores, oculta el overlay y llama a `onDone`. `goHome` y `goToProfiles` también lo limpian.
+
   - **Al empezar una ronda:** `startTablesRun` calcula `Tables.tablesToPresent(run.round, tables)`. Si no está vacío, presenta cada tabla en orden antes de la primera estación. Al terminar cada una, `state.profile.tables = Tables.markPresented(…)` y `saveProfiles()`. Si se sale a mitad, la presentación se repite la próxima vez.
   - **A pedido:** en el inicio, al pulsar `.char-card`, se llama a `showTableIntro(table, renderHomeCharacters)`, sin marcar nada. Esto reemplaza el `char_status` de la Tarea 10, que pasa al `aria-label` de la tarjeta.
   - **Nunca durante la práctica:** `showTableIntro` no se llama desde ninguna función de estación.
+
 - Textos nuevos (`es` / `en`):
   - `intro_title`: "Conoce la tabla del {n}" / "Meet the {n} times table"
   - `btn_replay`: "Otra vez" / "Again"
@@ -1152,18 +1752,18 @@ check(C.characterSvg(1, 0, "crown").includes('class="acc acc-crown"') && !C.char
 
 - `SHOP_COSMETICS` (exportado), `{ id, kind, value, price, icon, es, en }`. La economía es de unas 20 monedas por ronda de 15:
 
-| id              | kind        | value     | precio | icono | es        | en        |
-| --------------- | ----------- | --------- | ------ | ----- | --------- | --------- |
-| `acc-hat`       | `accessory` | `hat`     | 40     | 🎩    | Sombrero  | Top hat   |
-| `acc-glasses`   | `accessory` | `glasses` | 50     | 👓    | Gafas     | Glasses   |
-| `mel-marimba`   | `melody`    | `marimba` | 50     | 🎶    | Marimba   | Marimba   |
-| `theme-ocean`   | `theme`     | `ocean`   | 60     | 🌊    | Océano    | Ocean     |
-| `theme-forest`  | `theme`     | `forest`  | 60     | 🌲    | Bosque    | Forest    |
-| `acc-scarf`     | `accessory` | `scarf`   | 60     | 🧣    | Bufanda   | Scarf     |
-| `mel-fanfare`   | `melody`    | `fanfare` | 80     | 🎺    | Fanfarria | Fanfare   |
-| `theme-sunset`  | `theme`     | `sunset`  | 90     | 🌅    | Atardecer | Sunset    |
-| `acc-crown`     | `accessory` | `crown`   | 120    | 👑    | Corona    | Crown     |
-| `theme-galaxy`  | `theme`     | `galaxy`  | 150    | 🌌    | Galaxia   | Galaxy    |
+| id             | kind        | value     | precio | icono | es        | en      |
+| -------------- | ----------- | --------- | ------ | ----- | --------- | ------- |
+| `acc-hat`      | `accessory` | `hat`     | 40     | 🎩    | Sombrero  | Top hat |
+| `acc-glasses`  | `accessory` | `glasses` | 50     | 👓    | Gafas     | Glasses |
+| `mel-marimba`  | `melody`    | `marimba` | 50     | 🎶    | Marimba   | Marimba |
+| `theme-ocean`  | `theme`     | `ocean`   | 60     | 🌊    | Océano    | Ocean   |
+| `theme-forest` | `theme`     | `forest`  | 60     | 🌲    | Bosque    | Forest  |
+| `acc-scarf`    | `accessory` | `scarf`   | 60     | 🧣    | Bufanda   | Scarf   |
+| `mel-fanfare`  | `melody`    | `fanfare` | 80     | 🎺    | Fanfarria | Fanfare |
+| `theme-sunset` | `theme`     | `sunset`  | 90     | 🌅    | Atardecer | Sunset  |
+| `acc-crown`    | `accessory` | `crown`   | 120    | 👑    | Corona    | Crown   |
+| `theme-galaxy` | `theme`     | `galaxy`  | 150    | 🌌    | Galaxia   | Galaxy  |
 
 - `VICTORY_MELODIES = { classic: <las notas actuales de playVictoryMelody>, marimba: [...], fanfare: [...] }` (exportado).
 - **Progreso.** `progress.cosmetics: []` (ids comprados) y `progress.equipped: { theme: "classic", accessory: "none", melody: "classic" }`.
@@ -1189,15 +1789,39 @@ check(C.characterSvg(1, 0, "crown").includes('class="acc acc-crown"') && !C.char
 - [ ] **Paso 1: Pruebas unitarias que fallan** (`tests/profiles.test.js`):
 
 ```js
-check(app.SHOP_COSMETICS.length === 10 && new Set(app.SHOP_COSMETICS.map((c) => c.id)).size === 10 &&
-  app.SHOP_COSMETICS.every((c) => ["theme", "accessory", "melody"].includes(c.kind) && c.price >= 40 && c.price <= 150 && c.es && c.en),
-  "cosmetic catalogue");
-check(app.SHOP_COSMETICS.filter((c) => c.kind === "melody").every((c) => Array.isArray(app.VICTORY_MELODIES[c.value])) &&
-  Array.isArray(app.VICTORY_MELODIES.classic), "melodies exist");
-assert.deepEqual(app.defaultProgress().equipped, { theme: "classic", accessory: "none", melody: "classic" });
-const eq = (cosmetics, equipped) => app.normalizeProfile({ id: "p1", progress: { cosmetics, equipped } }).progress.equipped;
-check(eq([], { theme: "ocean" }).theme === "classic" && eq(["theme-ocean"], { theme: "ocean" }).theme === "ocean" &&
-  eq(["acc-crown"], { accessory: "cape" }).accessory === "none", "equipped must be owned");
+check(
+  app.SHOP_COSMETICS.length === 10 &&
+    new Set(app.SHOP_COSMETICS.map((c) => c.id)).size === 10 &&
+    app.SHOP_COSMETICS.every(
+      (c) =>
+        ["theme", "accessory", "melody"].includes(c.kind) &&
+        c.price >= 40 &&
+        c.price <= 150 &&
+        c.es &&
+        c.en,
+    ),
+  "cosmetic catalogue",
+);
+check(
+  app.SHOP_COSMETICS.filter((c) => c.kind === "melody").every((c) =>
+    Array.isArray(app.VICTORY_MELODIES[c.value]),
+  ) && Array.isArray(app.VICTORY_MELODIES.classic),
+  "melodies exist",
+);
+assert.deepEqual(app.defaultProgress().equipped, {
+  theme: "classic",
+  accessory: "none",
+  melody: "classic",
+});
+const eq = (cosmetics, equipped) =>
+  app.normalizeProfile({ id: "p1", progress: { cosmetics, equipped } }).progress
+    .equipped;
+check(
+  eq([], { theme: "ocean" }).theme === "classic" &&
+    eq(["theme-ocean"], { theme: "ocean" }).theme === "ocean" &&
+    eq(["acc-crown"], { accessory: "cape" }).accessory === "none",
+  "equipped must be owned",
+);
 ```
 
 - [ ] **Paso 2: Pruebas de navegador que fallan:**
@@ -1242,5 +1866,6 @@ check(eq([], { theme: "ocean" }).theme === "classic" && eq(["theme-ocean"], { th
   - Que la zona de padres pide la multiplicación.
 
   Anotar en el informe lo que se vio.
+
 - [ ] **Paso 7: Commit.** `git add -A && git commit -m "docs: profiles and tables mode in changelog, readme and backlog"`
 - [ ] **Paso 8: Integrar la rama** con la skill `superpowers:finishing-a-development-branch`. Al hacer merge a `main` se publica en GitHub Pages; confirmar con el usuario antes.
