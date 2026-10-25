@@ -542,6 +542,89 @@ function markPresented(tables, table) {
   return next;
 }
 
+// ---- Hint tricks, album and character fill ----
+
+var TRICK_ORDER = [1, 10, 9, 2, 5, 4, 3];
+
+// Hint for a x b: names a method, never the result.
+function tablesTrick(a, b) {
+  for (var i = 0; i < TRICK_ORDER.length; i++) {
+    var p = TRICK_ORDER[i];
+    if (a !== p && b !== p) continue;
+    var n = a === p ? b : a;
+    switch (p) {
+      case 1:
+        return { key: "trick_1", vars: { n: n } };
+      case 10:
+        return { key: "trick_10", vars: { n: n } };
+      case 9:
+        return { key: "trick_9", vars: { n: n, tens: n * 10 } };
+      case 2:
+        return { key: "trick_2", vars: { n: n } };
+      case 5:
+        return { key: "trick_5", vars: { n: n, tens: n * 10 } };
+      case 4:
+        return { key: "trick_4", vars: { n: n, double: n * 2 } };
+      default:
+        return { key: "trick_3", vars: { n: n, double: n * 2 } };
+    }
+  }
+  return { key: "trick_split", vars: { a: a, five: a * 5, rest: b - 5 } };
+}
+
+// 100 cells, row-major (a 1..10, b 1..10), for the parents' album.
+function albumCells(tables) {
+  var cells = [];
+  for (var a = 1; a <= 10; a++) {
+    for (var b = 1; b <= 10; b++) {
+      var key = factKey(a, b);
+      var fact = tables.facts[key];
+      var state = "new";
+      if (fact.state === "mastered") state = "mastered";
+      else if (fact.state === "practicing")
+        state = fact.fast >= 1 ? "almost" : "practicing";
+      cells.push({ a: a, b: b, key: key, state: state });
+    }
+  }
+  return cells;
+}
+
+// How many of the 10 facts with this factor were ever mastered (0..10).
+function characterFill(tables, table) {
+  var count = 0;
+  for (var n = 1; n <= 10; n++) {
+    if (tables.facts[factKey(table, n)].everMastered) count++;
+  }
+  return count;
+}
+
+var FILL_MILESTONES = [
+  [1, "first"],
+  [5, "half"],
+  [8, "almost"],
+  [10, "full"],
+];
+
+// Highest milestone crossed going from `before` to `after`.
+function fillMilestone(before, after) {
+  var found = null;
+  for (var i = 0; i < FILL_MILESTONES.length; i++) {
+    var m = FILL_MILESTONES[i];
+    if (before < m[0] && m[0] <= after) found = m[1];
+  }
+  return found;
+}
+
+// Keys mastered in `after` that were not in `before`.
+function newlyMastered(before, after) {
+  return factKeys().filter(function (k) {
+    return (
+      after.facts[k].state === "mastered" &&
+      before.facts[k].state !== "mastered"
+    );
+  });
+}
+
 var TablesEngine = {
   TABLE_ORDER: TABLE_ORDER,
   FAST_MS: FAST_MS,
@@ -571,6 +654,12 @@ var TablesEngine = {
   scheduleRetry: scheduleRetry,
   tablesToPresent: tablesToPresent,
   markPresented: markPresented,
+  tablesTrick: tablesTrick,
+  albumCells: albumCells,
+  characterFill: characterFill,
+  FILL_MILESTONES: FILL_MILESTONES,
+  fillMilestone: fillMilestone,
+  newlyMastered: newlyMastered,
 };
 
 if (typeof module !== "undefined" && module.exports) {
