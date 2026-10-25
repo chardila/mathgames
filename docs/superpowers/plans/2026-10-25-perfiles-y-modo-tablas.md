@@ -947,4 +947,281 @@ await page.screenshot({ path: path.join(root, ".cache", "mobile-tables.png"), fu
 
 ---
 
-<!-- TAREAS -->
+## Fase D · Personajes y álbum
+
+### Tarea 10: `characters.js`, personajes en el inicio y anuncios del lorito
+
+**Archivos:**
+
+- Crear: `characters.js`, `tests/characters.test.js`
+- Modificar:
+  - `index.html` (`<script src="characters.js" defer></script>` entre `tables.js` y `app.js`)
+  - `service-worker.js` (`"./characters.js"` en la precaché)
+  - `tests/offline.test.js` (`stores.size` 11)
+  - `package.json` (prueba y `node --check characters.js`)
+  - `.github/workflows/quality.yml`
+- Modificar: `app.js`, `styles.css` (`.char-card`, `.char-row`), `tests/browser.test.js`
+
+**Interfaces (`TableCharacters`):**
+
+- `CHARACTERS`: 10 entradas `{ table, name, color, dark, melody: [[freq, ms], …] }`, con `table` de 1 a 10. Los nombres (iguales en `es` y `en`) son: 1 Pipo, 2 Duna, 3 Tico, 4 Lola, 5 Max, 6 Kiko, 7 Nube, 8 Rayo, 9 Mora, 10 Bruno. Los colores y las melodías los elige el implementador, con las reglas de la prueba.
+- `ACCESSORIES = ["none", "hat", "glasses", "scarf", "crown"]`
+- `characterSvg(table, fill, accessory) -> string`:
+  - Un SVG `aria-hidden="true"` cuyo cuerpo son `table` bloques apilados: una columna para 1–5 y dos columnas para 6–10. Es la idea de "cantidad visible" del diseño, con dibujo propio.
+  - Una capa gris de bloques `class="cb cb--empty"` y, encima, una capa de color de bloques `class="cb cb--fill"`, recortada desde abajo por un `clipPath` cuyo rectángulo lleva `data-fill="<fill>"` y mide `fill / 10` de la altura.
+  - Ojos y sonrisa en el bloque de arriba.
+  - Con un accesorio distinto de `none`, un `<g class="acc acc-<id>">`.
+  - `fill` se limita a 0..10; un accesorio desconocido cuenta como `none`.
+
+**En `app.js`:**
+
+- `renderHomeCharacters()` dibuja en `#home-characters` 10 `button.char-card[data-table]`. Cada uno lleva `characterSvg(t, Tables.characterFill(tables, t), accesorio)` (de momento `"none"`; la Tarea 13 añade los accesorios), el nombre y `"{fill}/10"`. Se llama al mostrar el inicio de tablas.
+- Al pulsar un personaje, el lorito dice `char_status`. La Tarea 12 cambia esto para que suene su canción.
+- En `submitTablesAnswer`, después de registrar, para cada `t` de `Tables.factTables(key)`: `m = Tables.fillMilestone(fill antes, fill después)`. Si hay hito, `mascotSay(t("char_" + m, { name, n: t }))` y `showToast` con el mismo texto. Esto va después de `rewardCorrect`, para que no lo tape el elogio.
+- Textos nuevos (`es` / `en`):
+  - `home_characters_label`: "Tus personajes" / "Your buddies"
+  - `char_status`: "{name} · tabla del {n} · {fill} de 10" / "{name} · {n} times table · {fill} of 10"
+  - `char_first`: "¡{name} despertó! Es el personaje de la tabla del {n}." / "{name} woke up! It's the {n} times table buddy."
+  - `char_half`: "¡{name} ya está a la mitad!" / "{name} is half full!"
+  - `char_almost`: "¡Ya casi llenas a {name}, el personaje de la tabla del {n}!" / "You've almost filled {name}, the {n} times table buddy!"
+  - `char_full`: "¡{name} está completo! ¡Dominaste la tabla del {n}!" / "{name} is complete! You mastered the {n} times table!"
+
+- [ ] **Paso 1: Pruebas unitarias que fallan** (`tests/characters.test.js`):
+
+```js
+const C = require("../characters.js");
+check(C.CHARACTERS.length === 10 && C.CHARACTERS.every((c, i) => c.table === i + 1), "one character per table 1-10");
+check(new Set(C.CHARACTERS.map((c) => c.name)).size === 10 && new Set(C.CHARACTERS.map((c) => c.color)).size === 10, "unique names and colours");
+const numberWords = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+  "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez"];
+check(C.CHARACTERS.every((c) => !numberWords.includes(c.name.toLowerCase())), "own names, not number names");
+check(new Set(C.CHARACTERS.map((c) => JSON.stringify(c.melody))).size === 10 &&
+  C.CHARACTERS.every((c) => c.melody.length >= 3 && c.melody.length <= 6 &&
+    c.melody.every(([f, ms]) => f >= 200 && f <= 1200 && ms >= 80 && ms <= 400)), "own short melodies");
+const svg = C.characterSvg(7, 4, "none");
+const count = (s, needle) => s.split(needle).length - 1;
+check(svg.startsWith("<svg") && svg.includes('aria-hidden="true"') && count(svg, "cb cb--empty") === 7 &&
+  count(svg, "cb cb--fill") === 7 && svg.includes('data-fill="4"') && !svg.includes("acc-"), "character svg");
+check(C.characterSvg(3, 99).includes('data-fill="10"') && C.characterSvg(3, -1).includes('data-fill="0"'), "fill clamped");
+check(C.characterSvg(1, 0, "crown").includes('class="acc acc-crown"') && !C.characterSvg(1, 0, "cape").includes("acc-"), "accessories");
+```
+
+- [ ] **Paso 2: Prueba de navegador que falla** (contexto aparte, con `page.clock.install({ time: new Date(2026, 9, 25, 10, 0) })`):
+  - Se siembra "Ana" con todas las operaciones dominadas (`everMastered`, sin repaso pendiente) **salvo** `7-8`, que está en `practicing` con `fast: 2`, `fastDays: ["2026-10-24"]` y `lastSeen: "2026-10-24"`.
+  - En el inicio hay 10 `.char-card`, y la del 7 muestra "9/10" y `data-fill="9"`.
+  - Empieza la ronda y se contesta todo rápido. Al contestar `7-8`, `#mascot-bubble` o un `.toast` incluye "completo", y al volver al inicio la tarjeta del 7 muestra "10/10".
+- [ ] **Paso 3: Ejecutar** → falla.
+- [ ] **Paso 4: Implementar** `characters.js`, el cableado de "Archivos" y lo de `app.js`.
+- [ ] **Paso 5: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa. Mirar una captura del inicio (`.cache/tables-home.png`, que la prueba guarda): los 10 personajes son distintos y se reconocen.
+- [ ] **Paso 6: Commit.** `git add -A && git commit -m "feat: one character per table that fills as facts are mastered"`
+
+---
+
+### Tarea 11: Álbum de 100 casillas en la zona de padres
+
+**Archivos:**
+
+- Modificar: `index.html` (nueva `#screen-album`; botón `[data-action="open-album"]` en `#screen-profile-edit`)
+- Modificar: `app.js`, `styles.css`, `tests/browser.test.js`
+
+**Interfaces:**
+
+- Consume: `Tables.albumCells` (Tarea 7) y el perfil en edición (Tarea 3).
+- Produce:
+  - `#screen-album`, con:
+    - volver `[data-action="back-edit"]`;
+    - `h2#album-title` (`album_title` con `{name}`);
+    - `#album-summary` (`album_summary`);
+    - `#album-grid`: una cuadrícula de 11 × 11, con cabeceras 1–10 en la fila y la columna;
+    - `#album-legend`, con las 4 casillas y sus textos.
+  - Cada operación es un `div.album-cell[data-a][data-b][data-state]` que muestra `a × b` en letra pequeña. Su `title` es `album_cell_detail`, con `{q}`, `{seen}` y `{secs}` (`avgMs / 1000`, con un decimal según el idioma; `"–"` si no se ha visto).
+  - Colores:
+    - `new` gris `#d7dbe6`;
+    - `practicing` `var(--c-gold)`;
+    - `almost` `#b8e05a`;
+    - `mastered` `var(--c-correct)`.
+- Textos nuevos (`es` / `en`):
+  - `btn_album`: "Ver álbum" / "View album"
+  - `album_title`: "Álbum de {name}" / "{name}'s album"
+  - `album_summary`: "{m} de 55 dominadas · {p} practicando" / "{m} of 55 mastered · {p} practising"
+  - `album_new`: "Nueva" / "New"
+  - `album_practicing`: "Practicando" / "Practising"
+  - `album_almost`: "Casi dominada" / "Almost there"
+  - `album_mastered`: "Dominada" / "Mastered"
+  - `album_cell_detail`: "{q} · {seen} veces · {secs} s" / "{q} · {seen} times · {secs} s"
+
+- [ ] **Paso 1: Prueba que falla.**
+  - Se siembra "Ana" con `7-9` dominada, `3-4` en `practicing` con `fast: 1` y `2-2` en `practicing` con `fast: 0`.
+  - Freno → editar Ana → "Ver álbum". Comprobar:
+    - 100 `.album-cell`;
+    - `[data-a="7"][data-b="9"]` y `[data-a="9"][data-b="7"]` con `data-state="mastered"`;
+    - `[data-a="4"][data-b="3"]` con `almost`;
+    - `[data-a="2"][data-b="2"]` con `practicing`;
+    - `[data-a="5"][data-b="5"]` con `new`;
+    - `#album-summary` incluye "1 de 55".
+  - Comprobar también que `[data-action="open-album"]` solo existe dentro de `#screen-profile-edit`: la niña no lo ve.
+- [ ] **Paso 2: Ejecutar** → falla.
+- [ ] **Paso 3: Implementar.**
+- [ ] **Paso 4: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa. Revisar la captura `.cache/album.png` a 390 px de ancho: la cuadrícula cabe sin desbordar.
+- [ ] **Paso 5: Commit.** `git add -A && git commit -m "feat: 100-cell fact album in the parents area"`
+
+---
+
+## Fase E · Música
+
+### Tarea 12: Melodías de personajes y canción de presentación
+
+**Archivos:**
+
+- Modificar: `characters.js`, `tests/characters.test.js`
+- Modificar: `index.html` (overlay `#intro-overlay`)
+- Modificar: `app.js`, `styles.css`, `tests/browser.test.js`
+
+**Interfaces:**
+
+- Produce en `TableCharacters`: `introSequence(table) -> [{ value, freq, ms }] × 10`.
+  - `value = table × k`, con `k` de 1 a 10.
+  - `freq` sube en una escala pentatónica que empieza en 262 Hz.
+  - `ms = 420`, salvo la última nota (700).
+- Produce en `app.js`:
+  - `playMelody(notes)`: no hace nada si `!state.settings.music`. Si no, encadena `beep` como `playVictoryMelody`, y `beep` ya respeta `sound`: **la música necesita `sound` y `music`**.
+  - `playVictoryMelody` pasa a usar `playMelody`.
+  - **Al llegar a un hito de personaje** (Tarea 10): `playMelody(personaje.melody)`.
+  - **`showTableIntro(table, onDone)`.** Muestra `#intro-overlay` con:
+    - `#intro-title` (`intro_title` con `{n}`);
+    - el personaje;
+    - `#intro-number`;
+    - `#intro-blocks`, que crece `table` bloques en cada paso;
+    - los botones `[data-action="intro-replay"]` y `[data-action="intro-done"]` (`btn_start`).
+
+    Los pasos avanzan con temporizadores según `ms`, aunque la música esté apagada (el conteo visual siempre se ve). `intro-done` limpia los temporizadores, oculta el overlay y llama a `onDone`. `goHome` y `goToProfiles` también lo limpian.
+  - **Al empezar una ronda:** `startTablesRun` calcula `Tables.tablesToPresent(run.round, tables)`. Si no está vacío, presenta cada tabla en orden antes de la primera estación. Al terminar cada una, `state.profile.tables = Tables.markPresented(…)` y `saveProfiles()`. Si se sale a mitad, la presentación se repite la próxima vez.
+  - **A pedido:** en el inicio, al pulsar `.char-card`, se llama a `showTableIntro(table, renderHomeCharacters)`, sin marcar nada. Esto reemplaza el `char_status` de la Tarea 10, que pasa al `aria-label` de la tarjeta.
+  - **Nunca durante la práctica:** `showTableIntro` no se llama desde ninguna función de estación.
+- Textos nuevos (`es` / `en`):
+  - `intro_title`: "Conoce la tabla del {n}" / "Meet the {n} times table"
+  - `btn_replay`: "Otra vez" / "Again"
+
+- [ ] **Paso 1: Pruebas que fallan.**
+  - Unitaria: `introSequence(7)` da los valores `[7, 14, …, 70]`, con `freq` estrictamente creciente, 10 pasos y la última nota de 700 ms.
+  - Navegador:
+    - Un `addInitScript` cuenta las llamadas a `AudioContext.prototype.createOscillator` en `window.__osc`.
+    - Se siembra "Ana" con la tabla 1 ya vista, `probes["2"].introduce = true`, `presented: []`, `sound: true` y `music: true`.
+    - `start-tables` → se ve `#intro-overlay` y `#intro-title` incluye "2". `runFor(6000)` → `#intro-number` es "20" y `__osc > 0`. `intro-done` → `#screen-game` activo, y `presented` en el almacén incluye 2.
+    - Volver al inicio y empezar otra ronda → no aparece el overlay.
+    - Pulsar `.char-card[data-table="7"]` → overlay con "7"; `intro-done` → de vuelta en el inicio.
+    - Con `music: false`: se pone `__osc = 0`, se abre la presentación del 7 y `runFor(6000)` → `__osc === 0`, pero `#intro-number` es "70".
+- [ ] **Paso 2: Ejecutar** → falla.
+- [ ] **Paso 3: Implementar.**
+- [ ] **Paso 4: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa.
+- [ ] **Paso 5: Commit.** `git add -A && git commit -m "feat: character melodies and table introduction song"`
+
+---
+
+## Fase F · Tienda y colección
+
+### Tarea 13: Tienda de modo tablas con cosméticos, y "Mis tesoros"
+
+**Archivos:**
+
+- Modificar: `app.js` (catálogo junto a `SHOP_BUDDIES`, `defaultProgress`, `normalizeProfile`, tienda, tema del mapa, melodía de victoria, accesorios, pantalla de tesoros)
+- Modificar: `index.html` (`#screen-treasures`; botón `[data-action="go-treasures"]` en `#screen-tables-home` y en `#screen-menu`)
+- Modificar: `styles.css` (`.map--ocean`, `.map--forest`, `.map--sunset`, `.map--galaxy`, `.cosmetic-card`, `.treasure-grid`, `.treasure-tile`)
+- Modificar: `tests/profiles.test.js`, `tests/browser.test.js`
+
+**Interfaces:**
+
+- `SHOP_COSMETICS` (exportado), `{ id, kind, value, price, icon, es, en }`. La economía es de unas 20 monedas por ronda de 15:
+
+| id              | kind        | value     | precio | icono | es        | en        |
+| --------------- | ----------- | --------- | ------ | ----- | --------- | --------- |
+| `acc-hat`       | `accessory` | `hat`     | 40     | 🎩    | Sombrero  | Top hat   |
+| `acc-glasses`   | `accessory` | `glasses` | 50     | 👓    | Gafas     | Glasses   |
+| `mel-marimba`   | `melody`    | `marimba` | 50     | 🎶    | Marimba   | Marimba   |
+| `theme-ocean`   | `theme`     | `ocean`   | 60     | 🌊    | Océano    | Ocean     |
+| `theme-forest`  | `theme`     | `forest`  | 60     | 🌲    | Bosque    | Forest    |
+| `acc-scarf`     | `accessory` | `scarf`   | 60     | 🧣    | Bufanda   | Scarf     |
+| `mel-fanfare`   | `melody`    | `fanfare` | 80     | 🎺    | Fanfarria | Fanfare   |
+| `theme-sunset`  | `theme`     | `sunset`  | 90     | 🌅    | Atardecer | Sunset    |
+| `acc-crown`     | `accessory` | `crown`   | 120    | 👑    | Corona    | Crown     |
+| `theme-galaxy`  | `theme`     | `galaxy`  | 150    | 🌌    | Galaxia   | Galaxy    |
+
+- `VICTORY_MELODIES = { classic: <las notas actuales de playVictoryMelody>, marimba: [...], fanfare: [...] }` (exportado).
+- **Progreso.** `progress.cosmetics: []` (ids comprados) y `progress.equipped: { theme: "classic", accessory: "none", melody: "classic" }`.
+  - `defaultProgress` los incluye.
+  - `normalizeProfile` los completa. Si algo equipado no está comprado, o no existe, vuelve a su valor por defecto.
+- **Tienda:**
+  - Nueva sección `h3.shop-h-cosm` (`shop_cosmetics`) con `#shop-cosmetics`, que lleva un `button.cosmetic-card[data-cosmetic-id]` por artículo. Pulsar uno que no se tiene → se compra si alcanza (si no, `not_enough_coins`) y se equipa. Pulsar uno que se tiene → se equipa. Pulsar el equipado → se vuelve al valor por defecto.
+  - Si `state.settings.mainMode === "tables"`, se ocultan `.shop-h-pu` y `#shop-powerups`.
+- **Se aplica así:**
+  - el tema, con la clase `map--<value>` en `.map` (en `startRun`, `startTablesRun` y al equipar);
+  - el accesorio, como tercer parámetro de `characterSvg` en `renderHomeCharacters` y en la presentación;
+  - la melodía, con `playVictoryMelody`, que toca `VICTORY_MELODIES[equipped.melody]`.
+- **`#screen-treasures`**, con:
+  - volver `[data-action="go-menu"]` (que va a `goHome`);
+  - `#treasure-total` (`treasure_count`);
+  - `#treasure-grid`, con 50 `.treasure-tile`: los que tiene, con su SVG y nombre; los demás, `.is-locked` con "?".
+- Textos nuevos (`es` / `en`):
+  - `shop_cosmetics`: "Para tus personajes y tu mapa" / "For your buddies and your map"
+  - `shop_unequip`: "Quitar" / "Remove"
+  - `btn_treasures`: "Mis tesoros" / "My treasures"
+  - `treasures_title`: "Mis tesoros" / "My treasures"
+
+- [ ] **Paso 1: Pruebas unitarias que fallan** (`tests/profiles.test.js`):
+
+```js
+check(app.SHOP_COSMETICS.length === 10 && new Set(app.SHOP_COSMETICS.map((c) => c.id)).size === 10 &&
+  app.SHOP_COSMETICS.every((c) => ["theme", "accessory", "melody"].includes(c.kind) && c.price >= 40 && c.price <= 150 && c.es && c.en),
+  "cosmetic catalogue");
+check(app.SHOP_COSMETICS.filter((c) => c.kind === "melody").every((c) => Array.isArray(app.VICTORY_MELODIES[c.value])) &&
+  Array.isArray(app.VICTORY_MELODIES.classic), "melodies exist");
+assert.deepEqual(app.defaultProgress().equipped, { theme: "classic", accessory: "none", melody: "classic" });
+const eq = (cosmetics, equipped) => app.normalizeProfile({ id: "p1", progress: { cosmetics, equipped } }).progress.equipped;
+check(eq([], { theme: "ocean" }).theme === "classic" && eq(["theme-ocean"], { theme: "ocean" }).theme === "ocean" &&
+  eq(["acc-crown"], { accessory: "cape" }).accessory === "none", "equipped must be owned");
+```
+
+- [ ] **Paso 2: Pruebas de navegador que fallan:**
+  - "Ana" (tablas), con 200 monedas: en la tienda no se ven `#shop-powerups` ni el texto "Comodín".
+  - Comprar Océano → 140 monedas y `equipped.theme === "ocean"`. `start-tables` → `.map` tiene la clase `map--ocean`.
+  - Comprar Corona → 20 monedas, y en el inicio el SVG de `.char-card` incluye `acc-crown`.
+  - Pulsar la Corona equipada → `accessory` vuelve a `"none"`.
+  - El perfil "Jugador 1" (con `mainMode: "mix"`) sí ve "Comodín". La comprobación de hoy "shop purchase" debe ejecutarse con un perfil clásico.
+  - "Mis tesoros": se siembra `collection` con dos ids reales de `TREASURES`. Hay 50 `.treasure-tile`, 48 de ellas `.is-locked`, y `#treasure-total` = "2 de 50 tesoros".
+- [ ] **Paso 3: Ejecutar** → falla.
+- [ ] **Paso 4: Implementar.**
+- [ ] **Paso 5: Verificar.** `npm test && npm run validate && npm run test:browser` → todo pasa. Revisar a ojo los cuatro temas del mapa en capturas (`.cache/theme-*.png`).
+- [ ] **Paso 6: Commit.** `git add -A && git commit -m "feat: cosmetic shop for tables mode and treasure collection screen"`
+
+---
+
+## Fase G · Cierre
+
+### Tarea 14: Documentación, estado del backlog y verificación final
+
+**Archivos:**
+
+- Modificar: `docs/BACKLOG.md`, `CHANGELOG.md`, `README.md`
+- Modificar: `app.js` (`howto_body` en `es` y `en`)
+
+- [ ] **Paso 1: Actualizar `howto_body`** (`es` y `en`) para que hable de escribir el resultado, la pista con bloques, el lorito, los personajes y la tienda. Mantener una sola frase por idea y lenguaje de 8 años.
+- [ ] **Paso 2: `docs/BACKLOG.md`:**
+  - Hoja de ruta: las filas 1 y 2 pasan a "hecho (rama `feature/perfiles-y-tablas`)".
+  - H-01, H-02, H-04, H-05, H-11 y H-12 pasan a `hecho`, con el commit correspondiente.
+  - **H-03 no se cambia:** se anota que el modo tablas elige las operaciones y no hay selector manual de tabla, y se pregunta al usuario si pasa a `descartado`.
+  - Todo lo que haya salido durante la implementación se añade como hallazgo `por-analizar`.
+- [ ] **Paso 3: `CHANGELOG.md`.** En `[Unreleased]`, una sección `### Added` con perfiles y zona de padres, modo tablas, personajes, álbum, música, cosméticos y "Mis tesoros". Una sección `### Changed` con: ajustes solo en la zona de padres, "Otros juegos" respeta el perfil y caché PWA en v2.
+- [ ] **Paso 4: `README.md`.** Un párrafo corto: perfiles, zona de padres (cómo entrar) y que todo queda en el dispositivo.
+- [ ] **Paso 5: Verificación completa.**
+  - `npm test && npm run validate && npm run test:browser`: todo pasa; anotar las líneas finales de cada prueba.
+  - `npx --yes prettier --check app.js tables.js characters.js index.html styles.css service-worker.js tests docs`. Corregir el formato de los archivos tocados con `npx --yes prettier --write <esos archivos>`, nunca con `npm run format`, que reformatea todo.
+- [ ] **Paso 6: Prueba a mano en tablet o emulación** (`npm start` y abrir en el navegador; se puede usar la skill `run`). Una ronda entera de modo tablas, comprobando:
+  - Que no se ve ningún número de tiempo.
+  - Que la pista aparece sola.
+  - Que el lorito celebra.
+  - Que el resumen dice "dominaste" o "practicaste".
+  - Que la zona de padres pide la multiplicación.
+
+  Anotar en el informe lo que se vio.
+- [ ] **Paso 7: Commit.** `git add -A && git commit -m "docs: profiles and tables mode in changelog, readme and backlog"`
+- [ ] **Paso 8: Integrar la rama** con la skill `superpowers:finishing-a-development-branch`. Al hacer merge a `main` se publica en GitHub Pages; confirmar con el usuario antes.
