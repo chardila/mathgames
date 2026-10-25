@@ -46,6 +46,10 @@ var I18N = {
     tagline: "Solve number puzzles and find the great treasure!",
     btn_play: "Start adventure",
     btn_settings: "Settings",
+    btn_switch_player: "Switch player",
+    who_title: "Who's playing?",
+    who_empty: "No players yet. Ask a grown-up to add one.",
+    profile_default_name: "Player {n}",
     btn_howto: "How to play",
     btn_back: "Back",
     btn_start: "Let's go!",
@@ -138,6 +142,10 @@ var I18N = {
       "\u00a1Resuelve acertijos de n\u00fameros y encuentra el gran tesoro!",
     btn_play: "Empezar aventura",
     btn_settings: "Ajustes",
+    btn_switch_player: "Cambiar jugador",
+    who_title: "\u00bfQui\u00e9n juega?",
+    who_empty: "Todav\u00eda no hay jugadores. Pide a un adulto que cree uno.",
+    profile_default_name: "Jugador {n}",
     btn_howto: "C\u00f3mo jugar",
     btn_back: "Atr\u00e1s",
     btn_start: "\u00a1Vamos!",
@@ -1359,6 +1367,7 @@ function startApp() {
     lang: "ms_lang",
     settings: "ms_settings",
     progress: "ms_progress",
+    profiles: "ms_profiles",
   };
 
   function storageGet(key, fallback) {
@@ -1378,39 +1387,33 @@ function startApp() {
   }
 
   /* ---------------- App state ---------------- */
+  // Until a player is chosen, settings and progress are throwaway defaults
+  // that are never saved; afterwards they point into the active profile.
   var state = {
     lang: storageGet(STORAGE_KEYS.lang, null),
-    settings: Object.assign(
-      { sound: true, timer: false, quick: false, blitz: false, choices: true },
-      storageGet(STORAGE_KEYS.settings, {}),
-    ),
-    progress: Object.assign(
-      {
-        coins: 0,
-        treasures: 0,
-        badges: [],
-        bestStreak: 0,
-        avgMs: 0,
-        totalCorrect: 0,
-        lastPlayed: "",
-        blitzWins: 0,
-        bestCombo: 0,
-        stars: 0,
-        collection: [],
-        inventory: { joker: 0, fifty: 0, time: 0, shield: 0 },
-        buddies: ["kid"],
-        buddy: "kid",
-      },
-      storageGet(STORAGE_KEYS.progress, {}),
-    ),
+    store: null,
+    profile: null,
+    settings: normalizeSettings(),
+    progress: defaultProgress(),
     selectedMode: "add",
     selectedDiff: "adaptive",
     run: null,
     timerId: null,
   };
 
-  state.progress = migrateLearningStart(state.progress);
-  storageSet(STORAGE_KEYS.progress, state.progress);
+  var bootDict = I18N[state.lang] || I18N.es;
+  state.store = migrateLegacyStorage(
+    storageGet(STORAGE_KEYS.profiles, null),
+    storageGet(STORAGE_KEYS.progress, null),
+    storageGet(STORAGE_KEYS.settings, null),
+    bootDict.profile_default_name.replace("{n}", "1"),
+  );
+
+  // Persist the whole profile store (settings and progress of every child).
+  function saveProfiles() {
+    storageSet(STORAGE_KEYS.profiles, state.store);
+  }
+  saveProfiles();
 
   /* ---------------- i18n ---------------- */
   function t(key, vars) {
@@ -1452,6 +1455,8 @@ function startApp() {
   /* ---------------- Element references ---------------- */
   var els = {
     languageGrid: document.getElementById("language-grid"),
+    profileGrid: document.getElementById("profile-grid"),
+    whoEmpty: document.getElementById("who-empty"),
     settingsLanguageGrid: document.getElementById("settings-language-grid"),
     menuCoins: document.getElementById("menu-coins"),
     menuTreasures: document.getElementById("menu-treasures"),
@@ -1566,7 +1571,7 @@ function startApp() {
       els.languageGrid.appendChild(
         buildLanguageButton(meta, function (code) {
           setLanguage(code);
-          goToMenu();
+          goToProfiles();
         }),
       );
       els.settingsLanguageGrid.appendChild(
@@ -1709,7 +1714,7 @@ function startApp() {
       state.progress.lastPlayed = today;
       var bonus = 3;
       state.progress.coins += bonus;
-      storageSet(STORAGE_KEYS.progress, state.progress);
+      saveProfiles();
       refreshMenuStats();
       showToast(t("daily_bonus", { n: bonus }), "\uD83C\uDF1E");
     }
@@ -1982,7 +1987,7 @@ function startApp() {
       correct,
       elapsed,
     );
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
   }
 
   function onWrong() {
@@ -2252,7 +2257,7 @@ function startApp() {
     state.progress.blitzWins =
       (state.progress.blitzWins || 0) + state.run.blitzWins;
     evaluateBadges();
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
 
     // Fill summary screen.
     var accuracy =
@@ -2382,7 +2387,7 @@ function startApp() {
       state.progress.coins += reward;
       showToast(t("coin_treasure", { n: reward }), "\uD83E\uDE99");
     }
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
     if (els.treasureReveal) {
       els.treasureReveal.hidden = false;
       els.treasureReveal.innerHTML =
@@ -2448,7 +2453,7 @@ function startApp() {
     state.progress.stars = starBank() - STAR_TIME_COST;
     state.timerDeadline += 10000;
     state.timerBudget = (state.timerBudget || 10) + 10;
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
     showToast(t("time_added_10"), "⏳");
     beep(620, 140, "sine");
     refreshMenuStats();
@@ -2512,7 +2517,7 @@ function startApp() {
     else if (id === "shield") used = armShield();
     if (used) {
       state.progress.inventory[id] -= 1;
-      storageSet(STORAGE_KEYS.progress, state.progress);
+      saveProfiles();
       renderPowerups();
     }
   }
@@ -2628,6 +2633,7 @@ function startApp() {
     SHOP_POWERUPS.forEach(function (pu) {
       var row = document.createElement("div");
       row.className = "shop-item";
+      row.setAttribute("data-powerup", pu.id);
       row.innerHTML =
         '<span class="shop-item-icon" aria-hidden="true">' +
         pu.icon +
@@ -2680,7 +2686,7 @@ function startApp() {
     state.progress.coins -= pu.price;
     if (!state.progress.inventory) state.progress.inventory = {};
     state.progress.inventory[pu.id] = inventoryCount(pu.id) + 1;
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
     beep(720, 120, "triangle");
     refreshMenuStats();
     renderShop();
@@ -2700,7 +2706,7 @@ function startApp() {
       beep(720, 120, "triangle");
     }
     state.progress.buddy = b.id;
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
     applyBuddy();
     refreshMenuStats();
     renderShop();
@@ -2715,14 +2721,65 @@ function startApp() {
   }
 
   /* ---------------- Navigation helpers ---------------- */
-  function goToMenu() {
+  // Stop timers and any pending task transition before leaving a round.
+  function leaveRun() {
     stopTimer();
     window.clearTimeout(state.nextTaskId);
     activeTask = null;
     state.awaitingNext = false;
     state.run = null;
+  }
+  function goHome() {
+    leaveRun();
     refreshMenuStats();
     showScreen("screen-menu");
+  }
+
+  /* ---------------- Profiles ---------------- */
+  function goToProfiles() {
+    leaveRun();
+    state.profile = null;
+    state.settings = normalizeSettings();
+    state.progress = defaultProgress();
+    renderProfileGrid();
+    showScreen("screen-profiles");
+  }
+  function renderProfileGrid() {
+    els.profileGrid.innerHTML = "";
+    state.store.profiles.forEach(function (profile) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "profile-btn";
+      btn.setAttribute("data-profile-id", profile.id);
+      var avatar = document.createElement("span");
+      avatar.className = "profile-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = profile.avatar;
+      var name = document.createElement("span");
+      name.className = "profile-name";
+      name.textContent = profile.name;
+      btn.appendChild(avatar);
+      btn.appendChild(name);
+      btn.addEventListener("click", function () {
+        useProfile(profile.id);
+      });
+      els.profileGrid.appendChild(btn);
+    });
+    els.whoEmpty.hidden = state.store.profiles.length > 0;
+  }
+  function useProfile(id) {
+    var profile = state.store.profiles.filter(function (p) {
+      return p.id === id;
+    })[0];
+    if (!profile) return;
+    state.profile = profile;
+    state.settings = profile.settings;
+    state.progress = profile.progress;
+    state.store.lastId = id;
+    saveProfiles();
+    applyBuddy();
+    refreshMenuStats();
+    goHome();
   }
 
   /* ---------------- Mode + difficulty selection ---------------- */
@@ -2762,7 +2819,7 @@ function startApp() {
       els.toggleBlitzModes.checked = state.settings.blitz;
   }
   function persistSettings() {
-    storageSet(STORAGE_KEYS.settings, state.settings);
+    saveProfiles();
   }
   function wireToggles() {
     function bind(input, key, mirror) {
@@ -2785,25 +2842,9 @@ function startApp() {
 
   function resetProgress() {
     if (!window.confirm(t("reset_confirm"))) return;
-    state.progress = {
-      coins: 0,
-      treasures: 0,
-      badges: [],
-      bestStreak: 0,
-      avgMs: 0,
-      totalCorrect: 0,
-      lastPlayed: "",
-      blitzWins: 0,
-      bestCombo: 0,
-      stars: 0,
-      collection: [],
-      inventory: { joker: 0, fifty: 0, time: 0, shield: 0 },
-      buddies: ["kid"],
-      buddy: "kid",
-      learning: normalizeLearning(),
-      learningStartVersion: 1,
-    };
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    state.progress = defaultProgress();
+    if (state.profile) state.profile.progress = state.progress;
+    saveProfiles();
     refreshMenuStats();
   }
 
@@ -2815,7 +2856,10 @@ function startApp() {
         showScreen("screen-modes");
         break;
       case "go-menu":
-        goToMenu();
+        goHome();
+        break;
+      case "switch-player":
+        goToProfiles();
         break;
       case "go-settings":
         syncToggles();
@@ -2852,7 +2896,7 @@ function startApp() {
         break;
       case "quit":
         els.pauseOverlay.hidden = true;
-        goToMenu();
+        goHome();
         break;
       case "play-again":
         startRun();
@@ -2934,7 +2978,7 @@ function startApp() {
     if (state.lang && I18N[state.lang]) {
       applyI18n();
       refreshDynamicText();
-      goToMenu();
+      goToProfiles();
     } else {
       state.lang = "es"; // default language
       applyI18n();

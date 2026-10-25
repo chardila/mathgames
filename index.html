@@ -62,6 +62,26 @@
         </div>
       </section>
 
+      <!-- ============ WHO PLAYS ============ -->
+      <section
+        id="screen-profiles"
+        class="screen screen--profiles"
+        aria-labelledby="who-title"
+      >
+        <div class="card card--centered">
+          <h1 id="who-title" data-i18n="who_title">¿Quién juega?</h1>
+          <div
+            id="profile-grid"
+            class="profile-grid"
+            role="group"
+            aria-labelledby="who-title"
+          ></div>
+          <p id="who-empty" class="muted" data-i18n="who_empty" hidden>
+            Todavía no hay jugadores. Pide a un adulto que cree uno.
+          </p>
+        </div>
+      </section>
+
       <!-- ============ MAIN MENU ============ -->
       <section
         id="screen-menu"
@@ -99,6 +119,10 @@
             <button class="btn btn--secondary" data-action="go-settings">
               <span class="btn-emoji" aria-hidden="true">⚙️</span>
               <span data-i18n="btn_settings">Ajustes</span>
+            </button>
+            <button class="btn btn--ghost" data-action="switch-player">
+              <span class="btn-emoji" aria-hidden="true">👥</span>
+              <span data-i18n="btn_switch_player">Cambiar jugador</span>
             </button>
           </div>
         </div>

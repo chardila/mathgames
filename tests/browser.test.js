@@ -59,12 +59,35 @@ const server = http.createServer((request, response) => {
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    const store = (p = page) =>
+      p.evaluate(() => JSON.parse(localStorage.getItem("ms_profiles")));
+    const saved = async (p = page) => {
+      const s = await store(p);
+      return s.profiles.find((profile) => profile.id === s.lastId).progress;
+    };
+    const pickProfile = (name, p = page) =>
+      p
+        .locator("#profile-grid .profile-btn")
+        .filter({
+          has: p.locator(".profile-name", {
+            hasText: new RegExp("^" + name + "$"),
+          }),
+        })
+        .click();
+    const seedProfiles = async (profiles, lastId, p = page) => {
+      await p.evaluate(
+        (value) => localStorage.setItem("ms_profiles", JSON.stringify(value)),
+        { version: 1, lastId, profiles },
+      );
+      await p.reload();
+    };
     await page.goto(url);
     await page
       .locator("#language-grid button")
       .filter({ hasText: "Español" })
       .click();
     await page.evaluate(() => {
+      localStorage.removeItem("ms_profiles");
       localStorage.setItem(
         "ms_settings",
         JSON.stringify({
@@ -104,8 +127,22 @@ const server = http.createServer((request, response) => {
     });
     await page.reload();
     await page.clock.install();
-    const saved = () =>
-      page.evaluate(() => JSON.parse(localStorage.getItem("ms_progress")));
+    check(
+      (await page.locator("#profile-grid .profile-btn").count()) === 1 &&
+        (await page.locator("#profile-grid").textContent()).includes(
+          "Jugador 1",
+        ),
+      "who plays lists migrated profile",
+    );
+    check(
+      (
+        await page.evaluate(() =>
+          JSON.parse(localStorage.getItem("ms_progress")),
+        )
+      ).coins === 500,
+      "legacy keys untouched",
+    );
+    await pickProfile("Jugador 1");
     check(
       (await page.locator("#menu-coins").textContent()) === "500",
       "old coins retained",
@@ -364,7 +401,11 @@ const server = http.createServer((request, response) => {
             JSON.stringify({
               chip: document.getElementById("game-timer-chip").outerHTML,
               ringHidden: document.getElementById("timer-ring").hidden,
-              settings: JSON.parse(localStorage.getItem("ms_settings")),
+              settings: (
+                JSON.parse(localStorage.getItem("ms_profiles")) || {
+                  profiles: [],
+                }
+              ).profiles.map((profile) => profile.settings),
             }),
           )),
       );
@@ -437,6 +478,7 @@ const server = http.createServer((request, response) => {
     );
     const learningBeforeReload = JSON.stringify((await saved()).learning);
     await page.reload();
+    await pickProfile("Jugador 1");
     check(
       JSON.stringify((await saved()).learning) === learningBeforeReload,
       "persisted learning reload",
@@ -445,12 +487,14 @@ const server = http.createServer((request, response) => {
       await navigator.serviceWorker.ready;
     });
     await page.reload();
+    await pickProfile("Jugador 1");
     check(
       await page.evaluate(() => !!navigator.serviceWorker.controller),
       "service worker controls page",
     );
     await context.setOffline(true);
     await page.reload();
+    await pickProfile("Jugador 1");
     await start("div", true, "easy", false);
     await solve();
     check(
@@ -491,6 +535,7 @@ const server = http.createServer((request, response) => {
       .locator("#language-grid button")
       .filter({ hasText: "Español" })
       .click();
+    await pickProfile("Jugador 1", freshPage);
     await freshPage.locator('#screen-menu [data-action="go-settings"]').click();
     check(
       !(await freshPage.locator("#toggle-timer").isChecked()) &&
@@ -503,8 +548,10 @@ const server = http.createServer((request, response) => {
         JSON.stringify({ timer: true, blitz: true, sound: false }),
       );
       localStorage.setItem("ms_progress", "{broken");
+      localStorage.removeItem("ms_profiles");
     });
     await freshPage.reload();
+    await pickProfile("Jugador 1", freshPage);
     await freshPage.locator('#screen-menu [data-action="go-settings"]').click();
     check(
       (await freshPage.locator("#toggle-timer").isChecked()) &&
@@ -517,14 +564,76 @@ const server = http.createServer((request, response) => {
     );
     freshPage.once("dialog", (dialog) => dialog.accept());
     await freshPage.locator('[data-action="reset"]').click();
-    const reset = await freshPage.evaluate(() =>
-      JSON.parse(localStorage.getItem("ms_progress")),
-    );
+    const reset = await saved(freshPage);
     check(
       reset.coins === 0 &&
         reset.stars === 0 &&
         Object.values(reset.learning).every((r) => r.level === 1.5),
       "explicit reset clears learning and rewards",
+    );
+    // Two seeded profiles: A (coins 10), B (coins 99)
+    await seedProfiles(
+      [
+        { id: "p1", name: "A", progress: { coins: 10 } },
+        { id: "p2", name: "B", progress: { coins: 99 } },
+      ],
+      "p1",
+      freshPage,
+    );
+    await pickProfile("A", freshPage);
+    check(
+      (await freshPage.locator("#menu-coins").textContent()) === "10",
+      "profile A coins",
+    );
+    await freshPage
+      .locator('#screen-menu [data-action="switch-player"]')
+      .click();
+    check(
+      (await freshPage.locator("#profile-grid .profile-btn").count()) === 2,
+      "switch player shows who plays",
+    );
+    await pickProfile("B", freshPage);
+    check(
+      (await freshPage.locator("#menu-coins").textContent()) === "99",
+      "profile B coins",
+    );
+    // buy a joker as B -> A still has 10 coins in the store
+    await freshPage.locator('#screen-menu [data-action="go-shop"]').click();
+    await freshPage
+      .locator('.shop-item[data-powerup="joker"] .shop-buy')
+      .click();
+    await freshPage.locator('[data-action="close-shop"]').click();
+    check(
+      (await store(freshPage)).profiles.find((p) => p.name === "B").progress
+        .coins === 89 &&
+        (await store(freshPage)).profiles.find((p) => p.name === "B").progress
+          .inventory.joker === 1 &&
+        (await store(freshPage)).profiles.find((p) => p.name === "A").progress
+          .coins === 10,
+      "profiles isolated",
+    );
+    await seedProfiles([], "", freshPage);
+    check(
+      (await freshPage.locator("#profile-grid .profile-btn").count()) === 0 &&
+        (await freshPage.locator("#who-empty").isVisible()),
+      "who-empty shown without profiles",
+    );
+    // ms_profiles = "{broken" and no legacy keys -> one "Jugador 1" with 0 coins
+    await freshPage.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem("ms_lang", '"es"');
+      localStorage.setItem("ms_profiles", "{broken");
+    });
+    await freshPage.reload();
+    check(
+      (await freshPage.locator("#profile-grid .profile-btn").count()) === 1 &&
+        (await store(freshPage)).profiles[0].name === "Jugador 1" &&
+        (await store(freshPage)).profiles[0].progress.coins === 0,
+      "corrupt profile store recovers",
+    );
+    check(
+      await freshPage.locator("#who-empty").isHidden(),
+      "who-empty hidden with profiles",
     );
     await fresh.close();
     const privateContext = await browser.newContext();
@@ -542,6 +651,7 @@ const server = http.createServer((request, response) => {
       .locator("#language-grid button")
       .filter({ hasText: "Español" })
       .click();
+    await pickProfile("Jugador 1", privatePage);
     await privatePage.locator('#screen-menu [data-action="go-modes"]').click();
     await privatePage
       .locator('#screen-modes [data-action="start-run"]')

@@ -427,6 +427,50 @@ h3 {
 }
 
 /* ------------------------------------------------------------------ */
+/* Who plays (profile grid)                                            */
+/* ------------------------------------------------------------------ */
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 1.4em;
+}
+.profile-btn {
+  font-family: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  min-height: calc(var(--tap) * 2);
+  border: 3px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--c-card-soft);
+  color: var(--c-text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  transition:
+    transform 0.08s ease,
+    border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.profile-btn:active {
+  transform: scale(0.97);
+}
+.profile-btn:focus-visible {
+  border-color: var(--c-primary);
+}
+.profile-avatar {
+  font-size: 2.4em;
+  line-height: 1;
+}
+.profile-name {
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------------ */
 /* Mode cards                                                          */
 /* ------------------------------------------------------------------ */
 .mode-grid {
