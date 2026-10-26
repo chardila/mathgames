@@ -7,12 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Per-child profiles with a "Who's playing?" screen. Each child keeps their own settings, coins, treasures and progress; older single-player data is migrated into a first profile.
+- Parents area behind a multiplication gate: create, edit and delete profiles and change each child's settings.
+- Tables mode: the child types the result, timing is measured silently, a hint with a × b blocks and a trick appears after 5 s and the answer after 10 more. Each fact is tracked on its own, with mastery, spaced review and in-round retries of missed facts. Setbacks and a visible timer are optional per profile.
+- One character per table that fills with colour as its facts are mastered, with milestone messages from the parrot and a short introduction song the first time a table appears.
+- Character melodies and a music setting; melodies play only with both sound and music on.
+- 100-cell fact album in the parents area, showing the state and speed of every fact.
+- Cosmetic shop for tables mode (map themes, accessories and victory melodies) and a "My treasures" screen.
+
 ### Changed
 
 - Forked from AllesSuper/math-treasure-quest v1.3.0 and renamed to "Tablas del Tesoro".
 - Reduced the language list to Spanish (default) and English; English is the fallback.
 - Completed missing Spanish strings, treasure names, shop items and badge labels.
 - Removed upstream German reports and screenshots.
+- Settings are only available in the parents area, per profile.
+- "Other games" (addition, subtraction, multiplication, division and mixed) follow the profile's typing, setback and shield settings.
+- PWA cache bumped to v2.
 
 ## [Unreleased]
 
