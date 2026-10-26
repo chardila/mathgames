@@ -1760,6 +1760,7 @@ function startApp() {
     menuBadges: document.getElementById("menu-badges"),
     homeCoins: document.getElementById("home-coins"),
     homeCharacters: document.getElementById("home-characters"),
+    gameScreen: document.getElementById("screen-game"),
     map: document.querySelector("#screen-game .map"),
     treasureTotal: document.getElementById("treasure-total"),
     treasureGrid: document.getElementById("treasure-grid"),
@@ -2045,6 +2046,7 @@ function startApp() {
     applyMapTheme();
     if (els.powerups) els.powerups.hidden = false;
     renderPowerups();
+    els.gameScreen.setAttribute("data-kind", "classic");
     showScreen("screen-game");
     nextTask();
   }
@@ -2070,6 +2072,8 @@ function startApp() {
     applyBuddy();
     applyMapTheme();
     if (els.powerups) els.powerups.hidden = true;
+    // Tables layout: fixed hint slot, two columns on a tablet (styles.css).
+    els.gameScreen.setAttribute("data-kind", "tables");
     showScreen("screen-game");
     presentTables(
       Tables.tablesToPresent(state.run.round, state.profile.tables),

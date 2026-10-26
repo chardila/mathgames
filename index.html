@@ -393,58 +393,69 @@
             hidden
           ></span>
 
-          <div class="task-top">
-            <span class="blitz-tag" id="blitz-tag" hidden data-i18n="blitz_tag"
-              >¡Relámpago!</span
-            >
-            <svg
-              class="timer-ring"
-              id="timer-ring"
-              viewBox="0 0 60 60"
-              hidden
-              aria-hidden="true"
-            >
-              <circle class="timer-ring-bg" cx="30" cy="30" r="26"></circle>
-              <circle
-                class="timer-ring-arc"
-                id="timer-arc"
-                cx="30"
-                cy="30"
-                r="26"
-                transform="rotate(-90 30 30)"
-              ></circle>
-              <text
-                class="timer-ring-num"
-                id="timer-num"
-                x="30"
-                y="38"
-                text-anchor="middle"
+          <!-- Question side (tables mode on a tablet: left column) -->
+          <div class="task-main">
+            <div class="task-top">
+              <span
+                class="blitz-tag"
+                id="blitz-tag"
+                hidden
+                data-i18n="blitz_tag"
+                >¡Relámpago!</span
               >
-                0
-              </text>
-            </svg>
+              <svg
+                class="timer-ring"
+                id="timer-ring"
+                viewBox="0 0 60 60"
+                hidden
+                aria-hidden="true"
+              >
+                <circle class="timer-ring-bg" cx="30" cy="30" r="26"></circle>
+                <circle
+                  class="timer-ring-arc"
+                  id="timer-arc"
+                  cx="30"
+                  cy="30"
+                  r="26"
+                  transform="rotate(-90 30 30)"
+                ></circle>
+                <text
+                  class="timer-ring-num"
+                  id="timer-num"
+                  x="30"
+                  y="38"
+                  text-anchor="middle"
+                >
+                  0
+                </text>
+              </svg>
+            </div>
+
+            <p class="task-question" id="game-question" aria-live="polite">
+              7 + 5 =
+            </p>
+            <div
+              class="feedback"
+              id="feedback"
+              role="status"
+              aria-live="assertive"
+            ></div>
+            <div class="hint" id="hint" hidden></div>
           </div>
 
-          <p class="task-question" id="game-question" aria-live="polite">
-            7 + 5 =
-          </p>
-          <div
-            class="feedback"
-            id="feedback"
-            role="status"
-            aria-live="assertive"
-          ></div>
-          <div class="hint" id="hint" hidden></div>
-          <div class="answer-display" id="answer-display" hidden>_</div>
-          <div id="numpad-wrap" hidden>
-            <div class="numpad" id="numpad"></div>
-            <button
-              class="btn btn--primary btn--xl"
-              data-action="check"
-              data-i18n="btn_check"
-            >
-              Comprobar
-            </button>
+          <!-- Typed answer side (tables mode on a tablet: right column) -->
+          <div class="task-entry">
+            <div class="answer-display" id="answer-display" hidden>_</div>
+            <div id="numpad-wrap" hidden>
+              <div class="numpad" id="numpad"></div>
+              <button
+                class="btn btn--primary btn--xl"
+                data-action="check"
+                data-i18n="btn_check"
+              >
+                Comprobar
+              </button>
+            </div>
           </div>
 
           <!-- Multiple-choice answer buttons -->

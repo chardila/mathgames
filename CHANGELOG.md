@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings are only available in the parents area, per profile.
 - "Other games" (addition, subtraction, multiplication, division and mixed) follow the profile's typing, setback and shield settings.
 - PWA cache bumped to v2.
+- On a tablet (720 px wide or more) tables mode uses two columns (map, parrot, question and hint on the left; answer, keypad and Check on the right), and the hint space is kept from the start, so the whole loop fits without scrolling and nothing moves when the hint appears.
 
 ## [Unreleased]
 

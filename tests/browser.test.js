@@ -1020,16 +1020,81 @@ const server = http.createServer((request, response) => {
         await pressAnswer((await current()).answer);
         await page.clock.runFor(800);
       }
+      const loopSelectors = [
+        "#game-question",
+        "#hint",
+        "#answer-display",
+        "#numpad",
+        '[data-action="check"]',
+      ];
       const fitsViewport = () =>
-        page.evaluate(() =>
-          ["#numpad", '[data-action="check"]', "#hint"].every((sel) => {
-            const r = document.querySelector(sel).getBoundingClientRect();
-            return (
-              r.bottom <= window.innerHeight && r.right <= window.innerWidth
-            );
-          }),
+        page.evaluate(
+          (selectors) =>
+            selectors.every((sel) => {
+              const r = document.querySelector(sel).getBoundingClientRect();
+              return (
+                r.top >= 0 &&
+                r.bottom <= window.innerHeight &&
+                r.right <= window.innerWidth
+              );
+            }),
+          loopSelectors,
         );
+      const noScroll = () =>
+        page.evaluate(
+          () => document.documentElement.scrollHeight <= window.innerHeight,
+        );
+      // Where the question, hint slot, display, numpad and Check sit.
+      const loopRects = () =>
+        page.evaluate(
+          (selectors) =>
+            selectors
+              .map((sel) => {
+                const r = document.querySelector(sel).getBoundingClientRect();
+                return Math.round(r.left) + "," + Math.round(r.top);
+              })
+              .join(" "),
+          loopSelectors,
+        );
+      // Tablets in landscape, in portrait and a small one: the whole loop
+      // fits without scrolling, and nothing moves when the hint appears.
+      const tablets = [
+        { width: 1024, height: 768 },
+        { width: 768, height: 1024 },
+        { width: 960, height: 600 },
+      ];
+      const askRects = {};
+      const tabletStage = async (stage) => {
+        for (const size of tablets) {
+          const name = size.width + "x" + size.height;
+          await page.setViewportSize(size);
+          check(
+            (await hintStage()) === stage &&
+              (await noOverflow()) &&
+              (await noScroll()) &&
+              (await fitsViewport()),
+            "10 × 10 " + stage + " stage fits " + name + " without scrolling",
+          );
+          if (stage === "ask") askRects[name] = await loopRects();
+          else
+            check(
+              (await loopRects()) === askRects[name],
+              "nothing moves when the hint appears at " + name,
+            );
+          await page.screenshot({
+            path: path.join(
+              root,
+              ".cache",
+              "tablet-tables-" + stage + "-" + name + ".png",
+            ),
+          });
+        }
+        await page.setViewportSize({ width: 390, height: 844 });
+      };
       check((await current()).answer === 100, "worst-case fact reached");
+      await tabletStage("ask");
+      check(await fitsViewport(), "10 × 10 ask stage fits 390 × 844");
+      const phoneAsk = await loopRects();
       await page.clock.runFor(5100);
       check(
         (await page.locator("#hint .block").count()) === 100 &&
@@ -1037,6 +1102,11 @@ const server = http.createServer((request, response) => {
           (await fitsViewport()),
         "10 × 10 hint fits 390 × 844 without scrolling",
       );
+      check(
+        (await loopRects()) === phoneAsk,
+        "nothing moves when the hint appears at 390 × 844",
+      );
+      await tabletStage("hint");
       await page.clock.runFor(10000);
       check(
         (await hintStage()) === "answer" &&

@@ -1918,23 +1918,24 @@ h3 {
   }
 }
 
-/* Phones during a tables hint: map label only and slightly shorter keys,
-   so the 10 x 10 blocks, the numpad and Check fit without scrolling. */
+/* Phones in tables mode: map label only and slightly shorter keys, so the
+   reserved hint slot (10 x 10 blocks), the numpad and Check fit without
+   scrolling from the first second (nothing jumps when the hint appears). */
 @media (max-width: 540px) {
-  .screen--game:has(.blocks) .map svg {
+  .screen--game[data-kind="tables"] .map svg {
     display: none;
   }
-  .screen--game:has(.blocks) .feedback:empty {
+  .screen--game[data-kind="tables"] .feedback:empty {
     min-height: 0;
     margin: 0;
   }
-  .screen--game:has(.blocks) .numpad {
+  .screen--game[data-kind="tables"] .numpad {
     gap: 8px;
   }
-  .screen--game:has(.blocks) .key {
+  .screen--game[data-kind="tables"] .key {
     min-height: 56px;
   }
-  .screen--game:has(.blocks) [data-action="check"] {
+  .screen--game[data-kind="tables"] [data-action="check"] {
     min-height: 64px;
   }
 }
@@ -1947,6 +1948,110 @@ h3 {
   .task-card {
     padding-top: 12px;
     padding-bottom: 12px;
+  }
+}
+
+/* Tables mode: the hint slot is kept from the start (hidden, not removed),
+   and the screen is top-aligned, so nothing moves when the hint (5 s) or the
+   answer (10 s) appears under her finger. */
+.screen--game[data-kind="tables"] .hint {
+  min-height: 132px;
+  margin-bottom: 0.4em;
+}
+.screen--game[data-kind="tables"] .hint[hidden] {
+  display: block !important;
+  visibility: hidden;
+}
+.app:has(> .screen--game.is-active[data-kind="tables"]) {
+  align-items: flex-start;
+}
+
+/* Tables mode on a tablet (>= 720 px wide, either orientation): two
+   columns. Map, parrot, question and hint on the left; the typed answer,
+   numpad and Check on the right, all on one screen. */
+@media (min-width: 720px) {
+  .screen--game.is-active[data-kind="tables"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "bar bar"
+      "map entry"
+      "mascot entry"
+      "main entry";
+    grid-template-rows: auto auto auto 1fr;
+    align-items: start;
+    max-width: 960px;
+    position: relative;
+  }
+  /* The card box is gone (display: contents): pin the combo to the
+     answer card's corner. */
+  .screen--game[data-kind="tables"] .combo-tag {
+    grid-area: entry;
+  }
+  .screen--game[data-kind="tables"] .game-bar {
+    grid-area: bar;
+  }
+  .screen--game[data-kind="tables"] .map {
+    grid-area: map;
+  }
+  .screen--game[data-kind="tables"] .map svg {
+    height: clamp(60px, 11vh, 110px);
+  }
+  .screen--game[data-kind="tables"] .mascot-wrap {
+    grid-area: mascot;
+    margin: 0;
+    /* Room for a two-line bubble, so the question never shifts. */
+    min-height: 64px;
+  }
+  .screen--game[data-kind="tables"] .task-card {
+    display: contents;
+  }
+  .screen--game[data-kind="tables"] .task-main,
+  .screen--game[data-kind="tables"] .task-entry {
+    background: var(--c-card);
+    border-radius: var(--radius-lg);
+    padding: clamp(12px, 2vh, 24px);
+    box-shadow: 0 14px 34px var(--c-shadow);
+    text-align: center;
+  }
+  .screen--game[data-kind="tables"] .task-main {
+    grid-area: main;
+  }
+  .screen--game[data-kind="tables"] .task-entry {
+    grid-area: entry;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen--game[data-kind="tables"] .task-entry [data-action="check"] {
+    width: 100%;
+    margin-top: 12px;
+  }
+  .screen--game[data-kind="tables"] .task-question {
+    font-size: clamp(2.4rem, 7vh, 3.6rem);
+  }
+  .screen--game[data-kind="tables"] .answer-display {
+    margin-top: 0;
+    width: 100%;
+  }
+  .screen--game[data-kind="tables"] .hint {
+    margin-bottom: 0;
+  }
+}
+
+/* Short tablets (e.g. 960 x 600 in landscape): shorter keys and Check. */
+@media (min-width: 720px) and (max-height: 700px) {
+  .screen--game[data-kind="tables"] .mascot-wrap {
+    min-height: 52px;
+  }
+  .screen--game[data-kind="tables"] .numpad {
+    gap: 8px;
+  }
+  .screen--game[data-kind="tables"] .key {
+    min-height: 54px;
+  }
+  .screen--game[data-kind="tables"] [data-action="check"] {
+    min-height: 58px;
   }
 }
 
