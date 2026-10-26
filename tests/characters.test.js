@@ -98,5 +98,21 @@ check(
   ),
   "every accessory draws",
 );
+// Introduction song: 7, 14 ... 70 on a rising scale; the last note is longer.
+const intro = C.introSequence(7);
+check(
+  intro.length === 10 &&
+    intro.map((s) => s.value).join() === "7,14,21,28,35,42,49,56,63,70",
+  "intro values",
+);
+check(
+  intro[0].freq === 262 &&
+    intro.every((s, i) => i === 0 || s.freq > intro[i - 1].freq),
+  "intro pitch rises",
+);
+check(
+  intro.slice(0, 9).every((s) => s.ms === 420) && intro[9].ms === 700,
+  "intro note lengths",
+);
 
 console.log(checks + " character checks passed.");

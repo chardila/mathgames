@@ -356,11 +356,30 @@ function characterSvg(table, fill, accessory) {
   );
 }
 
+// Pentatonic scale (C D E G A over two octaves) from 262 Hz, one note per step.
+var INTRO_FREQS = [262, 294, 330, 392, 440, 523, 587, 659, 784, 880];
+var INTRO_STEP_MS = 420;
+var INTRO_LAST_MS = 700;
+
+// The table's introduction song: table x 1 .. table x 10, rising in pitch.
+function introSequence(table) {
+  var out = [];
+  for (var k = 1; k <= 10; k++) {
+    out.push({
+      value: table * k,
+      freq: INTRO_FREQS[k - 1],
+      ms: k === 10 ? INTRO_LAST_MS : INTRO_STEP_MS,
+    });
+  }
+  return out;
+}
+
 var TableCharacters = {
   CHARACTERS: CHARACTERS,
   ACCESSORIES: ACCESSORIES,
   characterFor: characterFor,
   characterSvg: characterSvg,
+  introSequence: introSequence,
 };
 
 if (typeof module !== "undefined" && module.exports) {

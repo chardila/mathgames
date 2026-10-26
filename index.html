@@ -784,6 +784,41 @@
       </div>
     </div>
 
+    <!-- Table introduction: the character counts its table in a song -->
+    <div
+      id="intro-overlay"
+      class="overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="intro-title"
+      hidden
+    >
+      <div class="card card--centered overlay-card intro-card">
+        <h2 id="intro-title"></h2>
+        <div class="intro-stage">
+          <div id="intro-character" class="intro-character"></div>
+          <p id="intro-number" class="intro-number" aria-live="polite"></p>
+        </div>
+        <div id="intro-blocks" class="intro-blocks" aria-hidden="true"></div>
+        <div class="menu-buttons">
+          <button
+            class="btn btn--primary btn--xl"
+            data-action="intro-done"
+            data-i18n="btn_start"
+          >
+            ¡Vamos!
+          </button>
+          <button
+            class="btn btn--secondary"
+            data-action="intro-replay"
+            data-i18n="btn_replay"
+          >
+            Otra vez
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Parent gate overlay -->
     <div
       id="parent-gate"

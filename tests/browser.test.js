@@ -742,6 +742,9 @@ const server = http.createServer((request, response) => {
     // ---- tables mode ----
     {
       await page.setViewportSize({ width: 1024, height: 768 });
+      // Every table already introduced: these blocks test the stations, the
+      // introduction song is tested on its own below.
+      const allPresented = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
       await seedProfiles(
         [
           {
@@ -754,6 +757,7 @@ const server = http.createServer((request, response) => {
               sound: false,
               timer: false,
             },
+            tables: { presented: allPresented },
           },
         ],
         "p1",
@@ -999,7 +1003,7 @@ const server = http.createServer((request, response) => {
               sound: false,
               timer: false,
             },
-            tables: { facts },
+            tables: { facts, presented: allPresented },
           },
         ],
         "p1",
@@ -1065,6 +1069,7 @@ const server = http.createServer((request, response) => {
                 },
                 settings,
               ),
+              tables: { presented: allPresented },
             },
           ],
           "p1",
@@ -1420,12 +1425,19 @@ const server = http.createServer((request, response) => {
     await charPage.screenshot({
       path: path.join(root, ".cache", "tables-home.png"),
     });
-    // Tapping a character: the parrot says how full it is.
+    // The status is in the card's label; tapping opens the introduction.
+    check(
+      (await card(7).getAttribute("aria-label")).includes("Nube") &&
+        (await card(7).getAttribute("aria-label")).includes("9"),
+      "character status in the card label",
+    );
     await card(7).click();
     check(
-      (await charPage.locator("#fx-layer .toast").count()) > 0,
-      "tapping a character shows its status",
+      (await charPage.locator("#intro-overlay").getAttribute("data-table")) ===
+        "7" && (await charPage.locator("#fx-layer .toast").count()) === 0,
+      "tapping a character opens its introduction, no toast",
     );
+    await charPage.locator('[data-action="intro-done"]').click();
     await charPage.clock.runFor(2500);
     await charPage.clock.pauseAt(
       (await charPage.evaluate(() => Date.now())) + 1000,
@@ -1565,6 +1577,156 @@ const server = http.createServer((request, response) => {
       "no browser errors (album): " + albumErrors.join("; "),
     );
     await albumContext.close();
+    // Table introduction song: shown before the first station of a round with
+    // new facts of a table not presented yet, and on demand from the home.
+    const introContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: "reduce",
+      hasTouch: true,
+    });
+    await introContext.addInitScript(() => {
+      window.__osc = 0;
+      if (window.AudioContext) {
+        const orig = AudioContext.prototype.createOscillator;
+        AudioContext.prototype.createOscillator = function () {
+          window.__osc++;
+          return orig.apply(this, arguments);
+        };
+      }
+    });
+    const introPage = await introContext.newPage();
+    const introErrors = [];
+    introPage.on("pageerror", (error) => introErrors.push(error.message));
+    await introPage.clock.install({ time: new Date(2026, 9, 25, 10, 0) });
+    await introPage.goto(url);
+    await introPage
+      .locator("#language-grid button")
+      .filter({ hasText: "Español" })
+      .click();
+    const introFacts = {};
+    for (let b = 1; b <= 10; b++)
+      introFacts["1-" + b] = {
+        state: "mastered",
+        everMastered: true,
+        seen: 5,
+        fast: 3,
+        fastDays: ["2026-10-01", "2026-10-02"],
+        lastSeen: "2026-10-02",
+        reviewStep: 3,
+        nextReview: "2999-01-01",
+      };
+    await seedProfiles(
+      [
+        {
+          id: "p1",
+          name: "Ana",
+          settings: {
+            mainMode: "tables",
+            setbacks: false,
+            tableStations: 10,
+            sound: true,
+            music: true,
+            timer: false,
+          },
+          tables: {
+            facts: introFacts,
+            probes: { 2: { introduce: true } },
+            presented: [],
+          },
+        },
+      ],
+      "p1",
+      introPage,
+    );
+    await pickProfile("Ana", introPage);
+    await introPage.clock.pauseAt(
+      (await introPage.evaluate(() => Date.now())) + 1000,
+    );
+    const introOverlay = introPage.locator("#intro-overlay");
+    const introNumber = () => introPage.locator("#intro-number").textContent();
+    const introDone = () =>
+      introPage.locator('[data-action="intro-done"]').click();
+    const presented = async () => {
+      const s = await store(introPage);
+      return s.profiles.find((p) => p.id === s.lastId).tables.presented;
+    };
+    await introPage.locator('[data-action="start-tables"]').click();
+    check(
+      (await introOverlay.isVisible()) &&
+        (await introOverlay.getAttribute("role")) === "dialog" &&
+        (await introOverlay.getAttribute("data-table")) === "2" &&
+        (await introPage.locator("#intro-title").getAttribute("data-table")) ===
+          "2" &&
+        (await introPage.evaluate(
+          () =>
+            document.activeElement.getAttribute("data-action") === "intro-done",
+        )),
+      "new table 2 is introduced before the first station",
+    );
+    check(
+      (await introPage.locator("#intro-character .char-svg").count()) === 1 &&
+        (await introPage.locator('[data-action="intro-replay"]').count()) === 1,
+      "introduction shows the character and a replay button",
+    );
+    await introPage.clock.runFor(6000);
+    check(
+      (await introNumber()) === "20" &&
+        (await introPage.locator("#intro-blocks .intro-block").count()) ===
+          20 &&
+        (await introPage.evaluate(() => window.__osc)) > 0,
+      "introduction counts to 20 with music",
+    );
+    check(await noOverflow(introPage), "introduction fits a 390 px screen");
+    await introPage.screenshot({
+      path: path.join(root, ".cache", "table-intro.png"),
+    });
+    await introDone();
+    check(
+      !(await introOverlay.isVisible()) &&
+        (await isActive("#screen-game", introPage)) &&
+        (await presented()).includes(2),
+      "after the introduction the round starts and table 2 is presented",
+    );
+    await introPage.locator('[data-action="pause"]').click();
+    await introPage.locator('[data-action="quit"]').click();
+    await introPage.locator('[data-action="start-tables"]').click();
+    check(
+      !(await introOverlay.isVisible()) &&
+        (await isActive("#screen-game", introPage)),
+      "a presented table is not introduced again",
+    );
+    await introPage.locator('[data-action="pause"]').click();
+    await introPage.locator('[data-action="quit"]').click();
+    await introPage.locator('.char-card[data-table="7"]').click();
+    check(
+      (await introOverlay.isVisible()) &&
+        (await introOverlay.getAttribute("data-table")) === "7",
+      "tapping a character replays its introduction",
+    );
+    await introDone();
+    check(
+      !(await introOverlay.isVisible()) &&
+        (await isActive("#screen-tables-home", introPage)) &&
+        !(await presented()).includes(7),
+      "on-demand introduction returns home and marks nothing",
+    );
+    await setProfileSettings({ music: false }, introPage);
+    await introPage.evaluate(() => {
+      window.__osc = 0;
+    });
+    await introPage.locator('.char-card[data-table="7"]').click();
+    await introPage.clock.runFor(6000);
+    check(
+      (await introPage.evaluate(() => window.__osc)) === 0 &&
+        (await introNumber()) === "70",
+      "without music the count still runs, silently",
+    );
+    await introDone();
+    check(
+      introErrors.length === 0,
+      "no browser errors (intro): " + introErrors.join("; "),
+    );
+    await introContext.close();
     console.log(
       checks +
         " browser checks passed in " +

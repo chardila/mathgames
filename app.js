@@ -166,6 +166,8 @@ var I18N = {
     tables_hint_intro: "Look at the blocks. You can do it!",
     home_characters_label: "Your buddies",
     char_status: "{name} \u00b7 {n} times table \u00b7 {fill} of 10",
+    intro_title: "Meet the {n} times table",
+    btn_replay: "Again",
     char_first: "{name} woke up! It's the {n} times table buddy.",
     char_half: "{name} is half full!",
     char_almost: "You've almost filled {name}, the {n} times table buddy!",
@@ -312,6 +314,8 @@ var I18N = {
     tables_hint_intro: "Mira los bloques. \u00a1T\u00fa puedes!",
     home_characters_label: "Tus personajes",
     char_status: "{name} \u00b7 tabla del {n} \u00b7 {fill} de 10",
+    intro_title: "Conoce la tabla del {n}",
+    btn_replay: "Otra vez",
     char_first:
       "\u00a1{name} despert\u00f3! Es el personaje de la tabla del {n}.",
     char_half: "\u00a1{name} ya est\u00e1 a la mitad!",
@@ -1606,6 +1610,11 @@ function startApp() {
     chest: document.getElementById("chest"),
     treasureReveal: document.getElementById("treasure-reveal"),
     pauseOverlay: document.getElementById("pause-overlay"),
+    introOverlay: document.getElementById("intro-overlay"),
+    introTitle: document.getElementById("intro-title"),
+    introCharacter: document.getElementById("intro-character"),
+    introNumber: document.getElementById("intro-number"),
+    introBlocks: document.getElementById("intro-blocks"),
     fxLayer: document.getElementById("fx-layer"),
     howtoBody: document.querySelector(".howto-body"),
     toggleSound: document.getElementById("toggle-sound"),
@@ -1882,7 +1891,25 @@ function startApp() {
     applyBuddy();
     if (els.powerups) els.powerups.hidden = true;
     showScreen("screen-game");
-    nextTablesStation();
+    presentTables(
+      Tables.tablesToPresent(state.run.round, state.profile.tables),
+      nextTablesStation,
+    );
+  }
+
+  // Introduce each table in order, marking it presented once it is seen to
+  // the end; leaving halfway means it is presented again next time.
+  function presentTables(queue, onDone) {
+    if (!queue.length) {
+      onDone();
+      return;
+    }
+    var table = queue[0];
+    showTableIntro(table, function () {
+      state.profile.tables = Tables.markPresented(state.profile.tables, table);
+      saveProfiles();
+      presentTables(queue.slice(1), onDone);
+    });
   }
 
   // Next station of whichever kind of round is running.
@@ -2071,6 +2098,7 @@ function startApp() {
   // The parrot announces when a table's character wakes up, is half full,
   // almost full or complete.
   function announceFillMilestones(factTables, fillsBefore) {
+    var melodyTable = 0;
     factTables.forEach(function (table, i) {
       var after = Tables.characterFill(state.profile.tables, table);
       var milestone = Tables.fillMilestone(fillsBefore[i], after);
@@ -2085,7 +2113,10 @@ function startApp() {
         toast.setAttribute("data-milestone", milestone);
         toast.setAttribute("data-table", table);
       }
+      melodyTable = table;
     });
+    // One fact can reach a milestone in two tables: sing only the last one.
+    if (melodyTable) playMelody(Characters.characterFor(melodyTable).melody);
   }
 
   // The first run of each calendar day grants a small welcome bonus, to gently
@@ -2851,21 +2882,99 @@ function startApp() {
     refreshMenuStats();
   }
 
-  // A short, cheerful arpeggio when the goal is reached (respects sound).
+  // Melodies need both sound (checked by beep) and music. A new melody
+  // replaces the one still playing, so they never overlap.
+  var melodyTimers = [];
+  function stopMelody() {
+    melodyTimers.forEach(function (id) {
+      window.clearTimeout(id);
+    });
+    melodyTimers = [];
+  }
+  function playMelody(notes) {
+    if (!state.settings.music) return;
+    stopMelody();
+    var delay = 0;
+    notes.forEach(function (note) {
+      melodyTimers.push(
+        window.setTimeout(function () {
+          beep(note[0], note[1], "triangle");
+        }, delay),
+      );
+      delay += note[1] + 20;
+    });
+  }
+
+  // A short, cheerful arpeggio when the goal is reached.
   function playVictoryMelody() {
-    var notes = [
+    playMelody([
       [523, 150],
       [659, 150],
       [784, 150],
       [1047, 320],
-    ];
-    var delay = 0;
-    notes.forEach(function (note) {
-      window.setTimeout(function () {
-        beep(note[0], note[1], "triangle");
-      }, delay);
-      delay += note[1] + 20;
+    ]);
+  }
+
+  /* ---------------- Table introduction song ---------------- */
+  // The table's character counts table x 1 .. table x 10 while a row of
+  // `table` blocks is added per step. The count always runs; the notes only
+  // sound with music on. Never shown during practice stations.
+  var intro = { table: 0, timers: [], onDone: null };
+  function clearIntroTimers() {
+    intro.timers.forEach(function (id) {
+      window.clearTimeout(id);
     });
+    intro.timers = [];
+  }
+  function playTableIntro() {
+    clearIntroTimers();
+    stopMelody();
+    els.introNumber.textContent = "";
+    els.introBlocks.innerHTML = "";
+    var delay = 0;
+    Characters.introSequence(intro.table).forEach(function (step) {
+      intro.timers.push(
+        window.setTimeout(function () {
+          els.introNumber.textContent = step.value;
+          var row = document.createElement("div");
+          row.className = "intro-row";
+          for (var i = 0; i < intro.table; i++) {
+            var block = document.createElement("span");
+            block.className = "intro-block";
+            row.appendChild(block);
+          }
+          els.introBlocks.appendChild(row);
+          if (state.settings.music) beep(step.freq, step.ms, "triangle");
+        }, delay),
+      );
+      delay += step.ms;
+    });
+  }
+  function showTableIntro(table, onDone) {
+    intro.table = table;
+    intro.onDone = onDone || null;
+    var fill = state.profile
+      ? Tables.characterFill(state.profile.tables, table)
+      : 0;
+    els.introOverlay.setAttribute("data-table", table);
+    els.introTitle.setAttribute("data-table", table);
+    els.introTitle.textContent = t("intro_title", { n: table });
+    els.introCharacter.innerHTML = Characters.characterSvg(table, fill, "none");
+    els.introOverlay.hidden = false;
+    var done = els.introOverlay.querySelector('[data-action="intro-done"]');
+    if (done) done.focus();
+    playTableIntro();
+  }
+  // Close without calling back (leaving the screen halfway).
+  function hideTableIntro() {
+    clearIntroTimers();
+    intro.onDone = null;
+    if (els.introOverlay) els.introOverlay.hidden = true;
+  }
+  function finishTableIntro() {
+    var onDone = intro.onDone;
+    hideTableIntro();
+    if (onDone) onDone();
   }
 
   /* ---------------- Coin shop + power-ups ---------------- */
@@ -3184,6 +3293,7 @@ function startApp() {
   // Home depends on the profile: tables home, or the classic menu with the
   // profile's main mode preselected.
   function goHome() {
+    hideTableIntro();
     leaveRun();
     refreshMenuStats();
     if (state.settings.mainMode === "tables") {
@@ -3225,21 +3335,20 @@ function startApp() {
       box.appendChild(card);
     });
   }
-  // Tapping a character: the parrot tells how full it is.
+  // Tapping a character replays its table's introduction (marks nothing).
   function wireHomeCharacters() {
     if (!els.homeCharacters) return;
     els.homeCharacters.addEventListener("click", function (event) {
       var card = event.target.closest(".char-card");
       if (!card || !state.profile) return;
       var table = Number(card.getAttribute("data-table"));
-      showToast(
-        t("char_status", {
-          name: Characters.characterFor(table).name,
-          n: table,
-          fill: Tables.characterFill(state.profile.tables, table),
-        }),
-        "\uD83E\uDD9C",
-      );
+      showTableIntro(table, function () {
+        renderHomeCharacters();
+        var again = els.homeCharacters.querySelector(
+          '.char-card[data-table="' + table + '"]',
+        );
+        if (again) again.focus();
+      });
     });
   }
   function renderHomeGreeting() {
@@ -3250,6 +3359,7 @@ function startApp() {
 
   /* ---------------- Profiles ---------------- */
   function goToProfiles() {
+    hideTableIntro();
     leaveRun();
     state.profile = null;
     state.settings = normalizeSettings();
@@ -3663,11 +3773,17 @@ function startApp() {
       case "start-tables":
         startTablesRun();
         break;
+      case "intro-replay":
+        playTableIntro();
+        break;
+      case "intro-done":
+        finishTableIntro();
+        break;
       case "check":
         checkAnswer();
         break;
       case "pause":
-        if (!els.pauseOverlay.hidden) break;
+        if (!els.pauseOverlay.hidden || !els.introOverlay.hidden) break;
         state.pausedRemaining = state.timerId
           ? Math.max(0, (state.timerDeadline - Date.now()) / 1000)
           : 0;
@@ -3743,6 +3859,8 @@ function startApp() {
       ) {
         return;
       }
+      // The introduction is on top: keys belong to its buttons.
+      if (!els.introOverlay.hidden) return;
       if (/^[0-9]$/.test(event.key)) {
         handleKey(event.key);
       } else if (event.key === "Backspace") {
