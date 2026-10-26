@@ -204,6 +204,38 @@ Referencias por nombre de función, no por línea. Ninguno está aprobado: hay q
 - **Qué pasa:** el texto de "Cómo jugar" describe el modo tablas (escribir, bloques, personajes), pero el botón solo está en el menú de los otros juegos. Un perfil de tablas no llega a esa pantalla, y quien la ve juega con botones por defecto, sin bloques ni personajes.
 - **A analizar:** poner "Cómo jugar" en el inicio de tablas, o tener un texto por modo.
 
+### Salidos de la revisión final de perfiles y modo tablas (2026-10-26)
+
+Menores M-1 a M-7 de la revisión final de la rama `feature/perfiles-y-tablas`. Ninguno está aprobado: hay que analizarlos.
+
+#### H-21 · Almacén de perfiles dañado o compartido entre contextos
+
+- **Estado:** `por-analizar`
+- **Dónde:** `migrateLegacyStorage`, carga de `ms_profiles` en `startApp`, `saveProfiles`
+- **Qué pasa:**
+  - (M-1) Si `ms_profiles` no se puede leer o no trae `profiles` como lista, se reconstruye un único perfil desde `ms_progress` (copia de antes de la migración, que nunca se borra) y `saveProfiles()` sobrescribe el almacén sin avisar. Se pierden los perfiles y el registro de tablas.
+  - (M-2) Dos contextos abiertos (la PWA y una pestaña) escriben el almacén entero desde su memoria: el ajuste del adulto en uno deshace lo que la niña avanzó en el otro, o al revés.
+  - (M-3) Una instancia antigua (v1) que siga abierta tras migrar guarda en `ms_progress`, que ya no se vuelve a leer.
+- **A analizar:** guardar el valor dañado en `ms_profiles_corrupt` y no resucitar los datos antiguos (quizá con una marca `ms_migrated`); escuchar el evento `storage` y recargar el almacén o volver a "¿Quién juega?"; documentar M-3.
+
+#### H-22 · Pausa y sonido al esconder o salir de la ronda
+
+- **Estado:** `por-analizar`
+- **Dónde:** `nextTablesStation`, `startStageTimer`, `leaveRun`, `goHome`, `stopMelody`
+- **Qué pasa:**
+  - (M-5) No hay `visibilitychange`: si deja la tablet a mitad de una operación, la pista y la respuesta avanzan solas y la operación cuenta como "necesitó respuesta" (pierde sus rápidas y, si estaba dominada, vuelve a "practicando" en el álbum).
+  - (M-6) `leaveRun`/`goHome` no paran la melodía: la de victoria o la de un personaje sigue sonando en el inicio o en "¿Quién juega?".
+- **A analizar:** pausar al quedar `document.hidden` (ya existe la pausa con `pausedStage`); llamar a `stopMelody()` al salir.
+
+#### H-23 · Potenciadores de "Otros juegos" y anuncio de la pista
+
+- **Estado:** `por-analizar`
+- **Dónde:** `renderShop`, `#hint` en `index.html`
+- **Qué pasa:**
+  - (M-4) La tienda decide los potenciadores por `mainMode`, no por el tipo de ronda: un perfil de tablas no puede comprarlos para "Otros juegos", aunque allí se ven y se pueden usar. El spec dice que siguen disponibles en "Otros juegos". Relacionado con H-17.
+  - (M-7) `#hint` no tiene `aria-live`: el truco y "7 × 9 = 63. ¡Escríbelo!" no se anuncian a un lector de pantalla (el loro está en `aria-hidden`). Relacionado con H-18.
+- **A analizar:** si la tienda de tablas debe ofrecer potenciadores para "Otros juegos"; `aria-live="polite"` en la pista.
+
 ### Limitaciones de diseño heredadas
 
 #### H-10 · El progreso vive solo en un dispositivo y navegador
