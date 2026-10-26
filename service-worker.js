@@ -27,7 +27,12 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_VERSION)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then((cache) =>
+        // Bypass the HTTP cache so an update never mixes old and new files.
+        cache.addAll(
+          PRECACHE_URLS.map((url) => new Request(url, { cache: "reload" })),
+        ),
+      )
       .then(() => self.skipWaiting()),
   );
 });

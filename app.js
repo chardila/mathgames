@@ -41,6 +41,7 @@ var LANGUAGES = [
  */
 var I18N = {
   en: {
+    load_error: "A game file did not load. Close the app and open it again.",
     lang_title: "Choose your language",
     lang_hint: "You can change it later in the settings.",
     tagline: "Solve number puzzles and find the great treasure!",
@@ -191,6 +192,8 @@ var I18N = {
     album_cell_detail: "{q} · {seen} times · {secs} s",
   },
   es: {
+    load_error:
+      "Un archivo del juego no se carg\u00f3. Cierra la app y \u00e1brela de nuevo.",
     lang_title: "Elige tu idioma",
     lang_hint: "Puedes cambiarlo m\u00e1s tarde en los ajustes.",
     tagline:
@@ -398,13 +401,20 @@ var BADGE_LABELS = {
 /* ================================================================== */
 
 // Tables-mode learning engine (loaded by index.html in the browser).
+// Without the engine (e.g. a stale index.html) the app shows load_error.
 var Tables =
-  typeof TablesEngine !== "undefined" ? TablesEngine : require("./tables.js");
+  typeof TablesEngine !== "undefined"
+    ? TablesEngine
+    : typeof require === "function"
+      ? require("./tables.js")
+      : null;
 // One character per table (loaded by index.html in the browser).
 var Characters =
   typeof TableCharacters !== "undefined"
     ? TableCharacters
-    : require("./characters.js");
+    : typeof require === "function"
+      ? require("./characters.js")
+      : null;
 
 // Inclusive random integer in [min, max].
 function randInt(min, max) {
@@ -4225,11 +4235,22 @@ function startApp() {
 /* ================================================================== */
 /* Bootstrap (browser) or export (Node test runner)                    */
 /* ================================================================== */
+// A missing engine file: say so in both languages instead of a blank page.
+function showLoadError() {
+  var box = document.createElement("p");
+  box.id = "load-error";
+  box.setAttribute("role", "alert");
+  box.style.cssText = "margin:2rem 1rem;font-size:1.25rem;text-align:center";
+  box.textContent = I18N.es.load_error + " / " + I18N.en.load_error;
+  document.body.insertBefore(box, document.body.firstChild);
+}
+
 if (typeof document !== "undefined") {
+  var bootApp = Tables && Characters ? startApp : showLoadError;
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", startApp);
+    document.addEventListener("DOMContentLoaded", bootApp);
   } else {
-    startApp();
+    bootApp();
   }
 }
 

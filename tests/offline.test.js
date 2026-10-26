@@ -10,8 +10,11 @@ const vm = require("node:vm");
   let claimed = false;
   const root = path.join(__dirname, "..");
   const cache = {
-    addAll: async (urls) => {
-      for (const url of urls) {
+    addAll: async (requests) => {
+      for (const request of requests) {
+        // Precache must bypass the HTTP cache (no mixed versions).
+        assert.equal(request.cache, "reload");
+        const url = request.url;
         assert.ok(
           fs.existsSync(path.join(root, url === "./" ? "index.html" : url)),
           url,
@@ -34,6 +37,12 @@ const vm = require("node:vm");
   let offline = false;
   const context = {
     URL,
+    Request: class {
+      constructor(url, init) {
+        this.url = url;
+        this.cache = init && init.cache;
+      }
+    },
     Promise,
     caches,
     fetch: async () => {
