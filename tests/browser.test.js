@@ -1335,6 +1335,141 @@ const server = http.createServer((request, response) => {
       "game without storage",
     );
     await privateContext.close();
+    // Characters: one per table on the tables home, filled by mastered facts.
+    // Ana has mastered everything except 7-8, one fast answer away (fast 2,
+    // the earlier fast day yesterday).
+    const charContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: "reduce",
+      hasTouch: true,
+    });
+    const charPage = await charContext.newPage();
+    const charErrors = [];
+    charPage.on("pageerror", (error) => charErrors.push(error.message));
+    await charPage.clock.install({ time: new Date(2026, 9, 25, 10, 0) });
+    await charPage.goto(url);
+    await charPage
+      .locator("#language-grid button")
+      .filter({ hasText: "Español" })
+      .click();
+    const charFacts = {};
+    for (let a = 1; a <= 10; a++)
+      for (let b = a; b <= 10; b++)
+        charFacts[a + "-" + b] = {
+          state: "mastered",
+          everMastered: true,
+          seen: 5,
+          fast: 3,
+          fastDays: ["2026-10-01", "2026-10-02"],
+          lastSeen: "2026-10-02",
+          reviewStep: 3,
+          nextReview: "2999-01-01",
+        };
+    charFacts["7-8"] = {
+      state: "practicing",
+      seen: 3,
+      fast: 2,
+      fastDays: ["2026-10-24"],
+      lastSeen: "2026-10-24",
+    };
+    await seedProfiles(
+      [
+        {
+          id: "p1",
+          name: "Ana",
+          settings: {
+            mainMode: "tables",
+            setbacks: false,
+            tableStations: 10,
+            sound: false,
+            timer: false,
+          },
+          tables: { facts: charFacts },
+        },
+      ],
+      "p1",
+      charPage,
+    );
+    await pickProfile("Ana", charPage);
+    const card = (n) => charPage.locator('.char-card[data-table="' + n + '"]');
+    check(
+      (await isActive("#screen-tables-home", charPage)) &&
+        (await charPage.locator("#home-characters .char-card").count()) ===
+          10 &&
+        (await charPage.locator("#home-characters .char-svg").count()) === 10,
+      "ten characters on the tables home",
+    );
+    check(
+      (await card(7).getAttribute("data-fill")) === "9" &&
+        (await card(7).locator(".char-svg").getAttribute("data-fill")) ===
+          "9" &&
+        (await card(7).locator(".char-count").textContent()) === "9/10" &&
+        (await card(1).getAttribute("data-fill")) === "10",
+      "table 7 character is 9/10",
+    );
+    check(
+      (await noOverflow(charPage)) &&
+        (await charPage.evaluate(() => {
+          const r = document
+            .querySelector('#screen-tables-home [data-action="start-tables"]')
+            .getBoundingClientRect();
+          return r.bottom <= window.innerHeight;
+        })),
+      "characters fit the 390 × 844 tables home",
+    );
+    await charPage.screenshot({
+      path: path.join(root, ".cache", "tables-home.png"),
+    });
+    // Tapping a character: the parrot says how full it is.
+    await card(7).click();
+    check(
+      (await charPage.locator("#fx-layer .toast").count()) > 0,
+      "tapping a character shows its status",
+    );
+    await charPage.clock.runFor(2500);
+    await charPage.clock.pauseAt(
+      (await charPage.evaluate(() => Date.now())) + 1000,
+    );
+    await charPage.locator('[data-action="start-tables"]').click();
+    const charCurrent = async () => {
+      const n = (await charPage.locator("#game-question").textContent())
+        .match(/\d+/g)
+        .map(Number);
+      return { a: n[0], b: n[1], answer: n[0] * n[1] };
+    };
+    let fullToast = false;
+    let reached = false;
+    for (let i = 0; i < 40 && (await isActive("#screen-game", charPage)); i++) {
+      const q = await charCurrent();
+      await charPage.keyboard.type(String(q.answer));
+      await charPage.keyboard.press("Enter");
+      if (q.answer === 56 && !reached) {
+        reached = true;
+        fullToast =
+          (await charPage
+            .locator('#fx-layer .toast[data-milestone="full"][data-table="7"]')
+            .count()) === 1;
+      }
+      await charPage.clock.runFor(800);
+    }
+    check(reached && fullToast, "completing table 7 is announced");
+    if (await isActive("#screen-summary", charPage))
+      await charPage.locator('#screen-summary [data-action="go-menu"]').click();
+    else {
+      await charPage.locator('[data-action="pause"]').click();
+      await charPage.locator('[data-action="quit"]').click();
+    }
+    check(
+      (await isActive("#screen-tables-home", charPage)) &&
+        (await card(7).getAttribute("data-fill")) === "10" &&
+        (await card(7).locator(".char-count").textContent()) === "10/10",
+      "table 7 character is full after the round",
+    );
+    check(
+      charErrors.length === 0,
+      "no browser errors (characters): " + charErrors.join("; "),
+    );
+    await charContext.close();
     console.log(
       checks +
         " browser checks passed in " +

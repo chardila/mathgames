@@ -164,6 +164,12 @@ var I18N = {
     btn_continue_learning: "Keep learning",
     btn_other_games: "Other games",
     tables_hint_intro: "Look at the blocks. You can do it!",
+    home_characters_label: "Your buddies",
+    char_status: "{name} \u00b7 {n} times table \u00b7 {fill} of 10",
+    char_first: "{name} woke up! It's the {n} times table buddy.",
+    char_half: "{name} is half full!",
+    char_almost: "You've almost filled {name}, the {n} times table buddy!",
+    char_full: "{name} is complete! You mastered the {n} times table!",
     tables_write_it: "{q} = {answer}. Type it in!",
     lbl_mastered_today: "Mastered today",
     sum_mastered_one: "Today you mastered 1 new fact!",
@@ -296,6 +302,15 @@ var I18N = {
     btn_continue_learning: "Seguir aprendiendo",
     btn_other_games: "Otros juegos",
     tables_hint_intro: "Mira los bloques. \u00a1T\u00fa puedes!",
+    home_characters_label: "Tus personajes",
+    char_status: "{name} \u00b7 tabla del {n} \u00b7 {fill} de 10",
+    char_first:
+      "\u00a1{name} despert\u00f3! Es el personaje de la tabla del {n}.",
+    char_half: "\u00a1{name} ya est\u00e1 a la mitad!",
+    char_almost:
+      "\u00a1Ya casi llenas a {name}, el personaje de la tabla del {n}!",
+    char_full:
+      "\u00a1{name} est\u00e1 completo! \u00a1Dominaste la tabla del {n}!",
     tables_write_it: "{q} = {answer}. \u00a1Escr\u00edbelo!",
     lbl_mastered_today: "Dominadas hoy",
     sum_mastered_one: "\u00a1Hoy dominaste 1 operaci\u00f3n nueva!",
@@ -357,6 +372,11 @@ var BADGE_LABELS = {
 // Tables-mode learning engine (loaded by index.html in the browser).
 var Tables =
   typeof TablesEngine !== "undefined" ? TablesEngine : require("./tables.js");
+// One character per table (loaded by index.html in the browser).
+var Characters =
+  typeof TableCharacters !== "undefined"
+    ? TableCharacters
+    : require("./characters.js");
 
 // Inclusive random integer in [min, max].
 function randInt(min, max) {
@@ -1544,6 +1564,7 @@ function startApp() {
     menuTreasures: document.getElementById("menu-treasures"),
     menuBadges: document.getElementById("menu-badges"),
     homeCoins: document.getElementById("home-coins"),
+    homeCharacters: document.getElementById("home-characters"),
     homeGreeting: document.getElementById("home-greeting"),
     gameStreak: document.getElementById("game-streak"),
     gameCoins: document.getElementById("game-coins"),
@@ -1692,7 +1713,10 @@ function startApp() {
       .querySelector('[data-action="pause"]')
       .setAttribute("aria-label", t("paused"));
     if (state.run) updateMapProgressLabel();
-    if (state.profile) renderHomeGreeting();
+    if (state.profile) {
+      renderHomeGreeting();
+      renderHomeCharacters();
+    }
   }
 
   /* ---------------- Number pad ---------------- */
@@ -1981,6 +2005,10 @@ function startApp() {
       clearStageTimer();
       var elapsed = run.taskStart ? Math.max(0, now() - run.taskStart) : 0;
       var outcome = Tables.classifyOutcome(run.stage, elapsed);
+      var factTables = Tables.factTables(activeTask.item.key);
+      var fillsBefore = factTables.map(function (table) {
+        return Tables.characterFill(state.profile.tables, table);
+      });
       state.profile.tables = Tables.recordTablesAnswer(
         state.profile.tables,
         activeTask.item,
@@ -1994,6 +2022,8 @@ function startApp() {
         run.round = Tables.scheduleRetry(run.round, run.cursor);
       }
       rewardCorrect(outcome === "fast" || outcome === "slow");
+      // After the praise, so the character news is what stays on screen.
+      announceFillMilestones(factTables, fillsBefore);
       stopTimer();
       run.index++;
       run.cursor++;
@@ -2016,6 +2046,26 @@ function startApp() {
     renderAnswer();
     if (run.stage === "ask") enterHintStage();
     else if (run.stage === "hint") enterAnswerStage();
+  }
+
+  // The parrot announces when a table's character wakes up, is half full,
+  // almost full or complete.
+  function announceFillMilestones(factTables, fillsBefore) {
+    factTables.forEach(function (table, i) {
+      var after = Tables.characterFill(state.profile.tables, table);
+      var milestone = Tables.fillMilestone(fillsBefore[i], after);
+      if (!milestone) return;
+      var message = t("char_" + milestone, {
+        name: Characters.characterFor(table).name,
+        n: table,
+      });
+      mascotSay(message, "\uD83E\uDD9C");
+      var toast = showToast(message, "\uD83C\uDF89");
+      if (toast) {
+        toast.setAttribute("data-milestone", milestone);
+        toast.setAttribute("data-table", table);
+      }
+    });
   }
 
   // The first run of each calendar day grants a small welcome bonus, to gently
@@ -2465,6 +2515,7 @@ function startApp() {
     window.setTimeout(function () {
       if (node.parentNode) node.parentNode.removeChild(node);
     }, 2000);
+    return node;
   }
   function haptic(pattern) {
     try {
@@ -3117,11 +3168,59 @@ function startApp() {
     refreshMenuStats();
     if (state.settings.mainMode === "tables") {
       renderHomeGreeting();
+      renderHomeCharacters();
       showScreen("screen-tables-home");
       return;
     }
     selectModeCard(state.settings.mainMode);
     showScreen("screen-menu");
+  }
+  // One card per table: the character, filled by mastered facts, and "n/10".
+  function renderHomeCharacters() {
+    var box = els.homeCharacters;
+    if (!box || !state.profile) return;
+    box.innerHTML = "";
+    box.setAttribute("role", "group");
+    box.setAttribute("aria-label", t("home_characters_label"));
+    Characters.CHARACTERS.forEach(function (ch) {
+      var fill = Tables.characterFill(state.profile.tables, ch.table);
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "char-card";
+      card.setAttribute("data-table", ch.table);
+      card.setAttribute("data-fill", fill);
+      card.setAttribute(
+        "aria-label",
+        t("char_status", { name: ch.name, n: ch.table, fill: fill }),
+      );
+      card.innerHTML = Characters.characterSvg(ch.table, fill, "none");
+      var name = document.createElement("span");
+      name.className = "char-name";
+      name.textContent = ch.name;
+      var count = document.createElement("span");
+      count.className = "char-count";
+      count.textContent = fill + "/10";
+      card.appendChild(name);
+      card.appendChild(count);
+      box.appendChild(card);
+    });
+  }
+  // Tapping a character: the parrot tells how full it is.
+  function wireHomeCharacters() {
+    if (!els.homeCharacters) return;
+    els.homeCharacters.addEventListener("click", function (event) {
+      var card = event.target.closest(".char-card");
+      if (!card || !state.profile) return;
+      var table = Number(card.getAttribute("data-table"));
+      showToast(
+        t("char_status", {
+          name: Characters.characterFor(table).name,
+          n: table,
+          fill: Tables.characterFill(state.profile.tables, table),
+        }),
+        "\uD83E\uDD9C",
+      );
+    });
   }
   function renderHomeGreeting() {
     els.homeGreeting.textContent = t("home_greeting", {
@@ -3563,6 +3662,7 @@ function startApp() {
     buildEditorSelects();
     wireToggles();
     wireActions();
+    wireHomeCharacters();
     renderLanguageGrids();
     refreshMenuStats();
     applyBuddy();

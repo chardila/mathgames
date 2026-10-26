@@ -17,12 +17,12 @@
   "scripts": {
     "start": "npx --yes http-server . -p 8080 -c-1",
     "serve": "python3 -m http.server 8080",
-    "test": "node tests/math.test.js && node tests/learning.test.js && node tests/profiles.test.js && node tests/tables.test.js && node tests/offline.test.js",
+    "test": "node tests/math.test.js && node tests/learning.test.js && node tests/profiles.test.js && node tests/tables.test.js && node tests/characters.test.js && node tests/offline.test.js",
     "test:browser": "node tests/browser.test.js",
     "format": "npx --yes prettier --write '**/*.{js,css,json,md,html}'",
     "format:check": "npx --yes prettier --check '**/*.{js,css,json,md,html}'",
     "validate:json": "node scripts/validate-json.js",
-    "validate": "node --check app.js && node --check tables.js && node --check service-worker.js && npm run validate:json"
+    "validate": "node --check app.js && node --check tables.js && node --check characters.js && node --check service-worker.js && npm run validate:json"
   },
   "private": false,
   "devDependencies": {

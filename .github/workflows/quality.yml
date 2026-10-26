@@ -25,6 +25,7 @@ jobs:
         run: |
           node --check app.js
           node --check tables.js
+          node --check characters.js
           node --check service-worker.js
 
       - name: Validate JSON files
