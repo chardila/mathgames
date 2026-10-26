@@ -164,6 +164,39 @@ check(
   rec(fresh, "2-5", "fast", "2026-10-25", "probe").probes["2"].fast === 1,
   "fast probe counted on home table",
 );
+// A probe's retry is the same fact again, not a second probe.
+{
+  const probeRound = [{ key: "1-9", a: 1, b: 9, kind: "probe" }].concat(
+    T.factKeys()
+      .filter((key) => key !== "1-9")
+      .slice(0, 14)
+      .map((key) => ({ key, a: 1, b: 1, kind: "practice" })),
+  );
+  const retry = T.scheduleRetry(probeRound, 0)[3];
+  let pr = T.recordTablesAnswer(
+    fresh,
+    probeRound[0],
+    "hint",
+    6000,
+    "2026-10-25",
+  );
+  pr = T.recordTablesAnswer(pr, retry, "answer", 11000, "2026-10-25");
+  check(
+    retry.key === "1-9" &&
+      retry.retry &&
+      pr.probes["1"].fail === 1 &&
+      !pr.probes["1"].introduce,
+    "probe retry does not count as a second probe",
+  );
+  const fastRetry = T.recordTablesAnswer(
+    fresh,
+    retry,
+    "fast",
+    1000,
+    "2026-10-25",
+  );
+  check(fastRetry.probes["1"].fast === 0, "fast probe retry not counted");
+}
 const before = JSON.stringify(fresh);
 rec(fresh, "7-9", "fast", "2026-10-25");
 check(JSON.stringify(fresh) === before, "pure");

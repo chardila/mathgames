@@ -219,7 +219,8 @@ function recordTablesAnswer(tables, item, outcome, elapsedMs, today) {
     }
   }
 
-  if (item.kind === "probe") {
+  // A retry repeats the same fact: it is not a second probe of its table.
+  if (item.kind === "probe" && !item.retry) {
     var probe = next.probes[homeTable(item.key)];
     if (outcome === "fast") {
       probe.fast++;
