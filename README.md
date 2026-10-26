@@ -19,8 +19,13 @@ Un juego de aventuras para aprenderse de memoria las **tablas de multiplicar**. 
 
 Todo lo demás se conserva: mapa de aventura, dificultad adaptativa, pistas tras un error, estrellas, rachas, monedas, insignias, 50 tesoros, tienda con potenciadores y acompañantes, modo con temporizador, modo rápido y funcionamiento sin conexión.
 
+## 👨‍👩‍👧 Perfiles y zona de padres
+
+Cada niño tiene su perfil, con sus ajustes, monedas, tesoros y progreso; al abrir el juego se elige en "¿Quién juega?" (desde el menú, con **Cambiar jugador**). La **zona de padres** está en esa misma pantalla, con el botón 🔒: pide resolver una multiplicación para entrar. Allí se crean y editan perfiles, se cambian los ajustes de cada niño y se ve el álbum de las 100 operaciones de las tablas. Todo queda guardado solo en el dispositivo.
+
 ## ✨ Características
 
+- 🧠 Modo tablas: se escribe el resultado, aparece una pista con bloques si tarda y cada tabla tiene un personaje que se llena de color
 - ➕ Suma, ➖ resta, ✖️ multiplicación (1×1 a 10×10), ➗ división exacta y 🌈 modo mixto
 - 🗺️ Mapa de aventura con 25 estaciones (10 en modo rápido)
 - 🎯 Dificultad que se adapta a cada operación
@@ -62,6 +67,8 @@ npm run test:browser         # pruebas en navegador real
 index.html          # pantallas de la app
 styles.css          # tema y animaciones
 app.js              # motor del juego, textos (i18n) y generadores de operaciones
+tables.js           # motor del modo tablas (dominio por operación y repaso)
+characters.js       # un personaje y una melodía por tabla
 manifest.json       # metadatos PWA
 service-worker.js   # caché sin conexión
 tests/              # pruebas

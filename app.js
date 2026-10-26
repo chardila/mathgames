@@ -41,11 +41,15 @@ var LANGUAGES = [
  */
 var I18N = {
   en: {
+    load_error: "A game file did not load. Close the app and open it again.",
     lang_title: "Choose your language",
     lang_hint: "You can change it later in the settings.",
     tagline: "Solve number puzzles and find the great treasure!",
     btn_play: "Start adventure",
-    btn_settings: "Settings",
+    btn_switch_player: "Switch player",
+    who_title: "Who's playing?",
+    who_empty: "No players yet. Ask a grown-up to add one.",
+    profile_default_name: "Player {n}",
     btn_howto: "How to play",
     btn_back: "Back",
     btn_start: "Let's go!",
@@ -76,7 +80,6 @@ var I18N = {
     lbl_best_streak: "Best streak",
     run_complete: "Journey complete!",
     treasure_found: "You found the treasure!",
-    set_title: "Settings",
     set_sound: "Sounds",
     set_timer: "Timer mode",
     set_quick: "Quick run (10 tasks)",
@@ -85,7 +88,7 @@ var I18N = {
     reset_confirm: "Really delete all progress?",
     howto_title: "How to play",
     howto_body:
-      "Travel across the map and solve a math task at every station. Tap the correct answer from the buttons. If you miss, we show you the worked solution – tap it to continue. Collect stars, coins and badges. Spend stars for extra time, and coins in the shop for power-ups like the Joker and new buddies. At the end of every journey you open a treasure chest with a new treasure each day!",
+      "Travel across the map and solve a multiplication at every station. Type the result with the big keys and tap Check. If you take a while, coloured blocks appear to help you count. The parrot cheers with you when you get it right. Every table has its own character, and it fills with colour as you learn the table. Spend your coins in the shop on fun things. A treasure waits for you at the end of every journey!",
     play_again: "New journey",
     paused: "Paused",
     station_progress: "Station {n} of {total}",
@@ -93,6 +96,24 @@ var I18N = {
     new_badge: "New badge!",
     set_blitz: "Lightning tasks with timer",
     set_choices: "Answer buttons instead of typing",
+    btn_parents: "Parents",
+    gate_title: "Grown-ups only",
+    gate_wrong: "Not quite. Try this one.",
+    btn_ok: "Enter",
+    btn_cancel: "Cancel",
+    parents_title: "Parents area",
+    add_profile: "Add player",
+    btn_edit: "Edit",
+    edit_title: "Player",
+    edit_name: "Name",
+    edit_avatar: "Avatar",
+    edit_main_mode: "Home screen",
+    mode_tables: "Learn the tables",
+    set_music: "Music",
+    set_setbacks: "Go back stations on a miss",
+    set_stations: "Stations in tables mode",
+    delete_profile: "Delete player",
+    delete_confirm: "Delete {name} and all their progress?",
     choose_answer: "Tap the correct answer",
     blitz_tag: "Blitz!",
     combo_tag: "Combo ×{x}",
@@ -117,6 +138,12 @@ var I18N = {
     shop_buy: "Buy",
     shop_equip: "Select",
     shop_equipped: "Active",
+    shop_cosmetics: "For your buddies and your map",
+    shop_unequip: "Remove",
+    shop_price: "{n} coins",
+    btn_treasures: "My treasures",
+    treasures_title: "My treasures",
+    treasure_locked: "Treasure not found yet",
     not_enough_coins: "Not enough coins",
     no_powerup: "Buy it in the shop first",
     joker_used: "Joker! Solved.",
@@ -130,14 +157,52 @@ var I18N = {
     encourage_1: "Almost!",
     encourage_2: "Nearly there!",
     encourage_3: "Don't give up!",
+    trick_1: "{n} \u00d7 1 is just one group of {n}.",
+    trick_10: "Times 10: put a zero after {n}.",
+    trick_9: "{n} \u00d7 10 = {tens}, minus {n}.",
+    trick_2: "It's double: {n} + {n}.",
+    trick_5: "{n} \u00d7 10 = {tens}, then half of it.",
+    trick_4: "Double, then double again: {n} \u00d7 2 = {double}, then again.",
+    trick_3: "{n} \u00d7 2 = {double}, plus {n}.",
+    trick_split: "{a} \u00d7 5 = {five}, plus {a} \u00d7 {rest}.",
+    home_greeting: "Hi, {name}! Shall we keep going?",
+    btn_continue_learning: "Keep learning",
+    btn_other_games: "Other games",
+    tables_hint_intro: "Look at the blocks. You can do it!",
+    home_characters_label: "Your buddies",
+    char_status: "{name} \u00b7 {n} times table \u00b7 {fill} of 10",
+    intro_title: "Meet the {n} times table",
+    btn_replay: "Again",
+    char_first: "{name} woke up! It's the {n} times table buddy.",
+    char_half: "{name} is half full!",
+    char_almost: "You've almost filled {name}, the {n} times table buddy!",
+    char_full: "{name} is complete! You mastered the {n} times table!",
+    tables_write_it: "{q} = {answer}. Type it in!",
+    lbl_mastered_today: "Mastered today",
+    sum_mastered_one: "Today you mastered 1 new fact!",
+    sum_mastered: "Today you mastered {n} new facts!",
+    sum_practiced: "Today you practised {n} facts! Every round counts.",
+    btn_album: "View album",
+    album_title: "{name}'s album",
+    album_summary: "{m} of 55 mastered · {p} practising",
+    album_new: "New",
+    album_practicing: "Practising",
+    album_almost: "Almost there",
+    album_mastered: "Mastered",
+    album_cell_detail: "{q} · {seen} times · {secs} s",
   },
   es: {
+    load_error:
+      "Un archivo del juego no se carg\u00f3. Cierra la app y \u00e1brela de nuevo.",
     lang_title: "Elige tu idioma",
     lang_hint: "Puedes cambiarlo m\u00e1s tarde en los ajustes.",
     tagline:
       "\u00a1Resuelve acertijos de n\u00fameros y encuentra el gran tesoro!",
     btn_play: "Empezar aventura",
-    btn_settings: "Ajustes",
+    btn_switch_player: "Cambiar jugador",
+    who_title: "\u00bfQui\u00e9n juega?",
+    who_empty: "Todav\u00eda no hay jugadores. Pide a un adulto que cree uno.",
+    profile_default_name: "Jugador {n}",
     btn_howto: "C\u00f3mo jugar",
     btn_back: "Atr\u00e1s",
     btn_start: "\u00a1Vamos!",
@@ -168,7 +233,6 @@ var I18N = {
     lbl_best_streak: "Mejor racha",
     run_complete: "\u00a1Viaje completado!",
     treasure_found: "\u00a1Has encontrado el tesoro!",
-    set_title: "Ajustes",
     set_sound: "Sonidos",
     set_timer: "Modo tiempo",
     set_quick: "Ronda r\u00e1pida (10 tareas)",
@@ -177,7 +241,7 @@ var I18N = {
     reset_confirm: "\u00bfBorrar todo el progreso?",
     howto_title: "C\u00f3mo jugar",
     howto_body:
-      "Viaja por el mapa y resuelve una tarea en cada estaci\u00f3n. Escribe tu respuesta con las teclas grandes y pulsa Comprobar. Re\u00fane estrellas, monedas e insignias. \u00a1Un cofre del tesoro te espera al final de cada viaje!",
+      "Viaja por el mapa y resuelve una multiplicaci\u00f3n en cada estaci\u00f3n. Escribe el resultado con las teclas grandes y pulsa Comprobar. Si tardas, aparecen bloques de colores que te ayudan a contar. El lorito celebra contigo cada acierto. Cada tabla tiene su personaje, que se llena de color cuando te la sabes. Con tus monedas compras cosas bonitas en la tienda. \u00a1Al final de cada viaje te espera un tesoro!",
     play_again: "Nuevo viaje",
     paused: "Pausa",
     station_progress: "Estaci\u00f3n {n} de {total}",
@@ -185,6 +249,24 @@ var I18N = {
     new_badge: "\u00a1Nueva insignia!",
     set_blitz: "Tareas rel\u00e1mpago con cron\u00f3metro",
     set_choices: "Botones de respuesta en lugar de escribir",
+    btn_parents: "Zona de padres",
+    gate_title: "Solo para adultos",
+    gate_wrong: "No es correcto. Prueba con esta.",
+    btn_ok: "Entrar",
+    btn_cancel: "Cancelar",
+    parents_title: "Zona de padres",
+    add_profile: "A\u00f1adir jugador",
+    btn_edit: "Editar",
+    edit_title: "Jugador",
+    edit_name: "Nombre",
+    edit_avatar: "Avatar",
+    edit_main_mode: "Pantalla de inicio",
+    mode_tables: "Aprender las tablas",
+    set_music: "M\u00fasica",
+    set_setbacks: "Retroceder estaciones al fallar",
+    set_stations: "Estaciones en modo tablas",
+    delete_profile: "Borrar jugador",
+    delete_confirm: "\u00bfBorrar a {name} y todo su progreso?",
     choose_answer: "Toca la respuesta correcta",
     blitz_tag: "\u00a1Rel\u00e1mpago!",
     combo_tag: "Combo \u00d7{x}",
@@ -209,6 +291,12 @@ var I18N = {
     shop_buy: "Comprar",
     shop_equip: "Elegir",
     shop_equipped: "Activo",
+    shop_cosmetics: "Para tus personajes y tu mapa",
+    shop_unequip: "Quitar",
+    shop_price: "{n} monedas",
+    btn_treasures: "Mis tesoros",
+    treasures_title: "Mis tesoros",
+    treasure_locked: "Tesoro por descubrir",
     not_enough_coins: "No tienes suficientes monedas",
     no_powerup: "Primero c\u00f3mpralo en la tienda",
     joker_used: "\u00a1Comod\u00edn! Resuelto.",
@@ -222,6 +310,43 @@ var I18N = {
     encourage_1: "\u00a1Casi!",
     encourage_2: "\u00a1Ya casi lo tienes!",
     encourage_3: "\u00a1No te rindas!",
+    trick_1: "{n} \u00d7 1 es un solo grupo de {n}.",
+    trick_10: "Por 10: pon un cero detr\u00e1s del {n}.",
+    trick_9: "{n} \u00d7 10 = {tens}, menos {n}.",
+    trick_2: "Es el doble: {n} + {n}.",
+    trick_5: "{n} \u00d7 10 = {tens}, y luego la mitad.",
+    trick_4:
+      "El doble del doble: {n} \u00d7 2 = {double}, y otra vez el doble.",
+    trick_3: "{n} \u00d7 2 = {double}, m\u00e1s {n}.",
+    trick_split: "{a} \u00d7 5 = {five}, m\u00e1s {a} \u00d7 {rest}.",
+    home_greeting: "\u00a1Hola, {name}! \u00bfSeguimos?",
+    btn_continue_learning: "Seguir aprendiendo",
+    btn_other_games: "Otros juegos",
+    tables_hint_intro: "Mira los bloques. \u00a1T\u00fa puedes!",
+    home_characters_label: "Tus personajes",
+    char_status: "{name} \u00b7 tabla del {n} \u00b7 {fill} de 10",
+    intro_title: "Conoce la tabla del {n}",
+    btn_replay: "Otra vez",
+    char_first:
+      "\u00a1{name} despert\u00f3! Es el personaje de la tabla del {n}.",
+    char_half: "\u00a1{name} ya est\u00e1 a la mitad!",
+    char_almost:
+      "\u00a1Ya casi llenas a {name}, el personaje de la tabla del {n}!",
+    char_full:
+      "\u00a1{name} est\u00e1 completo! \u00a1Dominaste la tabla del {n}!",
+    tables_write_it: "{q} = {answer}. \u00a1Escr\u00edbelo!",
+    lbl_mastered_today: "Dominadas hoy",
+    sum_mastered_one: "\u00a1Hoy dominaste 1 operaci\u00f3n nueva!",
+    sum_mastered: "\u00a1Hoy dominaste {n} operaciones nuevas!",
+    sum_practiced: "\u00a1Hoy practicaste {n} operaciones! Cada ronda cuenta.",
+    btn_album: "Ver \u00e1lbum",
+    album_title: "\u00c1lbum de {name}",
+    album_summary: "{m} de 55 dominadas \u00b7 {p} practicando",
+    album_new: "Nueva",
+    album_practicing: "Practicando",
+    album_almost: "Casi dominada",
+    album_mastered: "Dominada",
+    album_cell_detail: "{q} \u00b7 {seen} veces \u00b7 {secs} s",
   },
 };
 
@@ -274,6 +399,22 @@ var BADGE_LABELS = {
 /* ================================================================== */
 /* 2. Pure math generators + validation (test-friendly)                */
 /* ================================================================== */
+
+// Tables-mode learning engine (loaded by index.html in the browser).
+// Without the engine (e.g. a stale index.html) the app shows load_error.
+var Tables =
+  typeof TablesEngine !== "undefined"
+    ? TablesEngine
+    : typeof require === "function"
+      ? require("./tables.js")
+      : null;
+// One character per table (loaded by index.html in the browser).
+var Characters =
+  typeof TableCharacters !== "undefined"
+    ? TableCharacters
+    : typeof require === "function"
+      ? require("./characters.js")
+      : null;
 
 // Inclusive random integer in [min, max].
 function randInt(min, max) {
@@ -671,6 +812,206 @@ function migrateLearningStart(progress) {
     next.learningStartVersion = 1;
   }
   return next;
+}
+
+// Per-profile defaults, options and limits.
+var DEFAULT_SETTINGS = {
+  sound: true,
+  music: true,
+  timer: false,
+  blitz: false,
+  quick: false,
+  choices: true,
+  setbacks: false,
+  tableStations: 15,
+  mainMode: "tables",
+};
+var TABLE_STATION_OPTIONS = [10, 15, 20, 25];
+var MAIN_MODES = ["tables", "add", "sub", "mul", "div", "mix"];
+var PROFILE_AVATARS = [
+  "🦊",
+  "🐱",
+  "🐼",
+  "🦁",
+  "🐸",
+  "🐵",
+  "🦄",
+  "🐲",
+  "🐧",
+  "🐢",
+];
+var PROFILE_NAME_MAX = 20;
+
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+// A brand-new progress record (fresh object on every call).
+function defaultProgress() {
+  return {
+    coins: 0,
+    treasures: 0,
+    badges: [],
+    bestStreak: 0,
+    avgMs: 0,
+    totalCorrect: 0,
+    lastPlayed: "",
+    blitzWins: 0,
+    bestCombo: 0,
+    stars: 0,
+    collection: [],
+    inventory: { joker: 0, fifty: 0, time: 0, shield: 0 },
+    buddies: ["kid"],
+    buddy: "kid",
+    cosmetics: [],
+    equipped: defaultEquipped(),
+    learning: normalizeLearning(),
+    learningStartVersion: 1,
+  };
+}
+
+function defaultEquipped() {
+  return { theme: "classic", accessory: "none", melody: "classic" };
+}
+
+// Keep only known cosmetic ids, and only equipped items that were bought;
+// anything else goes back to its default.
+function normalizeCosmetics(progress) {
+  var known = {};
+  SHOP_COSMETICS.forEach(function (c) {
+    known[c.id] = c;
+  });
+  var owned = [];
+  (Array.isArray(progress.cosmetics) ? progress.cosmetics : []).forEach(
+    function (id) {
+      if (known[id] && owned.indexOf(id) === -1) owned.push(id);
+    },
+  );
+  var saved = isPlainObject(progress.equipped) ? progress.equipped : {};
+  var equipped = defaultEquipped();
+  Object.keys(equipped).forEach(function (kind) {
+    var value = saved[kind];
+    var ok = owned.some(function (id) {
+      return known[id].kind === kind && known[id].value === value;
+    });
+    if (ok) equipped[kind] = value;
+  });
+  progress.cosmetics = owned;
+  progress.equipped = equipped;
+  return progress;
+}
+
+// Keep only known settings, falling back to defaults on missing/invalid values.
+function normalizeSettings(saved) {
+  var src = isPlainObject(saved) ? saved : {};
+  var out = {};
+  Object.keys(DEFAULT_SETTINGS).forEach(function (key) {
+    var def = DEFAULT_SETTINGS[key];
+    out[key] = typeof src[key] === typeof def ? src[key] : def;
+  });
+  if (TABLE_STATION_OPTIONS.indexOf(out.tableStations) === -1) {
+    out.tableStations = DEFAULT_SETTINGS.tableStations;
+  }
+  if (MAIN_MODES.indexOf(out.mainMode) === -1) {
+    out.mainMode = DEFAULT_SETTINGS.mainMode;
+  }
+  return out;
+}
+
+// Trim, cap the length and fall back when the name ends up empty.
+function cleanProfileName(name, fallback) {
+  var clean = typeof name === "string" ? name.trim() : "";
+  clean = clean.slice(0, PROFILE_NAME_MAX).trim();
+  return clean || fallback;
+}
+
+// Ids look like "p<integer>"; pick the first one not already taken.
+function nextProfileId(existingIds) {
+  var n = 1;
+  while (existingIds.indexOf("p" + n) !== -1) n++;
+  return "p" + n;
+}
+
+function createProfile(name, avatar, existingIds, fallbackName) {
+  return {
+    id: nextProfileId(existingIds || []),
+    name: cleanProfileName(name, fallbackName),
+    avatar:
+      PROFILE_AVATARS.indexOf(avatar) === -1 ? PROFILE_AVATARS[0] : avatar,
+    settings: normalizeSettings(),
+    progress: defaultProgress(),
+    tables: Tables.normalizeTables(),
+  };
+}
+
+// Repair a saved profile; null when it cannot be recognised.
+function normalizeProfile(saved) {
+  if (!isPlainObject(saved) || typeof saved.id !== "string" || !saved.id) {
+    return null;
+  }
+  var profile = {
+    id: saved.id,
+    name: cleanProfileName(saved.name, "Jugador"),
+    avatar:
+      PROFILE_AVATARS.indexOf(saved.avatar) === -1
+        ? PROFILE_AVATARS[0]
+        : saved.avatar,
+    settings: normalizeSettings(saved.settings),
+    progress: normalizeCosmetics(
+      migrateLearningStart(
+        Object.assign(
+          defaultProgress(),
+          isPlainObject(saved.progress) ? saved.progress : {},
+        ),
+      ),
+    ),
+    tables: Tables.normalizeTables(saved.tables),
+  };
+  return profile;
+}
+
+// Repair the whole store: drop invalid and duplicate profiles, validate lastId.
+function normalizeProfileStore(saved) {
+  var store = { version: 1, lastId: "", profiles: [] };
+  if (!isPlainObject(saved) || !Array.isArray(saved.profiles)) return store;
+  var seen = {};
+  saved.profiles.forEach(function (item) {
+    var profile = normalizeProfile(item);
+    if (!profile || seen[profile.id]) return;
+    seen[profile.id] = true;
+    store.profiles.push(profile);
+  });
+  if (seen[saved.lastId]) store.lastId = saved.lastId;
+  return store;
+}
+
+// Use the saved store if present; otherwise build one profile from legacy data.
+function migrateLegacyStorage(
+  savedStore,
+  legacyProgress,
+  legacySettings,
+  defaultName,
+) {
+  if (isPlainObject(savedStore) && Array.isArray(savedStore.profiles)) {
+    return normalizeProfileStore(savedStore);
+  }
+  var profile = createProfile(defaultName, PROFILE_AVATARS[0], [], defaultName);
+  if (isPlainObject(legacyProgress)) {
+    profile.progress = migrateLearningStart(
+      Object.assign(defaultProgress(), legacyProgress),
+    );
+  }
+  if (isPlainObject(legacySettings)) {
+    profile.settings = normalizeSettings(legacySettings);
+  }
+  return normalizeProfileStore({ lastId: profile.id, profiles: [profile] });
+}
+
+// Simple 12-19 multiplication to keep young children out of parent settings.
+function parentChallenge() {
+  var a = randInt(12, 19);
+  var b = randInt(12, 19);
+  return { a: a, b: b, answer: a * b };
 }
 
 // Four independent successes raise the rating by just one eighth of a level.
@@ -1188,12 +1529,135 @@ var SHOP_BUDDIES = [
   { id: "dragon", price: 320, emoji: "🐲", es: "Drag\u00f3n", en: "Dragon" },
 ];
 
+// Cosmetics for the characters and the map (about 20 coins per 15-station
+// round). Bought once; one of each kind can be equipped at a time.
+var SHOP_COSMETICS = [
+  {
+    id: "acc-hat",
+    kind: "accessory",
+    value: "hat",
+    price: 40,
+    icon: "🎩",
+    es: "Sombrero",
+    en: "Top hat",
+  },
+  {
+    id: "acc-glasses",
+    kind: "accessory",
+    value: "glasses",
+    price: 50,
+    icon: "👓",
+    es: "Gafas",
+    en: "Glasses",
+  },
+  {
+    id: "mel-marimba",
+    kind: "melody",
+    value: "marimba",
+    price: 50,
+    icon: "🎶",
+    es: "Marimba",
+    en: "Marimba",
+  },
+  {
+    id: "theme-ocean",
+    kind: "theme",
+    value: "ocean",
+    price: 60,
+    icon: "🌊",
+    es: "Océano",
+    en: "Ocean",
+  },
+  {
+    id: "theme-forest",
+    kind: "theme",
+    value: "forest",
+    price: 60,
+    icon: "🌲",
+    es: "Bosque",
+    en: "Forest",
+  },
+  {
+    id: "acc-scarf",
+    kind: "accessory",
+    value: "scarf",
+    price: 60,
+    icon: "🧣",
+    es: "Bufanda",
+    en: "Scarf",
+  },
+  {
+    id: "mel-fanfare",
+    kind: "melody",
+    value: "fanfare",
+    price: 80,
+    icon: "🎺",
+    es: "Fanfarria",
+    en: "Fanfare",
+  },
+  {
+    id: "theme-sunset",
+    kind: "theme",
+    value: "sunset",
+    price: 90,
+    icon: "🌅",
+    es: "Atardecer",
+    en: "Sunset",
+  },
+  {
+    id: "acc-crown",
+    kind: "accessory",
+    value: "crown",
+    price: 120,
+    icon: "👑",
+    es: "Corona",
+    en: "Crown",
+  },
+  {
+    id: "theme-galaxy",
+    kind: "theme",
+    value: "galaxy",
+    price: 150,
+    icon: "🌌",
+    es: "Galaxia",
+    en: "Galaxy",
+  },
+];
+
+// End-of-round tunes, as [frequency Hz, duration ms] notes.
+var VICTORY_MELODIES = {
+  classic: [
+    [523, 150],
+    [659, 150],
+    [784, 150],
+    [1047, 320],
+  ],
+  marimba: [
+    [784, 110],
+    [659, 110],
+    [784, 110],
+    [988, 110],
+    [1175, 110],
+    [988, 110],
+    [1319, 300],
+  ],
+  fanfare: [
+    [392, 120],
+    [392, 120],
+    [392, 120],
+    [523, 360],
+    [659, 160],
+    [784, 420],
+  ],
+};
+
 function startApp() {
   /* ---------------- Storage helpers ---------------- */
   var STORAGE_KEYS = {
     lang: "ms_lang",
     settings: "ms_settings",
     progress: "ms_progress",
+    profiles: "ms_profiles",
   };
 
   function storageGet(key, fallback) {
@@ -1213,39 +1677,40 @@ function startApp() {
   }
 
   /* ---------------- App state ---------------- */
+  // Until a player is chosen, settings and progress are throwaway defaults
+  // that are never saved; afterwards they point into the active profile.
   var state = {
     lang: storageGet(STORAGE_KEYS.lang, null),
-    settings: Object.assign(
-      { sound: true, timer: false, quick: false, blitz: false, choices: true },
-      storageGet(STORAGE_KEYS.settings, {}),
-    ),
-    progress: Object.assign(
-      {
-        coins: 0,
-        treasures: 0,
-        badges: [],
-        bestStreak: 0,
-        avgMs: 0,
-        totalCorrect: 0,
-        lastPlayed: "",
-        blitzWins: 0,
-        bestCombo: 0,
-        stars: 0,
-        collection: [],
-        inventory: { joker: 0, fifty: 0, time: 0, shield: 0 },
-        buddies: ["kid"],
-        buddy: "kid",
-      },
-      storageGet(STORAGE_KEYS.progress, {}),
-    ),
+    store: null,
+    profile: null,
+    settings: normalizeSettings(),
+    progress: defaultProgress(),
     selectedMode: "add",
     selectedDiff: "adaptive",
+    editingId: "",
+    gate: null,
     run: null,
     timerId: null,
+    stageTimerId: null,
+    stageDeadline: 0,
+    stageFn: null,
+    pausedStage: null,
+    lastRunKind: "classic",
   };
 
-  state.progress = migrateLearningStart(state.progress);
-  storageSet(STORAGE_KEYS.progress, state.progress);
+  var bootDict = I18N[state.lang] || I18N.es;
+  state.store = migrateLegacyStorage(
+    storageGet(STORAGE_KEYS.profiles, null),
+    storageGet(STORAGE_KEYS.progress, null),
+    storageGet(STORAGE_KEYS.settings, null),
+    bootDict.profile_default_name.replace("{n}", "1"),
+  );
+
+  // Persist the whole profile store (settings and progress of every child).
+  function saveProfiles() {
+    storageSet(STORAGE_KEYS.profiles, state.store);
+  }
+  saveProfiles();
 
   /* ---------------- i18n ---------------- */
   function t(key, vars) {
@@ -1287,10 +1752,19 @@ function startApp() {
   /* ---------------- Element references ---------------- */
   var els = {
     languageGrid: document.getElementById("language-grid"),
+    profileGrid: document.getElementById("profile-grid"),
+    whoEmpty: document.getElementById("who-empty"),
     settingsLanguageGrid: document.getElementById("settings-language-grid"),
     menuCoins: document.getElementById("menu-coins"),
     menuTreasures: document.getElementById("menu-treasures"),
     menuBadges: document.getElementById("menu-badges"),
+    homeCoins: document.getElementById("home-coins"),
+    homeCharacters: document.getElementById("home-characters"),
+    gameScreen: document.getElementById("screen-game"),
+    map: document.querySelector("#screen-game .map"),
+    treasureTotal: document.getElementById("treasure-total"),
+    treasureGrid: document.getElementById("treasure-grid"),
+    homeGreeting: document.getElementById("home-greeting"),
     gameStreak: document.getElementById("game-streak"),
     gameCoins: document.getElementById("game-coins"),
     gameTimer: document.getElementById("game-timer"),
@@ -1307,22 +1781,41 @@ function startApp() {
     sumStars: document.getElementById("sum-stars"),
     sumCoins: document.getElementById("sum-coins"),
     sumAccuracy: document.getElementById("sum-accuracy"),
+    sumAccuracyLbl: document.getElementById("sum-accuracy-lbl"),
+    sumProgressLine: document.getElementById("sum-progress-line"),
     sumStreak: document.getElementById("sum-streak"),
     badgeShelf: document.getElementById("badge-shelf"),
     treasureLine: document.getElementById("treasure-line"),
     chest: document.getElementById("chest"),
     treasureReveal: document.getElementById("treasure-reveal"),
     pauseOverlay: document.getElementById("pause-overlay"),
+    introOverlay: document.getElementById("intro-overlay"),
+    introTitle: document.getElementById("intro-title"),
+    introCharacter: document.getElementById("intro-character"),
+    introNumber: document.getElementById("intro-number"),
+    introBlocks: document.getElementById("intro-blocks"),
     fxLayer: document.getElementById("fx-layer"),
     howtoBody: document.querySelector(".howto-body"),
     toggleSound: document.getElementById("toggle-sound"),
+    toggleMusic: document.getElementById("toggle-music"),
     toggleTimer: document.getElementById("toggle-timer"),
-    toggleQuick: document.getElementById("toggle-quick"),
-    toggleQuickModes: document.getElementById("toggle-quick-modes"),
-    toggleTimerModes: document.getElementById("toggle-timer-modes"),
     toggleBlitz: document.getElementById("toggle-blitz"),
+    toggleQuick: document.getElementById("toggle-quick"),
     toggleChoices: document.getElementById("toggle-choices"),
-    toggleBlitzModes: document.getElementById("toggle-blitz-modes"),
+    toggleSetbacks: document.getElementById("toggle-setbacks"),
+    parentGate: document.getElementById("parent-gate"),
+    gateQuestion: document.getElementById("gate-question"),
+    gateInput: document.getElementById("gate-input"),
+    gateFeedback: document.getElementById("gate-feedback"),
+    parentProfiles: document.getElementById("parent-profiles"),
+    editName: document.getElementById("edit-name"),
+    editAvatars: document.getElementById("edit-avatars"),
+    editMainMode: document.getElementById("edit-main-mode"),
+    editStations: document.getElementById("edit-stations"),
+    albumTitle: document.getElementById("album-title"),
+    albumSummary: document.getElementById("album-summary"),
+    albumGrid: document.getElementById("album-grid"),
+    albumLegend: document.getElementById("album-legend"),
     numpadWrap: document.getElementById("numpad-wrap"),
     choices: document.getElementById("choices"),
     powerups: document.getElementById("powerups"),
@@ -1371,6 +1864,7 @@ function startApp() {
     els.menuCoins.textContent = state.progress.coins;
     els.menuTreasures.textContent = state.progress.treasures;
     els.menuBadges.textContent = state.progress.badges.length;
+    els.homeCoins.textContent = state.progress.coins;
   }
 
   /* ---------------- Language grids ---------------- */
@@ -1401,7 +1895,7 @@ function startApp() {
       els.languageGrid.appendChild(
         buildLanguageButton(meta, function (code) {
           setLanguage(code);
-          goToMenu();
+          goToProfiles();
         }),
       );
       els.settingsLanguageGrid.appendChild(
@@ -1427,6 +1921,10 @@ function startApp() {
       .querySelector('[data-action="pause"]')
       .setAttribute("aria-label", t("paused"));
     if (state.run) updateMapProgressLabel();
+    if (state.profile) {
+      renderHomeGreeting();
+      renderHomeCharacters();
+    }
   }
 
   /* ---------------- Number pad ---------------- */
@@ -1499,16 +1997,10 @@ function startApp() {
     adaptive: START_LEVEL,
   };
 
-  function startRun() {
-    stopTimer();
-    window.clearTimeout(state.nextTaskId);
-    state.awaitingNext = false;
-    var total = state.settings.quick ? 10 : 25;
-    state.run = {
-      mode: state.selectedMode,
-      diff: state.selectedDiff,
-      level: DIFF_START_LEVEL[state.selectedDiff] || START_LEVEL,
-      modes: createRoundModes(state.selectedMode, total),
+  // Fields shared by classic and tables rounds.
+  function newRun(kind, total) {
+    return {
+      kind: kind,
       milestones: [],
       index: 0,
       total: total,
@@ -1527,13 +2019,288 @@ function startApp() {
       taskStart: 0,
       newBadges: [],
     };
+  }
+
+  // Stop every timer and pending transition before a new round starts.
+  function resetRunTimers() {
+    stopTimer();
+    clearStageTimer();
+    state.pausedStage = null;
+    window.clearTimeout(state.nextTaskId);
+    state.awaitingNext = false;
+  }
+
+  function startRun() {
+    resetRunTimers();
+    state.lastRunKind = "classic";
+    var total = state.settings.quick ? 10 : 25;
+    state.run = newRun("classic", total);
+    state.run.mode = state.selectedMode;
+    state.run.diff = state.selectedDiff;
+    state.run.level = DIFF_START_LEVEL[state.selectedDiff] || START_LEVEL;
+    state.run.modes = createRoundModes(state.selectedMode, total);
     grantDailyBonus();
     hideComboTag();
     buildMap(total);
     applyBuddy();
+    applyMapTheme();
+    if (els.powerups) els.powerups.hidden = false;
     renderPowerups();
+    els.gameScreen.setAttribute("data-kind", "classic");
     showScreen("screen-game");
     nextTask();
+  }
+
+  // Tables mode: a per-fact round from the engine, always typed, no tray.
+  function startTablesRun() {
+    resetRunTimers();
+    state.lastRunKind = "tables";
+    var total = state.settings.tableStations;
+    var today = Tables.localDateKey(new Date());
+    state.run = newRun("tables", total);
+    state.run.round = Tables.buildTablesRound(
+      state.profile.tables,
+      today,
+      total,
+    );
+    state.run.cursor = 0;
+    state.run.tablesBefore = JSON.parse(JSON.stringify(state.profile.tables));
+    state.run.stage = "ask";
+    grantDailyBonus();
+    hideComboTag();
+    buildMap(total);
+    applyBuddy();
+    applyMapTheme();
+    if (els.powerups) els.powerups.hidden = true;
+    // Tables layout: fixed hint slot, two columns on a tablet (styles.css).
+    els.gameScreen.setAttribute("data-kind", "tables");
+    showScreen("screen-game");
+    presentTables(
+      Tables.tablesToPresent(state.run.round, state.profile.tables),
+      nextTablesStation,
+    );
+  }
+
+  // Introduce each table in order, marking it presented once it is seen to
+  // the end; leaving halfway means it is presented again next time.
+  function presentTables(queue, onDone) {
+    if (!queue.length) {
+      onDone();
+      return;
+    }
+    var table = queue[0];
+    showTableIntro(table, function () {
+      state.profile.tables = Tables.markPresented(state.profile.tables, table);
+      saveProfiles();
+      presentTables(queue.slice(1), onDone);
+    });
+  }
+
+  // Next station of whichever kind of round is running.
+  function nextStation() {
+    if (!state.run) return;
+    if (state.run.kind === "tables") nextTablesStation();
+    else nextTask();
+  }
+
+  function nextTablesStation() {
+    var run = state.run;
+    if (!run) return;
+    // run.cursor walks run.round; run.index is the map station.
+    if (run.index >= run.total) {
+      finishRun();
+      return;
+    }
+    // Setbacks can run the round out before the last station: add more.
+    if (run.cursor >= run.round.length) {
+      run.round = Tables.appendRound(
+        run.round,
+        Tables.buildTablesRound(
+          state.profile.tables,
+          Tables.localDateKey(new Date()),
+          5,
+        ),
+      );
+    }
+    var item = run.round[run.cursor];
+    var a = item.a;
+    var b = item.b;
+    run.attemptsOnCurrent = 0;
+    run.stage = "ask";
+    run.setbackDone = false;
+    activeTask = {
+      type: "mul",
+      operands: [a, b],
+      text: a + " \u00d7 " + b + " =",
+      answer: a * b,
+      choice: false,
+      // Visible timer only if the profile asks for it (Blitz is ignored).
+      timed: !!state.settings.timer,
+      item: item,
+    };
+    currentInput = "";
+    els.question.textContent = activeTask.text;
+    els.feedback.textContent = "";
+    els.feedback.className = "feedback";
+    els.hint.className = "hint";
+    els.hint.onclick = null;
+    els.hint.hidden = true;
+    els.hint.textContent = "";
+    els.hint.setAttribute("data-stage", "ask");
+    renderAnswer();
+    setupAnswerMode();
+    moveWalker(run.index);
+    updateMapProgressLabel();
+    run.taskStart = now();
+    restartTimer();
+    startStageTimer(Tables.HINT_DELAY_MS, enterHintStage);
+  }
+
+  // One pending stage change (hint, then answer) of the tables cycle.
+  function startStageTimer(ms, fn) {
+    clearStageTimer();
+    state.stageFn = fn;
+    state.stageDeadline = Date.now() + ms;
+    state.stageTimerId = window.setTimeout(function () {
+      state.stageTimerId = null;
+      state.stageFn = null;
+      fn();
+    }, ms);
+  }
+  function clearStageTimer() {
+    if (state.stageTimerId) window.clearTimeout(state.stageTimerId);
+    state.stageTimerId = null;
+    state.stageFn = null;
+    state.stageDeadline = 0;
+  }
+
+  // Hint stage: a × b blocks plus a trick that never names the result.
+  function enterHintStage() {
+    if (!state.run || state.run.kind !== "tables" || !activeTask) return;
+    var a = activeTask.operands[0];
+    var b = activeTask.operands[1];
+    state.run.stage = "hint";
+    currentInput = "";
+    renderAnswer();
+    els.hint.textContent = "";
+    var grid = document.createElement("div");
+    grid.className = "blocks";
+    grid.setAttribute("aria-hidden", "true");
+    // Block size comes from the larger side, so the grid stays ~100 px.
+    grid.style.setProperty("--n", String(Math.max(a, b)));
+    grid.style.gridTemplateColumns = "repeat(" + b + ", var(--cell))";
+    for (var i = 0; i < a * b; i++) {
+      var block = document.createElement("span");
+      block.className = "block";
+      grid.appendChild(block);
+    }
+    var trick = Tables.tablesTrick(a, b);
+    var line = document.createElement("p");
+    line.className = "hint-trick";
+    line.textContent = t(trick.key, trick.vars);
+    els.hint.appendChild(grid);
+    els.hint.appendChild(line);
+    els.hint.setAttribute("data-stage", "hint");
+    els.hint.hidden = false;
+    mascotSay(t("tables_hint_intro"), "\uD83E\uDD9C");
+    startStageTimer(Tables.ANSWER_DELAY_MS, enterAnswerStage);
+  }
+
+  // Answer stage: show the result; she types it to move on (no timer).
+  function enterAnswerStage() {
+    if (!state.run || state.run.kind !== "tables" || !activeTask) return;
+    if (state.run.stage === "answer") return;
+    clearStageTimer();
+    // The visible timer ends here and stays off (also after a pause).
+    stopTimer();
+    activeTask.timed = false;
+    state.run.stage = "answer";
+    if (state.settings.setbacks && !state.run.setbackDone) {
+      goBackOnMiss(3);
+      state.run.setbackDone = true;
+    }
+    var line = document.createElement("p");
+    line.className = "hint-answer";
+    line.textContent = t("tables_write_it", {
+      q: activeTask.operands[0] + " \u00d7 " + activeTask.operands[1],
+      answer: activeTask.answer,
+    });
+    els.hint.appendChild(line);
+    els.hint.setAttribute("data-stage", "answer");
+    els.hint.hidden = false;
+  }
+
+  function submitTablesAnswer(value) {
+    var run = state.run;
+    if (value === activeTask.answer) {
+      clearStageTimer();
+      var elapsed = run.taskStart ? Math.max(0, now() - run.taskStart) : 0;
+      var outcome = Tables.classifyOutcome(run.stage, elapsed);
+      var factTables = Tables.factTables(activeTask.item.key);
+      var fillsBefore = factTables.map(function (table) {
+        return Tables.characterFill(state.profile.tables, table);
+      });
+      state.profile.tables = Tables.recordTablesAnswer(
+        state.profile.tables,
+        activeTask.item,
+        outcome,
+        Math.round(elapsed),
+        Tables.localDateKey(new Date()),
+      );
+      saveProfiles();
+      // Needed help: the fact comes back a few stations later (if it fits).
+      if (outcome === "hint" || outcome === "answer") {
+        run.round = Tables.scheduleRetry(run.round, run.cursor);
+      }
+      rewardCorrect(outcome === "fast" || outcome === "slow");
+      // After the praise, so the character news is what stays on screen.
+      announceFillMilestones(factTables, fillsBefore);
+      stopTimer();
+      run.index++;
+      run.cursor++;
+      moveWalker(run.index);
+      activeTask = null;
+      state.nextTaskId = window.setTimeout(nextStation, 750);
+      return;
+    }
+    // Wrong: no setback and no general learning record; just more help.
+    run.streak = 0;
+    run.combo = 1;
+    hideComboTag();
+    els.gameStreak.textContent = 0;
+    els.feedback.textContent = t("feedback_wrong");
+    els.feedback.className = "feedback is-wrong";
+    mascotSay(pickEncourage(), "\uD83E\uDD9C");
+    haptic([8, 40, 8]);
+    beep(180, 220, "sawtooth");
+    currentInput = "";
+    renderAnswer();
+    if (run.stage === "ask") enterHintStage();
+    else if (run.stage === "hint") enterAnswerStage();
+  }
+
+  // The parrot announces when a table's character wakes up, is half full,
+  // almost full or complete.
+  function announceFillMilestones(factTables, fillsBefore) {
+    var melodyTable = 0;
+    factTables.forEach(function (table, i) {
+      var after = Tables.characterFill(state.profile.tables, table);
+      var milestone = Tables.fillMilestone(fillsBefore[i], after);
+      if (!milestone) return;
+      var message = t("char_" + milestone, {
+        name: Characters.characterFor(table).name,
+        n: table,
+      });
+      mascotSay(message, "\uD83E\uDD9C");
+      var toast = showToast(message, "\uD83C\uDF89");
+      if (toast) {
+        toast.setAttribute("data-milestone", milestone);
+        toast.setAttribute("data-table", table);
+      }
+      melodyTable = table;
+    });
+    // One fact can reach a milestone in two tables: sing only the last one.
+    if (melodyTable) playMelody(Characters.characterFor(melodyTable).melody);
   }
 
   // The first run of each calendar day grants a small welcome bonus, to gently
@@ -1544,7 +2311,7 @@ function startApp() {
       state.progress.lastPlayed = today;
       var bonus = 3;
       state.progress.coins += bonus;
-      storageSet(STORAGE_KEYS.progress, state.progress);
+      saveProfiles();
       refreshMenuStats();
       showToast(t("daily_bonus", { n: bonus }), "\uD83C\uDF1E");
     }
@@ -1619,10 +2386,13 @@ function startApp() {
   }
 
   function updateMapProgressLabel() {
+    var n = Math.min(state.run.index + 1, state.run.total);
     els.mapProgress.textContent = t("station_progress", {
-      n: Math.min(state.run.index + 1, state.run.total),
+      n: n,
       total: state.run.total,
     });
+    els.mapProgress.setAttribute("data-station", String(n));
+    els.mapProgress.setAttribute("data-total", String(state.run.total));
   }
 
   var activeTask = null;
@@ -1648,8 +2418,8 @@ function startApp() {
     // Decide per task whether it is timed (Blitz) and/or multiple choice.
     activeTask.timed =
       state.settings.timer || (state.settings.blitz && Math.random() < 0.4);
-    // All tasks are multiple-choice now (tap one of 4-6 answers, no typing).
-    activeTask.choice = true;
+    // The profile decides between answer buttons and typing on the number pad.
+    activeTask.choice = !!state.settings.choices;
 
     currentInput = "";
     els.question.textContent = activeTask.text;
@@ -1683,7 +2453,10 @@ function startApp() {
     if (els.answerDisplay) els.answerDisplay.hidden = useChoice;
     if (els.choices) els.choices.hidden = !useChoice;
     if (useChoice) renderChoices();
-    if (els.blitzTag) els.blitzTag.hidden = !activeTask.timed;
+    if (els.blitzTag) {
+      els.blitzTag.hidden =
+        !activeTask.timed || !!(state.run && state.run.kind === "tables");
+    }
     renderPowerups();
   }
 
@@ -1719,6 +2492,10 @@ function startApp() {
     )
       return;
     state.run.attemptsOnCurrent++;
+    if (state.run.kind === "tables") {
+      submitTablesAnswer(value);
+      return;
+    }
     if (value === activeTask.answer) {
       if (sourceBtn) markChoice(true, sourceBtn);
       onCorrect();
@@ -1740,6 +2517,23 @@ function startApp() {
   function onCorrect() {
     var firstTry = state.run.attemptsOnCurrent === 1;
     var elapsed = state.run.taskStart ? now() - state.run.taskStart : 0;
+    // Learn the child's pace so the adaptive timer evolves with them.
+    if (firstTry && elapsed > 0) {
+      state.progress.avgMs = updateAvgMs(state.progress.avgMs, elapsed);
+      state.progress.totalCorrect = (state.progress.totalCorrect || 0) + 1;
+    }
+    recordLearning(firstTry, elapsed);
+    rewardCorrect(firstTry);
+    stopTimer();
+    state.run.index++;
+    moveWalker(state.run.index);
+    activeTask = null;
+    state.nextTaskId = window.setTimeout(nextStation, 750);
+  }
+
+  // Streak, combo, stars, coins, bonuses, messages and effects of a right
+  // answer (shared by classic and tables rounds).
+  function rewardCorrect(firstTry) {
     state.run.correct++;
     if (firstTry) {
       state.run.firstTry++;
@@ -1754,13 +2548,6 @@ function startApp() {
 
     // Combo multiplier grows with the streak (x1 .. x4).
     state.run.combo = clamp(1 + Math.floor(state.run.streak / 3), 1, 4);
-
-    // Learn the child's pace so the adaptive timer evolves with them.
-    if (firstTry && elapsed > 0) {
-      state.progress.avgMs = updateAvgMs(state.progress.avgMs, elapsed);
-      state.progress.totalCorrect = (state.progress.totalCorrect || 0) + 1;
-    }
-    recordLearning(firstTry, elapsed);
 
     // Modest, predictable economy: roughly one Joker per successful run, two
     // when a strong streak is earned, and a new buddy after about 4-5 runs.
@@ -1794,7 +2581,6 @@ function startApp() {
     mascotSay(pickPraise(), "\uD83E\uDD9C");
     haptic(vibrationForTask(activeTask, state.run.level, firstTry));
     beep(660, 140, "triangle");
-    stopTimer();
 
     if (
       state.run.correct % 5 === 0 &&
@@ -1803,11 +2589,6 @@ function startApp() {
       state.run.milestones.push(state.run.correct);
       mascotSay(t("milestone", { n: state.run.correct }), "🌟");
     }
-
-    state.run.index++;
-    moveWalker(state.run.index);
-    activeTask = null;
-    state.nextTaskId = window.setTimeout(nextTask, 750);
   }
 
   function recordLearning(correct, elapsed) {
@@ -1817,7 +2598,7 @@ function startApp() {
       correct,
       elapsed,
     );
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
   }
 
   function onWrong() {
@@ -1833,8 +2614,8 @@ function startApp() {
     haptic([8, 40, 8]);
     beep(180, 220, "sawtooth");
     recordMiss();
-    // Penalty: a wrong answer sends the traveller back along the path.
-    goBackOnMiss(3);
+    // Penalty (if the profile allows it): a wrong answer sends the traveller back.
+    if (state.settings.setbacks) goBackOnMiss(3);
     recordLearning(false, 0);
     currentInput = "";
     // Show the worked calculation path; tap it to move to the next task.
@@ -1853,8 +2634,8 @@ function startApp() {
   // along the path. The walker animates to the earlier station and a small
   // toast shows the setback. Clamped so the journey never goes before start.
   function goBackOnMiss(steps) {
-    // A ready shield absorbs one setback instead of moving the traveller back.
-    if (state.run && state.run.shieldArmed) {
+    // A ready shield absorbs one setback (there is no shield in tables mode).
+    if (state.run && state.run.shieldArmed && state.run.kind !== "tables") {
       state.run.shieldArmed = false;
       renderPowerups();
       showToast(t("shield_saved"), "🛡️");
@@ -1890,6 +2671,13 @@ function startApp() {
       els.hint.onclick = advanceAfterWrong;
     }
     if (els.choices) {
+      // Typing mode: swap the number pad for the choices area holding only
+      // the continue button (the next setupAnswerMode restores both).
+      if (!activeTask.choice) {
+        if (els.numpadWrap) els.numpadWrap.hidden = true;
+        els.choices.innerHTML = "";
+        els.choices.hidden = false;
+      }
       var cont = document.createElement("button");
       cont.type = "button";
       cont.className = "choice choice--continue";
@@ -1907,7 +2695,7 @@ function startApp() {
     }
     state.run.index++;
     moveWalker(state.run.index);
-    nextTask();
+    nextStation();
   }
 
   /* ---------------- Juicy feedback helpers ---------------- */
@@ -1962,6 +2750,7 @@ function startApp() {
     window.setTimeout(function () {
       if (node.parentNode) node.parentNode.removeChild(node);
     }, 2000);
+    return node;
   }
   function haptic(pattern) {
     try {
@@ -2023,6 +2812,11 @@ function startApp() {
     }
   }
   function onTimeout() {
+    // Tables mode: time up just shows the answer; no miss is recorded.
+    if (state.run && state.run.kind === "tables") {
+      enterAnswerStage();
+      return;
+    }
     if (state.run.attemptsOnCurrent === 0) state.run.attemptsOnCurrent = 1;
     els.feedback.textContent = t("timeout_msg");
     els.feedback.className = "feedback is-wrong";
@@ -2035,8 +2829,8 @@ function startApp() {
     els.gameStreak.textContent = 0;
     recordMiss();
     recordLearning(false, 0);
-    // Too slow on the Blitz timer: send the traveller back along the path.
-    goBackOnMiss(3);
+    // Too slow on the Blitz timer: send the traveller back (if allowed).
+    if (state.settings.setbacks) goBackOnMiss(3);
     showSolution();
   }
   function stopTimer() {
@@ -2075,6 +2869,7 @@ function startApp() {
 
   function finishRun() {
     stopTimer();
+    clearStageTimer();
     // Persist progress.
     state.progress.coins += state.run.coins;
     state.progress.treasures += 1;
@@ -2087,26 +2882,59 @@ function startApp() {
     state.progress.blitzWins =
       (state.progress.blitzWins || 0) + state.run.blitzWins;
     evaluateBadges();
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
 
     // Fill summary screen.
-    var accuracy =
-      state.run.total > 0
-        ? Math.round((state.run.correct / state.run.total) * 100)
-        : 0;
     els.sumStars.textContent = state.run.stars;
     els.sumCoins.textContent = state.run.coins;
-    els.sumAccuracy.textContent = accuracy + "%";
     els.sumStreak.textContent = state.run.bestStreak;
+    if (state.run.kind === "tables") {
+      renderTablesSummary();
+    } else {
+      var accuracy =
+        state.run.total > 0
+          ? Math.round((state.run.correct / state.run.total) * 100)
+          : 0;
+      els.sumAccuracy.textContent = accuracy + "%";
+      setSummaryLabel("lbl_accuracy");
+      els.sumProgressLine.hidden = true;
+      els.sumProgressLine.textContent = "";
+      renderReview();
+    }
     prepareChestReveal();
 
-    renderReview();
     renderBadges();
     showScreen("screen-summary");
     els.chest.classList.add("is-shaking");
     playVictoryMelody();
     haptic([60, 40, 60, 40, 140]);
     refreshMenuStats();
+  }
+
+  function setSummaryLabel(key) {
+    els.sumAccuracyLbl.setAttribute("data-i18n", key);
+    els.sumAccuracyLbl.textContent = t(key);
+  }
+
+  // Tables summary: facts mastered today instead of accuracy, no review.
+  function renderTablesSummary() {
+    var run = state.run;
+    var n = Tables.newlyMastered(run.tablesBefore, state.profile.tables).length;
+    els.sumAccuracy.textContent = String(n);
+    setSummaryLabel("lbl_mastered_today");
+    var line;
+    if (n === 1) line = t("sum_mastered_one");
+    else if (n > 1) line = t("sum_mastered", { n: n });
+    else {
+      var keys = [];
+      run.round.slice(0, run.cursor).forEach(function (item) {
+        if (keys.indexOf(item.key) === -1) keys.push(item.key);
+      });
+      line = t("sum_practiced", { n: keys.length });
+    }
+    els.sumProgressLine.textContent = line;
+    els.sumProgressLine.hidden = false;
+    if (els.reviewBox) els.reviewBox.hidden = true;
   }
 
   // Show up to six missed tasks so the child can practise them again.
@@ -2217,7 +3045,7 @@ function startApp() {
       state.progress.coins += reward;
       showToast(t("coin_treasure", { n: reward }), "\uD83E\uDE99");
     }
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
     if (els.treasureReveal) {
       els.treasureReveal.hidden = false;
       els.treasureReveal.innerHTML =
@@ -2238,21 +3066,98 @@ function startApp() {
     refreshMenuStats();
   }
 
-  // A short, cheerful arpeggio when the goal is reached (respects sound).
-  function playVictoryMelody() {
-    var notes = [
-      [523, 150],
-      [659, 150],
-      [784, 150],
-      [1047, 320],
-    ];
+  // Melodies need both sound (checked by beep) and music. A new melody
+  // replaces the one still playing, so they never overlap.
+  var melodyTimers = [];
+  function stopMelody() {
+    melodyTimers.forEach(function (id) {
+      window.clearTimeout(id);
+    });
+    melodyTimers = [];
+  }
+  function playMelody(notes) {
+    if (!state.settings.music) return;
+    stopMelody();
     var delay = 0;
     notes.forEach(function (note) {
-      window.setTimeout(function () {
-        beep(note[0], note[1], "triangle");
-      }, delay);
+      melodyTimers.push(
+        window.setTimeout(function () {
+          beep(note[0], note[1], "triangle");
+        }, delay),
+      );
       delay += note[1] + 20;
     });
+  }
+
+  // A short, cheerful tune when the goal is reached: the equipped one.
+  function playVictoryMelody() {
+    playMelody(VICTORY_MELODIES[equipped().melody] || VICTORY_MELODIES.classic);
+  }
+
+  /* ---------------- Table introduction song ---------------- */
+  // The table's character counts table x 1 .. table x 10 while a row of
+  // `table` blocks is added per step. The count always runs; the notes only
+  // sound with music on. Never shown during practice stations.
+  var intro = { table: 0, timers: [], onDone: null };
+  function clearIntroTimers() {
+    intro.timers.forEach(function (id) {
+      window.clearTimeout(id);
+    });
+    intro.timers = [];
+  }
+  function playTableIntro() {
+    clearIntroTimers();
+    stopMelody();
+    els.introNumber.textContent = "";
+    els.introBlocks.innerHTML = "";
+    var delay = 0;
+    Characters.introSequence(intro.table).forEach(function (step) {
+      intro.timers.push(
+        window.setTimeout(function () {
+          els.introNumber.textContent = step.value;
+          var row = document.createElement("div");
+          row.className = "intro-row";
+          for (var i = 0; i < intro.table; i++) {
+            var block = document.createElement("span");
+            block.className = "intro-block";
+            row.appendChild(block);
+          }
+          els.introBlocks.appendChild(row);
+          if (state.settings.music) beep(step.freq, step.ms, "triangle");
+        }, delay),
+      );
+      delay += step.ms;
+    });
+  }
+  function showTableIntro(table, onDone) {
+    intro.table = table;
+    intro.onDone = onDone || null;
+    var fill = state.profile
+      ? Tables.characterFill(state.profile.tables, table)
+      : 0;
+    els.introOverlay.setAttribute("data-table", table);
+    els.introTitle.setAttribute("data-table", table);
+    els.introTitle.textContent = t("intro_title", { n: table });
+    els.introCharacter.innerHTML = Characters.characterSvg(
+      table,
+      fill,
+      equipped().accessory,
+    );
+    els.introOverlay.hidden = false;
+    var done = els.introOverlay.querySelector('[data-action="intro-done"]');
+    if (done) done.focus();
+    playTableIntro();
+  }
+  // Close without calling back (leaving the screen halfway).
+  function hideTableIntro() {
+    clearIntroTimers();
+    intro.onDone = null;
+    if (els.introOverlay) els.introOverlay.hidden = true;
+  }
+  function finishTableIntro() {
+    var onDone = intro.onDone;
+    hideTableIntro();
+    if (onDone) onDone();
   }
 
   /* ---------------- Coin shop + power-ups ---------------- */
@@ -2272,6 +3177,7 @@ function startApp() {
   }
   // Spend stars during a timed task to gain ten extra seconds of thinking time.
   function buyTimeWithStars() {
+    if (state.run && state.run.kind === "tables") return;
     if (!activeTask || !activeTask.timed || !state.timerId) {
       showToast(t("time_only_timed"), "⏳");
       return;
@@ -2283,7 +3189,7 @@ function startApp() {
     state.progress.stars = starBank() - STAR_TIME_COST;
     state.timerDeadline += 10000;
     state.timerBudget = (state.timerBudget || 10) + 10;
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
     showToast(t("time_added_10"), "⏳");
     beep(620, 140, "sine");
     refreshMenuStats();
@@ -2317,10 +3223,12 @@ function startApp() {
     starBtn.addEventListener("click", buyTimeWithStars);
     els.powerups.appendChild(starBtn);
     SHOP_POWERUPS.forEach(function (pu) {
+      if (pu.id === "shield" && !state.settings.setbacks) return;
       var count = inventoryCount(pu.id);
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "powerup" + (count <= 0 ? " is-empty" : "");
+      btn.setAttribute("data-powerup", pu.id);
       btn.innerHTML =
         '<span class="powerup-icon" aria-hidden="true">' +
         pu.icon +
@@ -2336,6 +3244,8 @@ function startApp() {
   }
 
   function usePowerup(id) {
+    // The tray is hidden in tables mode; power-ups never apply there.
+    if (state.run && state.run.kind === "tables") return;
     if (inventoryCount(id) <= 0) {
       showToast(t("no_powerup"), "🛒");
       return;
@@ -2347,7 +3257,7 @@ function startApp() {
     else if (id === "shield") used = armShield();
     if (used) {
       state.progress.inventory[id] -= 1;
-      storageSet(STORAGE_KEYS.progress, state.progress);
+      saveProfiles();
       renderPowerups();
     }
   }
@@ -2372,7 +3282,7 @@ function startApp() {
     state.run.index++;
     moveWalker(state.run.index);
     activeTask = null;
-    state.nextTaskId = window.setTimeout(nextTask, 750);
+    state.nextTaskId = window.setTimeout(nextStation, 750);
     return true;
   }
 
@@ -2436,11 +3346,14 @@ function startApp() {
       '<div class="shop-list" id="shop-powerups"></div>' +
       '<h3 class="shop-section-label shop-h-buddy"></h3>' +
       '<div class="shop-grid" id="shop-buddies"></div>' +
+      '<h3 class="shop-section-label shop-h-cosm"></h3>' +
+      '<div class="shop-grid" id="shop-cosmetics"></div>' +
       "</div>";
     document.body.appendChild(ov);
     els.shopOverlay = ov;
     els.shopPowerups = ov.querySelector("#shop-powerups");
     els.shopBuddies = ov.querySelector("#shop-buddies");
+    els.shopCosmetics = ov.querySelector("#shop-cosmetics");
     ov.addEventListener("click", function (event) {
       if (event.target === ov) closeShop();
     });
@@ -2459,10 +3372,19 @@ function startApp() {
     ov.querySelector(".shop-coins").textContent = "🪙 " + state.progress.coins;
     ov.querySelector(".shop-h-pu").textContent = t("shop_powerups");
     ov.querySelector(".shop-h-buddy").textContent = t("shop_buddies");
+    ov.querySelector(".shop-h-cosm").textContent = t("shop_cosmetics");
+    // Tables mode has no power-ups, so the shop does not sell them.
+    var noPowerups = state.settings.mainMode === "tables";
+    ov.querySelector(".shop-h-pu").hidden = noPowerups;
+    els.shopPowerups.hidden = noPowerups;
+    renderCosmetics();
     els.shopPowerups.innerHTML = "";
     SHOP_POWERUPS.forEach(function (pu) {
+      // Without setbacks there is nothing for a shield to absorb.
+      if (pu.id === "shield" && !state.settings.setbacks) return;
       var row = document.createElement("div");
       row.className = "shop-item";
+      row.setAttribute("data-powerup", pu.id);
       row.innerHTML =
         '<span class="shop-item-icon" aria-hidden="true">' +
         pu.icon +
@@ -2515,7 +3437,7 @@ function startApp() {
     state.progress.coins -= pu.price;
     if (!state.progress.inventory) state.progress.inventory = {};
     state.progress.inventory[pu.id] = inventoryCount(pu.id) + 1;
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
     beep(720, 120, "triangle");
     refreshMenuStats();
     renderShop();
@@ -2535,10 +3457,130 @@ function startApp() {
       beep(720, 120, "triangle");
     }
     state.progress.buddy = b.id;
-    storageSet(STORAGE_KEYS.progress, state.progress);
+    saveProfiles();
     applyBuddy();
     refreshMenuStats();
     renderShop();
+  }
+  // The equipped cosmetics of the active player (defaults if none).
+  function equipped() {
+    return (state.progress && state.progress.equipped) || defaultEquipped();
+  }
+  function ownsCosmetic(c) {
+    return (state.progress.cosmetics || []).indexOf(c.id) !== -1;
+  }
+  function renderCosmetics() {
+    els.shopCosmetics.innerHTML = "";
+    SHOP_COSMETICS.forEach(function (c) {
+      var owned = ownsCosmetic(c);
+      var isOn = owned && equipped()[c.kind] === c.value;
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "cosmetic-card" + (isOn ? " is-equipped" : "");
+      if (!owned && state.progress.coins < c.price) {
+        card.classList.add("is-locked");
+      }
+      card.setAttribute("data-cosmetic-id", c.id);
+      card.setAttribute("data-kind", c.kind);
+      card.setAttribute("data-owned", owned ? "true" : "false");
+      card.setAttribute("data-equipped", isOn ? "true" : "false");
+      card.setAttribute("aria-pressed", isOn ? "true" : "false");
+      card.innerHTML =
+        '<span class="cosmetic-icon" aria-hidden="true">' +
+        c.icon +
+        '</span><span class="cosmetic-name"></span><span class="cosmetic-action"></span>';
+      card.querySelector(".cosmetic-name").textContent = shopLabel(c);
+      var action = isOn
+        ? t("shop_unequip")
+        : owned
+          ? t("shop_equip")
+          : c.price + " 🪙";
+      card.querySelector(".cosmetic-action").textContent = action;
+      card.setAttribute(
+        "aria-label",
+        shopLabel(c) +
+          ", " +
+          (isOn
+            ? t("shop_equipped") + ", " + t("shop_unequip")
+            : owned
+              ? t("shop_equip")
+              : t("shop_price", { n: c.price })),
+      );
+      card.addEventListener("click", function () {
+        buyOrEquipCosmetic(c);
+      });
+      els.shopCosmetics.appendChild(card);
+    });
+  }
+  // Not owned: buy (if affordable) and equip. Owned: equip. Equipped: remove.
+  function buyOrEquipCosmetic(c) {
+    var p = state.progress;
+    if (!ownsCosmetic(c)) {
+      if (p.coins < c.price) {
+        showToast(t("not_enough_coins"), "🪙");
+        return;
+      }
+      p.coins -= c.price;
+      if (!Array.isArray(p.cosmetics)) p.cosmetics = [];
+      p.cosmetics.push(c.id);
+      beep(720, 120, "triangle");
+    }
+    if (!isPlainObject(p.equipped)) p.equipped = defaultEquipped();
+    if (p.equipped[c.kind] === c.value) {
+      p.equipped[c.kind] = defaultEquipped()[c.kind];
+    } else {
+      p.equipped[c.kind] = c.value;
+      if (c.kind === "melody") playVictoryMelody();
+    }
+    saveProfiles();
+    applyMapTheme();
+    renderHomeCharacters();
+    refreshMenuStats();
+    renderShop();
+  }
+  // Paint the round's map with the equipped theme (none for classic).
+  function applyMapTheme() {
+    if (!els.map) return;
+    SHOP_COSMETICS.forEach(function (c) {
+      if (c.kind === "theme") els.map.classList.remove("map--" + c.value);
+    });
+    var theme = equipped().theme;
+    if (theme !== "classic") els.map.classList.add("map--" + theme);
+  }
+  // "My treasures": every treasure, collected ones with picture and name.
+  function renderTreasures() {
+    var have = state.progress.collection || [];
+    var count = 0;
+    els.treasureGrid.innerHTML = "";
+    els.treasureGrid.setAttribute("role", "list");
+    TREASURES.forEach(function (tr) {
+      var tile = document.createElement("div");
+      tile.setAttribute("role", "listitem");
+      tile.setAttribute("data-treasure-id", tr.id);
+      if (have.indexOf(tr.id) !== -1) {
+        count++;
+        tile.className = "treasure-tile";
+        tile.setAttribute("aria-label", treasureName(tr));
+        tile.innerHTML =
+          '<span class="treasure-tile-img" aria-hidden="true">' +
+          tr.svg +
+          '</span><span class="treasure-tile-name" aria-hidden="true"></span>';
+        tile.querySelector(".treasure-tile-name").textContent =
+          treasureName(tr);
+      } else {
+        tile.className = "treasure-tile is-locked";
+        tile.setAttribute("aria-label", t("treasure_locked"));
+        tile.innerHTML =
+          '<span class="treasure-tile-q" aria-hidden="true">?</span>';
+      }
+      els.treasureGrid.appendChild(tile);
+    });
+    els.treasureTotal.textContent = t("treasure_count", { n: count });
+    els.treasureTotal.setAttribute("data-count", String(count));
+  }
+  function openTreasures() {
+    renderTreasures();
+    showScreen("screen-treasures");
   }
   // Apply the chosen travelling buddy to the map walker.
   function applyBuddy() {
@@ -2550,26 +3592,148 @@ function startApp() {
   }
 
   /* ---------------- Navigation helpers ---------------- */
-  function goToMenu() {
+  // Stop timers and any pending task transition before leaving a round.
+  function leaveRun() {
     stopTimer();
+    clearStageTimer();
+    state.pausedStage = null;
     window.clearTimeout(state.nextTaskId);
     activeTask = null;
     state.awaitingNext = false;
     state.run = null;
+  }
+  // Home depends on the profile: tables home, or the classic menu with the
+  // profile's main mode preselected.
+  function goHome() {
+    hideTableIntro();
+    leaveRun();
     refreshMenuStats();
+    if (state.settings.mainMode === "tables") {
+      renderHomeGreeting();
+      renderHomeCharacters();
+      showScreen("screen-tables-home");
+      return;
+    }
+    selectModeCard(state.settings.mainMode);
     showScreen("screen-menu");
+  }
+  // One card per table: the character, filled by mastered facts, and "n/10".
+  function renderHomeCharacters() {
+    var box = els.homeCharacters;
+    if (!box || !state.profile) return;
+    box.innerHTML = "";
+    box.setAttribute("role", "group");
+    box.setAttribute("aria-label", t("home_characters_label"));
+    Characters.CHARACTERS.forEach(function (ch) {
+      var fill = Tables.characterFill(state.profile.tables, ch.table);
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "char-card";
+      card.setAttribute("data-table", ch.table);
+      card.setAttribute("data-fill", fill);
+      card.setAttribute(
+        "aria-label",
+        t("char_status", { name: ch.name, n: ch.table, fill: fill }),
+      );
+      card.innerHTML = Characters.characterSvg(
+        ch.table,
+        fill,
+        equipped().accessory,
+      );
+      var name = document.createElement("span");
+      name.className = "char-name";
+      name.textContent = ch.name;
+      var count = document.createElement("span");
+      count.className = "char-count";
+      count.textContent = fill + "/10";
+      card.appendChild(name);
+      card.appendChild(count);
+      box.appendChild(card);
+    });
+  }
+  // Tapping a character replays its table's introduction (marks nothing).
+  function wireHomeCharacters() {
+    if (!els.homeCharacters) return;
+    els.homeCharacters.addEventListener("click", function (event) {
+      var card = event.target.closest(".char-card");
+      if (!card || !state.profile) return;
+      var table = Number(card.getAttribute("data-table"));
+      showTableIntro(table, function () {
+        renderHomeCharacters();
+        var again = els.homeCharacters.querySelector(
+          '.char-card[data-table="' + table + '"]',
+        );
+        if (again) again.focus();
+      });
+    });
+  }
+  function renderHomeGreeting() {
+    els.homeGreeting.textContent = t("home_greeting", {
+      name: state.profile ? state.profile.name : "",
+    });
+  }
+
+  /* ---------------- Profiles ---------------- */
+  function goToProfiles() {
+    hideTableIntro();
+    leaveRun();
+    state.profile = null;
+    state.settings = normalizeSettings();
+    state.progress = defaultProgress();
+    renderProfileGrid();
+    showScreen("screen-profiles");
+  }
+  function renderProfileGrid() {
+    els.profileGrid.innerHTML = "";
+    state.store.profiles.forEach(function (profile) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "profile-btn";
+      btn.setAttribute("data-profile-id", profile.id);
+      var avatar = document.createElement("span");
+      avatar.className = "profile-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = profile.avatar;
+      var name = document.createElement("span");
+      name.className = "profile-name";
+      name.textContent = profile.name;
+      btn.appendChild(avatar);
+      btn.appendChild(name);
+      btn.addEventListener("click", function () {
+        useProfile(profile.id);
+      });
+      els.profileGrid.appendChild(btn);
+    });
+    els.whoEmpty.hidden = state.store.profiles.length > 0;
+  }
+  function useProfile(id) {
+    var profile = state.store.profiles.filter(function (p) {
+      return p.id === id;
+    })[0];
+    if (!profile) return;
+    state.profile = profile;
+    state.settings = profile.settings;
+    state.progress = profile.progress;
+    state.store.lastId = id;
+    saveProfiles();
+    applyBuddy();
+    refreshMenuStats();
+    goHome();
   }
 
   /* ---------------- Mode + difficulty selection ---------------- */
+  function selectModeCard(mode) {
+    state.selectedMode = mode;
+    document.querySelectorAll(".mode-card").forEach(function (c) {
+      var selected = c.dataset.mode === mode;
+      c.classList.toggle("is-selected", selected);
+      c.setAttribute("aria-checked", selected ? "true" : "false");
+    });
+  }
   function wireModeSelection() {
     document.querySelectorAll(".mode-card").forEach(function (card) {
       card.addEventListener("click", function () {
-        state.selectedMode = card.dataset.mode;
-        document.querySelectorAll(".mode-card").forEach(function (c) {
-          var selected = c === card;
-          c.classList.toggle("is-selected", selected);
-          c.setAttribute("aria-checked", selected ? "true" : "false");
-        });
+        selectModeCard(card.dataset.mode);
       });
     });
     document.querySelectorAll(".chip[data-diff]").forEach(function (chip) {
@@ -2584,78 +3748,337 @@ function startApp() {
     });
   }
 
-  /* ---------------- Settings toggles ---------------- */
-  function syncToggles() {
-    els.toggleSound.checked = state.settings.sound;
-    els.toggleTimer.checked = state.settings.timer;
-    els.toggleQuick.checked = state.settings.quick;
-    els.toggleTimerModes.checked = state.settings.timer;
-    els.toggleQuickModes.checked = state.settings.quick;
-    if (els.toggleBlitz) els.toggleBlitz.checked = state.settings.blitz;
-    if (els.toggleChoices) els.toggleChoices.checked = state.settings.choices;
-    if (els.toggleBlitzModes)
-      els.toggleBlitzModes.checked = state.settings.blitz;
+  /* ---------------- Parents area ---------------- */
+  // A grown-up gate guards the parents area; it opens only from who-plays.
+  function openGate() {
+    state.gate = parentChallenge();
+    els.gateQuestion.textContent = state.gate.a + " × " + state.gate.b + " = ?";
+    els.gateInput.value = "";
+    els.gateFeedback.hidden = true;
+    els.parentGate.hidden = false;
+    els.gateInput.focus();
   }
-  function persistSettings() {
-    storageSet(STORAGE_KEYS.settings, state.settings);
+  function closeGate() {
+    els.parentGate.hidden = true;
+    state.gate = null;
   }
-  function wireToggles() {
-    function bind(input, key, mirror) {
-      if (!input) return;
-      input.addEventListener("change", function () {
-        state.settings[key] = input.checked;
-        persistSettings();
-        if (mirror) mirror.checked = input.checked;
-      });
+  function checkGate() {
+    if (!state.gate) return;
+    if (parseInt(els.gateInput.value, 10) === state.gate.answer) {
+      closeGate();
+      goToParents();
+      return;
     }
-    bind(els.toggleSound, "sound");
-    bind(els.toggleTimer, "timer", els.toggleTimerModes);
-    bind(els.toggleQuick, "quick", els.toggleQuickModes);
-    bind(els.toggleTimerModes, "timer", els.toggleTimer);
-    bind(els.toggleQuickModes, "quick", els.toggleQuick);
-    bind(els.toggleBlitz, "blitz", els.toggleBlitzModes);
-    bind(els.toggleBlitzModes, "blitz", els.toggleBlitz);
-    bind(els.toggleChoices, "choices");
+    state.gate = parentChallenge();
+    els.gateQuestion.textContent = state.gate.a + " × " + state.gate.b + " = ?";
+    els.gateFeedback.hidden = false;
+    els.gateInput.value = "";
+    els.gateInput.focus();
+  }
+  function goToParents() {
+    state.editingId = "";
+    renderParentProfiles();
+    renderLanguageGrids();
+    showScreen("screen-parents");
+  }
+  function renderParentProfiles() {
+    els.parentProfiles.innerHTML = "";
+    state.store.profiles.forEach(function (profile) {
+      var row = document.createElement("li");
+      row.className = "parent-profile";
+      var avatar = document.createElement("span");
+      avatar.className = "profile-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = profile.avatar;
+      var name = document.createElement("span");
+      name.className = "parent-profile-name";
+      name.textContent = profile.name;
+      var edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "btn btn--secondary parent-edit";
+      edit.setAttribute("data-edit-id", profile.id);
+      edit.setAttribute("data-i18n", "btn_edit");
+      edit.textContent = t("btn_edit");
+      edit.addEventListener("click", function () {
+        openEditor(profile.id);
+      });
+      row.appendChild(avatar);
+      row.appendChild(name);
+      row.appendChild(edit);
+      els.parentProfiles.appendChild(row);
+    });
+  }
+  function addProfile() {
+    var fallback = t("profile_default_name", {
+      n: state.store.profiles.length + 1,
+    });
+    var profile = createProfile(
+      fallback,
+      PROFILE_AVATARS[0],
+      state.store.profiles.map(function (p) {
+        return p.id;
+      }),
+      fallback,
+    );
+    state.store.profiles.push(profile);
+    saveProfiles();
+    openEditor(profile.id);
+  }
+  function editingProfile() {
+    return state.store.profiles.filter(function (p) {
+      return p.id === state.editingId;
+    })[0];
+  }
+  function openEditor(id) {
+    state.editingId = id;
+    var profile = editingProfile();
+    if (!profile) return;
+    els.editName.value = profile.name;
+    renderAvatarPicker(profile);
+    syncToggles();
+    showScreen("screen-profile-edit");
+  }
+  function renderAvatarPicker(profile) {
+    els.editAvatars.innerHTML = "";
+    PROFILE_AVATARS.forEach(function (emoji) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "avatar-btn";
+      btn.setAttribute("data-avatar", emoji);
+      var selected = emoji === profile.avatar;
+      btn.classList.toggle("is-selected", selected);
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+      btn.textContent = emoji;
+      btn.addEventListener("click", function () {
+        var current = editingProfile();
+        if (!current) return;
+        current.avatar = emoji;
+        saveProfiles();
+        renderAvatarPicker(current);
+      });
+      els.editAvatars.appendChild(btn);
+    });
+  }
+  function deleteEditingProfile() {
+    var profile = editingProfile();
+    if (!profile) return;
+    if (!window.confirm(t("delete_confirm", { name: profile.name }))) return;
+    state.store.profiles = state.store.profiles.filter(function (p) {
+      return p !== profile;
+    });
+    if (state.store.lastId === profile.id) state.store.lastId = "";
+    saveProfiles();
+    goToParents();
   }
 
+  /* ---------------- Fact album (parents area) ---------------- */
+  var ALBUM_STATES = ["new", "practicing", "almost", "mastered"];
+  function albumCell(state, label, title) {
+    var cell = document.createElement("div");
+    cell.className = "album-cell";
+    cell.setAttribute("data-state", state);
+    cell.textContent = label;
+    if (title) {
+      cell.title = title;
+      cell.setAttribute("aria-label", title);
+    }
+    return cell;
+  }
+  function albumHead(text) {
+    var head = document.createElement("div");
+    head.className = "album-head";
+    head.textContent = text;
+    return head;
+  }
+  function formatSeconds(ms) {
+    var secs = Math.round(ms / 100) / 10;
+    try {
+      return secs.toLocaleString(state.lang, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      });
+    } catch (error) {
+      return secs.toFixed(1);
+    }
+  }
+  // 11 x 11 grid: a corner, column headers 1-10, then each row's header and
+  // its ten facts coloured by state; the summary counts the 55 facts.
+  function renderAlbum() {
+    var profile = editingProfile();
+    if (!profile) return;
+    var tables = profile.tables;
+    els.albumTitle.textContent = t("album_title", { name: profile.name });
+    var mastered = 0;
+    var practicing = 0;
+    Object.keys(tables.facts).forEach(function (key) {
+      var factState = tables.facts[key].state;
+      if (factState === "mastered") mastered++;
+      else if (factState === "practicing") practicing++;
+    });
+    els.albumSummary.textContent = t("album_summary", {
+      m: mastered,
+      p: practicing,
+    });
+    els.albumSummary.setAttribute("data-mastered", String(mastered));
+    els.albumSummary.setAttribute("data-practicing", String(practicing));
+    els.albumGrid.innerHTML = "";
+    els.albumGrid.appendChild(albumHead("×"));
+    for (var n = 1; n <= 10; n++) els.albumGrid.appendChild(albumHead(n));
+    Tables.albumCells(tables).forEach(function (item) {
+      if (item.b === 1) els.albumGrid.appendChild(albumHead(item.a));
+      var fact = tables.facts[item.key];
+      var q = item.a + " × " + item.b;
+      var cell = albumCell(
+        item.state,
+        q,
+        t("album_cell_detail", {
+          q: q,
+          seen: fact.seen,
+          secs: fact.seen ? formatSeconds(fact.avgMs) : "–",
+        }),
+      );
+      cell.setAttribute("data-a", String(item.a));
+      cell.setAttribute("data-b", String(item.b));
+      els.albumGrid.appendChild(cell);
+    });
+    els.albumLegend.innerHTML = "";
+    ALBUM_STATES.forEach(function (key) {
+      var row = document.createElement("li");
+      row.className = "album-legend-item";
+      var swatch = albumCell(key, "");
+      swatch.setAttribute("aria-hidden", "true");
+      row.appendChild(swatch);
+      var label = document.createElement("span");
+      label.textContent = t("album_" + key);
+      row.appendChild(label);
+      els.albumLegend.appendChild(row);
+    });
+  }
+  function openAlbum() {
+    if (!editingProfile()) return;
+    renderAlbum();
+    showScreen("screen-album");
+  }
+
+  /* ---------------- Profile editor controls ---------------- */
+  var SETTING_TOGGLES = [
+    ["toggleSound", "sound"],
+    ["toggleMusic", "music"],
+    ["toggleTimer", "timer"],
+    ["toggleBlitz", "blitz"],
+    ["toggleQuick", "quick"],
+    ["toggleChoices", "choices"],
+    ["toggleSetbacks", "setbacks"],
+  ];
+  // Copy the edited profile's settings into the editor controls.
+  function syncToggles() {
+    var profile = editingProfile();
+    if (!profile) return;
+    SETTING_TOGGLES.forEach(function (pair) {
+      els[pair[0]].checked = profile.settings[pair[1]];
+    });
+    els.editMainMode.value = profile.settings.mainMode;
+    els.editStations.value = String(profile.settings.tableStations);
+  }
+  function buildEditorSelects() {
+    MAIN_MODES.forEach(function (mode) {
+      var option = document.createElement("option");
+      var key = mode === "tables" ? "mode_tables" : "m_" + mode;
+      option.value = mode;
+      option.setAttribute("data-i18n", key);
+      option.textContent = t(key);
+      els.editMainMode.appendChild(option);
+    });
+    TABLE_STATION_OPTIONS.forEach(function (count) {
+      var option = document.createElement("option");
+      option.value = String(count);
+      option.textContent = String(count);
+      els.editStations.appendChild(option);
+    });
+  }
+  // Every control writes straight into the edited profile and saves.
+  function wireToggles() {
+    function update(key, value) {
+      var profile = editingProfile();
+      if (!profile) return;
+      profile.settings[key] = value;
+      saveProfiles();
+    }
+    SETTING_TOGGLES.forEach(function (pair) {
+      var input = els[pair[0]];
+      input.addEventListener("change", function () {
+        update(pair[1], input.checked);
+      });
+    });
+    els.editMainMode.addEventListener("change", function () {
+      update("mainMode", els.editMainMode.value);
+    });
+    els.editStations.addEventListener("change", function () {
+      update("tableStations", parseInt(els.editStations.value, 10));
+    });
+    els.editName.addEventListener("blur", function () {
+      var profile = editingProfile();
+      if (!profile) return;
+      profile.name = cleanProfileName(els.editName.value, profile.name);
+      els.editName.value = profile.name;
+      saveProfiles();
+    });
+    els.gateInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        checkGate();
+      }
+    });
+  }
+
+  // Reset the progress of the profile being edited (after confirmation).
   function resetProgress() {
+    var profile = editingProfile();
+    if (!profile) return;
     if (!window.confirm(t("reset_confirm"))) return;
-    state.progress = {
-      coins: 0,
-      treasures: 0,
-      badges: [],
-      bestStreak: 0,
-      avgMs: 0,
-      totalCorrect: 0,
-      lastPlayed: "",
-      blitzWins: 0,
-      bestCombo: 0,
-      stars: 0,
-      collection: [],
-      inventory: { joker: 0, fifty: 0, time: 0, shield: 0 },
-      buddies: ["kid"],
-      buddy: "kid",
-      learning: normalizeLearning(),
-      learningStartVersion: 1,
-    };
-    storageSet(STORAGE_KEYS.progress, state.progress);
-    refreshMenuStats();
+    profile.progress = defaultProgress();
+    profile.tables = Tables.normalizeTables();
+    saveProfiles();
   }
 
   /* ---------------- Global action handling ---------------- */
   function handleAction(action) {
     switch (action) {
       case "go-modes":
-        syncToggles();
         showScreen("screen-modes");
         break;
       case "go-menu":
-        goToMenu();
+        goHome();
         break;
-      case "go-settings":
-        syncToggles();
-        renderLanguageGrids();
-        showScreen("screen-settings");
+      case "switch-player":
+        goToProfiles();
+        break;
+      case "open-parents":
+        openGate();
+        break;
+      case "gate-ok":
+        checkGate();
+        break;
+      case "gate-cancel":
+        closeGate();
+        break;
+      case "go-profiles":
+        goToProfiles();
+        break;
+      case "back-parents":
+        goToParents();
+        break;
+      case "add-profile":
+        addProfile();
+        break;
+      case "delete-profile":
+        deleteEditingProfile();
+        break;
+      case "open-album":
+        openAlbum();
+        break;
+      case "back-edit":
+        showScreen("screen-profile-edit");
         break;
       case "go-howto":
         showScreen("screen-howto");
@@ -2663,15 +4086,32 @@ function startApp() {
       case "start-run":
         startRun();
         break;
+      case "start-tables":
+        startTablesRun();
+        break;
+      case "intro-replay":
+        playTableIntro();
+        break;
+      case "intro-done":
+        finishTableIntro();
+        break;
       case "check":
         checkAnswer();
         break;
       case "pause":
-        if (!els.pauseOverlay.hidden) break;
+        if (!els.pauseOverlay.hidden || !els.introOverlay.hidden) break;
         state.pausedRemaining = state.timerId
           ? Math.max(0, (state.timerDeadline - Date.now()) / 1000)
           : 0;
         state.pausedAt = now();
+        // Keep what is left of a pending hint/answer wait.
+        state.pausedStage = state.stageTimerId
+          ? {
+              fn: state.stageFn,
+              ms: Math.max(0, state.stageDeadline - Date.now()),
+            }
+          : null;
+        clearStageTimer();
         window.clearTimeout(state.nextTaskId);
         stopTimer();
         els.pauseOverlay.hidden = false;
@@ -2680,17 +4120,23 @@ function startApp() {
         els.pauseOverlay.hidden = true;
         if (state.run) {
           state.run.taskStart += now() - state.pausedAt;
-          if (activeTask) restartTimer(true);
-          else nextTask();
+          if (activeTask) {
+            restartTimer(true);
+            if (state.pausedStage) {
+              startStageTimer(state.pausedStage.ms, state.pausedStage.fn);
+            }
+          } else nextStation();
+          state.pausedStage = null;
           renderPowerups();
         }
         break;
       case "quit":
         els.pauseOverlay.hidden = true;
-        goToMenu();
+        goHome();
         break;
       case "play-again":
-        startRun();
+        if (state.lastRunKind === "tables") startTablesRun();
+        else startRun();
         break;
       case "reset":
         resetProgress();
@@ -2700,6 +4146,9 @@ function startApp() {
         break;
       case "close-shop":
         closeShop();
+        break;
+      case "go-treasures":
+        openTreasures();
         break;
       default:
         break;
@@ -2729,6 +4178,8 @@ function startApp() {
       ) {
         return;
       }
+      // The introduction is on top: keys belong to its buttons.
+      if (!els.introOverlay.hidden) return;
       if (/^[0-9]$/.test(event.key)) {
         handleKey(event.key);
       } else if (event.key === "Backspace") {
@@ -2760,8 +4211,10 @@ function startApp() {
   function init() {
     buildNumpad();
     wireModeSelection();
+    buildEditorSelects();
     wireToggles();
     wireActions();
+    wireHomeCharacters();
     renderLanguageGrids();
     refreshMenuStats();
     applyBuddy();
@@ -2769,7 +4222,7 @@ function startApp() {
     if (state.lang && I18N[state.lang]) {
       applyI18n();
       refreshDynamicText();
-      goToMenu();
+      goToProfiles();
     } else {
       state.lang = "es"; // default language
       applyI18n();
@@ -2786,16 +4239,40 @@ function startApp() {
 /* ================================================================== */
 /* Bootstrap (browser) or export (Node test runner)                    */
 /* ================================================================== */
+// A missing engine file: say so in both languages instead of a blank page.
+function showLoadError() {
+  var box = document.createElement("p");
+  box.id = "load-error";
+  box.setAttribute("role", "alert");
+  box.style.cssText = "margin:2rem 1rem;font-size:1.25rem;text-align:center";
+  box.textContent = I18N.es.load_error + " / " + I18N.en.load_error;
+  document.body.insertBefore(box, document.body.firstChild);
+}
+
 if (typeof document !== "undefined") {
+  var bootApp = Tables && Characters ? startApp : showLoadError;
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", startApp);
+    document.addEventListener("DOMContentLoaded", bootApp);
   } else {
-    startApp();
+    bootApp();
   }
 }
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
+    DEFAULT_SETTINGS: DEFAULT_SETTINGS,
+    TABLE_STATION_OPTIONS: TABLE_STATION_OPTIONS,
+    MAIN_MODES: MAIN_MODES,
+    PROFILE_AVATARS: PROFILE_AVATARS,
+    PROFILE_NAME_MAX: PROFILE_NAME_MAX,
+    defaultProgress: defaultProgress,
+    normalizeSettings: normalizeSettings,
+    cleanProfileName: cleanProfileName,
+    createProfile: createProfile,
+    normalizeProfile: normalizeProfile,
+    normalizeProfileStore: normalizeProfileStore,
+    migrateLegacyStorage: migrateLegacyStorage,
+    parentChallenge: parentChallenge,
     LANGUAGES: LANGUAGES,
     I18N: I18N,
     randInt: randInt,
@@ -2820,6 +4297,8 @@ if (typeof module !== "undefined" && module.exports) {
     computeTimeBudget: computeTimeBudget,
     updateAvgMs: updateAvgMs,
     TREASURES: TREASURES,
+    SHOP_COSMETICS: SHOP_COSMETICS,
+    VICTORY_MELODIES: VICTORY_MELODIES,
     dailyTreasureIndex: dailyTreasureIndex,
     taskDifficultyScore: taskDifficultyScore,
     vibrationForTask: vibrationForTask,

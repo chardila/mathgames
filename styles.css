@@ -427,6 +427,146 @@ h3 {
 }
 
 /* ------------------------------------------------------------------ */
+/* Who plays (profile grid)                                            */
+/* ------------------------------------------------------------------ */
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 1.4em;
+}
+.profile-btn {
+  font-family: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  min-height: calc(var(--tap) * 2);
+  border: 3px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--c-card-soft);
+  color: var(--c-text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  transition:
+    transform 0.08s ease,
+    border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.profile-btn:active {
+  transform: scale(0.97);
+}
+.profile-btn:focus-visible {
+  border-color: var(--c-primary);
+}
+.profile-avatar {
+  font-size: 2.4em;
+  line-height: 1;
+}
+.profile-name {
+  overflow-wrap: anywhere;
+}
+.btn--parents {
+  margin-top: 1.2em;
+}
+
+/* ------------------------------------------------------------------ */
+/* Parents area, gate and profile editor                               */
+/* ------------------------------------------------------------------ */
+.parent-profiles {
+  list-style: none;
+  padding: 0;
+  margin: 0.6em 0 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.parent-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--c-card-soft);
+}
+.parent-profile .profile-avatar {
+  font-size: 2em;
+}
+.parent-profile-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+.parent-edit {
+  flex: none;
+}
+.btn--wide {
+  width: 100%;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.field-input {
+  font-family: inherit;
+  font-size: 1.1rem;
+  min-height: 52px;
+  width: 100%;
+  min-width: 0;
+  padding: 0 14px;
+  border: 3px solid rgba(14, 27, 58, 0.12);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--c-text);
+}
+.field-input:focus-visible {
+  outline: none;
+  border-color: var(--c-secondary);
+}
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+  margin: 0.6em 0 0.4em;
+}
+.avatar-btn {
+  font-size: 1.8rem;
+  min-height: 56px;
+  border: 3px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--c-card-soft);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.avatar-btn.is-selected {
+  border-color: var(--c-primary);
+  background: #fff4ea;
+}
+.gate-question {
+  font-size: clamp(1.6rem, 6vw, 2.2rem);
+  font-weight: 800;
+  margin: 0.4em 0;
+}
+.gate-input {
+  text-align: center;
+  font-size: 1.5rem;
+}
+.gate-feedback {
+  color: var(--c-danger);
+  font-weight: 700;
+  margin: 0.6em 0 0;
+}
+
+/* ------------------------------------------------------------------ */
 /* Mode cards                                                          */
 /* ------------------------------------------------------------------ */
 .mode-grid {
@@ -865,6 +1005,48 @@ h3 {
 }
 .overlay-card {
   max-width: 420px;
+}
+
+/* Table introduction: character, running count and growing blocks */
+.intro-card {
+  width: 100%;
+}
+.intro-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 8px 0;
+}
+.intro-character .char-svg {
+  height: clamp(64px, 12vh, 96px);
+}
+.intro-number {
+  min-width: 2.5ch;
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--c-secondary);
+}
+.intro-blocks {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 2px;
+  min-height: 12px;
+  margin: 0 auto 12px;
+}
+.intro-row {
+  display: flex;
+  gap: 2px;
+}
+.intro-block {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--c-gold);
+  box-shadow: inset 0 -2px 0 rgba(122, 90, 0, 0.25);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1387,6 +1569,124 @@ h3 {
   font-weight: 800;
 }
 
+/* Tables home */
+.tables-home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.tables-home-mascot {
+  font-size: clamp(3rem, 12vw, 4.5rem);
+  line-height: 1;
+  animation: bob 3s ease-in-out infinite;
+}
+.tables-home-greeting {
+  font-size: clamp(1.4rem, 5.5vw, 2rem);
+  text-align: start;
+}
+.home-characters:empty {
+  display: none;
+}
+/* One character per table: 5 per row, filled from the bottom */
+.char-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin: 4px 0 8px;
+}
+.char-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 6px 2px 4px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--c-card-soft);
+  color: var(--c-text);
+  font: inherit;
+  cursor: pointer;
+}
+.char-card:focus-visible {
+  outline: 3px solid var(--c-secondary);
+  outline-offset: 2px;
+}
+.char-card:active {
+  transform: scale(0.96);
+}
+.char-svg {
+  display: block;
+  height: clamp(48px, 9vh, 72px);
+  width: auto;
+}
+.char-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.char-count {
+  font-size: 0.7rem;
+  color: var(--c-muted);
+  line-height: 1.1;
+}
+.char-card[data-fill="10"] {
+  border-color: var(--c-gold);
+}
+
+/* Tables hint: a rows x b columns of blocks, then the trick */
+.blocks {
+  /* --n = larger side (set in app.js): the grid stays about 100 px. */
+  --cell: clamp(8px, calc(100px / var(--n, 5) - 2px), 18px);
+  display: grid;
+  gap: 2px;
+  justify-content: center;
+  margin: 0 auto 8px;
+}
+.block {
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 2px;
+  background: var(--c-gold);
+  box-shadow: inset 0 -2px 0 rgba(122, 90, 0, 0.25);
+}
+.hint-trick,
+.hint-answer {
+  margin: 0;
+  text-align: center;
+}
+.hint-answer {
+  margin-top: 6px;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+/* Blocks beside the text, so the hint stays short */
+.hint:has(> .blocks) {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 12px;
+  padding: 8px 10px;
+}
+.hint:has(> .blocks) > .blocks {
+  grid-row: 1 / span 2;
+  margin: 0;
+}
+.hint:has(> .blocks) > p {
+  text-align: start;
+}
+.sum-progress-line {
+  font-weight: 700;
+  margin: 0.4em 0 0;
+}
+
 /* The worked-solution panel (reuses #hint) after a wrong answer */
 .hint.solution {
   display: block;
@@ -1618,6 +1918,38 @@ h3 {
   }
 }
 
+/* Phones in tables mode: map label only and slightly shorter keys, so the
+   reserved hint slot (10 x 10 blocks), the numpad and Check fit without
+   scrolling from the first second (nothing jumps when the hint appears). */
+@media (max-width: 540px) {
+  .screen--game[data-kind="tables"] .map svg {
+    display: none;
+  }
+  .screen--game[data-kind="tables"] .mascot-wrap {
+    height: 44px;
+    margin: 0;
+  }
+  .screen--game[data-kind="tables"] .mascot-bubble {
+    max-width: 82%;
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    line-height: 1.2;
+  }
+  .screen--game[data-kind="tables"] .feedback:empty {
+    min-height: 0;
+    margin: 0;
+  }
+  .screen--game[data-kind="tables"] .numpad {
+    gap: 8px;
+  }
+  .screen--game[data-kind="tables"] .key {
+    min-height: 56px;
+  }
+  .screen--game[data-kind="tables"] [data-action="check"] {
+    min-height: 64px;
+  }
+}
+
 /* Short portrait phones: trim vertical rhythm so answers stay above the fold. */
 @media (max-height: 720px) {
   .map svg {
@@ -1627,4 +1959,326 @@ h3 {
     padding-top: 12px;
     padding-bottom: 12px;
   }
+}
+
+/* Tables mode: the hint slot is kept from the start (hidden, not removed),
+   and the screen is top-aligned, so nothing moves when the hint (5 s) or the
+   answer (10 s) appears under her finger. */
+.screen--game[data-kind="tables"] .hint {
+  min-height: 132px;
+  margin-bottom: 0.4em;
+}
+.screen--game[data-kind="tables"] .hint[hidden] {
+  display: block !important;
+  visibility: hidden;
+}
+.app:has(> .screen--game.is-active[data-kind="tables"]) {
+  align-items: flex-start;
+}
+/* Fixed parrot row (a long milestone message never pushes the loop), and
+   the optional timer ring out of the flow, in the question card's corner. */
+.screen--game[data-kind="tables"] .mascot-wrap {
+  height: 56px;
+  min-height: 0;
+}
+.screen--game[data-kind="tables"] .task-main {
+  position: relative;
+}
+.screen--game[data-kind="tables"] .task-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+}
+
+/* Tables mode on a tablet (>= 720 px wide, either orientation): two
+   columns. Map, parrot, question and hint on the left; the typed answer,
+   numpad and Check on the right, all on one screen. */
+@media (min-width: 720px) {
+  .screen--game.is-active[data-kind="tables"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "bar bar"
+      "map entry"
+      "mascot entry"
+      "main entry";
+    grid-template-rows: auto auto auto 1fr;
+    align-items: start;
+    max-width: 960px;
+    position: relative;
+  }
+  /* The card box is gone (display: contents): pin the combo to the
+     answer card's corner. */
+  .screen--game[data-kind="tables"] .combo-tag {
+    grid-area: entry;
+  }
+  .screen--game[data-kind="tables"] .game-bar {
+    grid-area: bar;
+  }
+  .screen--game[data-kind="tables"] .map {
+    grid-area: map;
+  }
+  .screen--game[data-kind="tables"] .map svg {
+    height: clamp(60px, 11vh, 110px);
+  }
+  .screen--game[data-kind="tables"] .mascot-wrap {
+    grid-area: mascot;
+    margin: 0;
+    /* Room for a two-line bubble. */
+    height: 64px;
+  }
+  .screen--game[data-kind="tables"] .task-card {
+    display: contents;
+  }
+  .screen--game[data-kind="tables"] .task-main,
+  .screen--game[data-kind="tables"] .task-entry {
+    background: var(--c-card);
+    border-radius: var(--radius-lg);
+    padding: clamp(12px, 2vh, 24px);
+    box-shadow: 0 14px 34px var(--c-shadow);
+    text-align: center;
+  }
+  .screen--game[data-kind="tables"] .task-main {
+    grid-area: main;
+  }
+  .screen--game[data-kind="tables"] .task-top {
+    top: 10px;
+    left: 10px;
+  }
+  .screen--game[data-kind="tables"] .task-entry {
+    grid-area: entry;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen--game[data-kind="tables"] .task-entry [data-action="check"] {
+    width: 100%;
+    margin-top: 12px;
+  }
+  .screen--game[data-kind="tables"] .task-question {
+    font-size: clamp(2.4rem, 7vh, 3.6rem);
+  }
+  .screen--game[data-kind="tables"] .answer-display {
+    margin-top: 0;
+    width: 100%;
+  }
+  .screen--game[data-kind="tables"] .hint {
+    margin-bottom: 0;
+  }
+}
+
+/* Short tablets (e.g. 960 x 600 in landscape): shorter keys and Check. */
+@media (min-width: 720px) and (max-height: 700px) {
+  .screen--game[data-kind="tables"] .map svg {
+    height: 54px;
+  }
+  .screen--game[data-kind="tables"] .numpad {
+    gap: 8px;
+  }
+  .screen--game[data-kind="tables"] .key {
+    min-height: 54px;
+  }
+  .screen--game[data-kind="tables"] [data-action="check"] {
+    min-height: 58px;
+  }
+}
+
+/* Fact album (parents area): 11 x 11 grid with headers, coloured by state */
+.album-summary {
+  margin: 0 0 10px;
+  font-weight: 700;
+  color: var(--c-muted);
+}
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 2px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 12px;
+}
+.album-head,
+.album-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  line-height: 1;
+  text-align: center;
+}
+.album-head {
+  font-size: clamp(0.6rem, 2.6vw, 0.85rem);
+  font-weight: 800;
+  color: var(--c-muted);
+}
+.album-cell {
+  font-size: clamp(6px, 1.7vw, 9px);
+  font-weight: 700;
+  color: rgba(14, 27, 58, 0.75);
+  background: #d7dbe6;
+  overflow: hidden;
+}
+.album-cell[data-state="practicing"] {
+  background: var(--c-gold);
+}
+.album-cell[data-state="almost"] {
+  background: #b8e05a;
+}
+.album-cell[data-state="mastered"] {
+  background: var(--c-correct);
+  color: #fff;
+}
+.album-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.album-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.album-legend-item .album-cell {
+  width: 18px;
+  flex: none;
+}
+
+/* Cosmetic shop cards (themes, accessories, melodies) */
+.cosmetic-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--tap);
+  padding: 12px 6px;
+  border-radius: 16px;
+  background: var(--c-card);
+  color: var(--c-text);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08);
+  border: 3px solid transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.cosmetic-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+.cosmetic-name {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+.cosmetic-action {
+  font-size: 0.75rem;
+  color: var(--c-muted);
+}
+.cosmetic-card.is-equipped {
+  border-color: var(--c-correct);
+}
+.cosmetic-card.is-locked {
+  opacity: 0.6;
+}
+
+/* Map themes: the trail colours stay, background and route change */
+.map--ocean {
+  background: linear-gradient(180deg, #bfe9ff 0%, #4fa8e0 100%);
+}
+.map--forest {
+  background: linear-gradient(180deg, #d9f2c4 0%, #5fa850 100%);
+}
+.map--sunset {
+  background: linear-gradient(180deg, #ffe3ae 0%, #ffb27a 55%, #f59a9a 100%);
+}
+.map--galaxy {
+  background:
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(255, 255, 255, 0.8) 0 1px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at 70% 20%,
+      rgba(255, 255, 255, 0.7) 0 1px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at 85% 70%,
+      rgba(255, 255, 255, 0.6) 0 1px,
+      transparent 2px
+    ),
+    linear-gradient(180deg, #2a1b5e 0%, #120a33 100%);
+}
+.map--ocean #map-path,
+.map--forest #map-path,
+.map--sunset #map-path {
+  stroke: rgba(14, 27, 58, 0.35);
+}
+.map--galaxy #map-path {
+  stroke: rgba(255, 255, 255, 0.45);
+}
+.map--ocean .map-station,
+.map--forest .map-station,
+.map--sunset .map-station {
+  stroke: rgba(14, 27, 58, 0.55);
+}
+.map--ocean .map-progress,
+.map--forest .map-progress,
+.map--sunset .map-progress {
+  color: #0e1b3a;
+}
+.map--galaxy .map-progress {
+  color: #fff;
+}
+
+/* My treasures: 50 tiles, collected ones with picture and name */
+.treasure-total {
+  margin: 0 0 12px;
+  font-weight: 800;
+  color: var(--c-muted);
+}
+.treasure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 8px;
+}
+.treasure-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 96px;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--c-card-soft);
+  text-align: center;
+}
+.treasure-tile-img {
+  display: block;
+  width: 56px;
+  height: 56px;
+}
+.treasure-tile-img svg {
+  width: 100%;
+  height: 100%;
+}
+.treasure-tile-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--c-text);
+}
+.treasure-tile.is-locked {
+  background: #d7dbe6;
+}
+.treasure-tile-q {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: rgba(14, 27, 58, 0.45);
 }

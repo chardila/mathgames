@@ -27,16 +27,16 @@ Un hallazgo pasa al backlog solo cuando alguien lo analiza y lo acepta. Si se de
 
 Trabajos con dirección decidida en la conversación del 2026-10-25 (diseño con niños con TDAH en mente). Cada uno necesita su documento de diseño aprobado y un plan antes de tocar código.
 
-| #   | Trabajo                                                                                                                                                         | Estado                                      | Documento                                                                                                                                 |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Perfiles por niño y zona de padres (álbum de 100 casillas para padres)                                                                                          | plan escrito; falta revisarlo               | `docs/superpowers/specs/2026-10-25-perfiles-y-modo-tablas-design.md`; plan: `docs/superpowers/plans/2026-10-25-perfiles-y-modo-tablas.md` |
-| 2   | Modo para dominar las tablas: escribir el resultado, pista visual si tarda, repetición por operación, velocidad medida en silencio, un personaje por tabla      | plan escrito (junto con 1); falta revisarlo | mismo diseño y mismo plan                                                                                                                 |
-| 3   | Multiplicación de varias cifras **paso a paso en columnas** (como en el cuaderno, con las cifras que se llevan); para el hermano de 6 años y luego para la hija | pendiente: diseñar en una sesión posterior  | —                                                                                                                                         |
-| —   | Backend / sincronización                                                                                                                                        | futuro, descartado por ahora (todo local)   | —                                                                                                                                         |
+| #   | Trabajo                                                                                                                                                         | Estado                                     | Documento                                                                                                                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Perfiles por niño y zona de padres (álbum de 100 casillas para padres)                                                                                          | hecho (rama `feature/perfiles-y-tablas`)   | `docs/superpowers/specs/2026-10-25-perfiles-y-modo-tablas-design.md`; plan: `docs/superpowers/plans/2026-10-25-perfiles-y-modo-tablas.md` |
+| 2   | Modo para dominar las tablas: escribir el resultado, pista visual si tarda, repetición por operación, velocidad medida en silencio, un personaje por tabla      | hecho (rama `feature/perfiles-y-tablas`)   | mismo diseño y mismo plan                                                                                                                 |
+| 3   | Multiplicación de varias cifras **paso a paso en columnas** (como en el cuaderno, con las cifras que se llevan); para el hermano de 6 años y luego para la hija | pendiente: diseñar en una sesión posterior | —                                                                                                                                         |
+| —   | Backend / sincronización                                                                                                                                        | futuro, descartado por ahora (todo local)  | —                                                                                                                                         |
 
 Lo ya decidido para el trabajo 3: el niño escribe cifra por cifra, de derecha a izquierda, con las llevadas; si falla, se ve en qué paso (opción B del boceto del 2026-10-25). Por decidir: tamaños de números (¿empezar por 2 cifras × 1?), si incluye suma y resta en columnas.
 
-Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12.
+Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12. Los que salieron al implementarlo están en H-14 a H-20.
 
 ---
 
@@ -46,7 +46,7 @@ Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12.
 
 #### H-01 · La multiplicación es uniforme y sin memoria
 
-- **Estado:** `por-analizar`
+- **Estado:** `hecho` (`905737c`: registro por operación con dominio y repaso espaciado; `a8e8b6d`: la operación fallada vuelve dentro de la ronda). Solo en el modo tablas.
 - **Dónde:** `generateMultiplication` (`app.js:345`), `generateTask`, `nextTask`
 - **Qué pasa:** `a` y `b` se eligen al azar entre 1 y 10, sin usar el nivel. No hay repetición espaciada. Un error solo baja el nivel general de multiplicación, no hace que esa operación vuelva a salir.
 - **Por qué importa:** memorizar exige repetir más lo que se falla. Hoy una operación fallada puede no volver a aparecer en muchas partidas.
@@ -55,7 +55,7 @@ Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12.
 
 #### H-02 · Siempre es opción múltiple
 
-- **Estado:** `por-analizar`
+- **Estado:** `hecho` (`2c1a3e9`: el modo tablas siempre se responde escribiendo; `a41e254`: en los otros juegos el ajuste "botones en lugar de escribir" de cada perfil vuelve a funcionar).
 - **Dónde:** `nextTask` fija `activeTask.choice = true` (`app.js:1652`); `setupAnswerMode`, `renderChoices`
 - **Qué pasa:** el teclado numérico, el botón de comprobar, la entrada por teclado físico y el ajuste "botones en lugar de escribir" (`settings.choices`) son **código muerto**: el ajuste se guarda pero no cambia nada.
 - **Por qué importa:** reconocer la respuesta entre varias es más fácil que recordarla, lo que va en contra de memorizar.
@@ -70,10 +70,11 @@ Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12.
 - **Por qué importa:** es la forma natural de estudiar tablas: una a la vez, luego varias.
 - **Ideas (sin decidir):** selector de tablas (1–10, una o varias) que acote `a` o `b` en el generador.
 - **A analizar:** relación con H-01 (el selector y la ponderación se pisan) y con la división inversa.
+- **Nota (2026-10-26):** el modo tablas (rama `feature/perfiles-y-tablas`) elige solo las operaciones de cada ronda según el orden de presentación de las tablas y el dominio de cada una; no hay selector manual de tabla. **Pregunta para el usuario:** ¿pasa a `descartado`?
 
 #### H-04 · Los fallos no se conservan entre partidas
 
-- **Estado:** `por-analizar`
+- **Estado:** `hecho` (`905737c`: cada operación guarda aciertos, tiempo medio, estado y fecha dentro del perfil).
 - **Dónde:** `recordMiss` (`app.js:1845`), `renderReview`
 - **Qué pasa:** el repaso final muestra hasta 6 operaciones falladas, pero solo de esa partida. `state.run.missed` se pierde al terminar.
 - **Por qué importa:** es la base natural para H-01.
@@ -81,7 +82,7 @@ Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12.
 
 #### H-05 · No hay progreso visible por tabla ni vista para padres
 
-- **Estado:** `por-analizar`
+- **Estado:** `hecho` (`e947c65`: un personaje por tabla que se llena al dominarla; `950c596`: álbum de 100 casillas en la zona de padres).
 - **Dónde:** `state.progress.learning` guarda solo un nivel por operación (suma/resta/mul/div)
 - **Qué pasa:** no se sabe qué operaciones concretas domina o le cuestan. El progreso no se ve ni para la niña ni para los padres.
 - **Ideas (sin decidir):** cuadrícula 10×10 con color por dominio; pantalla simple para padres.
@@ -125,6 +126,116 @@ Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12.
 - **Ideas (sin decidir):** separar la interfaz en archivos por área (`shop.js`, `map.js`, `profiles.js`…) con el mismo patrón que `tables.js` (variable global más `module.exports`, sin build). Habría que añadir cada archivo a `index.html` y a la caché de `service-worker.js`.
 - **A analizar:** cuándo hacerlo (¿después del plan de perfiles, para no mezclar los dos cambios?), cómo compartir `state`, `els` y `t` entre archivos y cómo probarlo sin romper `tests/browser.test.js`.
 
+### Salidos al implementar perfiles y modo tablas (2026-10-26)
+
+Referencias por nombre de función, no por línea. Ninguno está aprobado: hay que analizarlos.
+
+#### H-14 · Ritmo del modo tablas: pista, retroceso y cronómetro
+
+- **Estado:** `por-analizar`
+- **Dónde:** `enterHintStage`, `enterAnswerStage`, `nextTablesStation`, `restartTimer`, `computeTimeBudget`
+- **Qué pasa:**
+  - Al aparecer la pista a los 5 s se borra lo que la niña ya estaba tecleando (`currentInput = ""`). Es una decisión de producto: ¿conservarlo?
+  - Con el retroceso activado, la ronda puede rebotar entre las estaciones 1 y 2 y crecer sin fin (`Tables.appendRound` añade 5 operaciones cada vez que se agota). Habría que poner un tope.
+  - Con el cronómetro visible, 1×1 recibe unos 6 s y la pista se ve ~1 s antes de agotarse. El presupuesto sale de `computeTimeBudget` con las estadísticas del modo clásico, que el modo tablas no actualiza.
+- **A analizar:** si se conserva lo tecleado; tope de estaciones extra con retroceso; presupuesto propio para el modo tablas o no mostrar cronómetro durante la pista.
+
+#### H-15 · Premios, contadores y potenciadores en la pantalla de juego
+
+- **Estado:** `por-analizar`
+- **Dónde:** `rewardCorrect`, `evaluateBadges`, `finishRun`, `startRun`/`startTablesRun`, `removeTwoWrong`
+- **Qué pasa:**
+  - Con el cronómetro activado, el bono de una moneda por tiempo y `blitzWins` (insignia "speedy") también se suman desde el modo tablas.
+  - Las insignias del modo clásico (rachas, "Maestro del combo", "Primer tesoro") también se ganan en el modo tablas: en la emulación de la primera ronda salieron cuatro.
+  - Los contadores de racha y monedas de la pantalla de juego no se reinician al empezar una ronda (ya pasaba antes de la rama).
+  - En los otros juegos, con un perfil que responde escribiendo, el botón del potenciador 50:50 sigue a la vista pero no hace nada (no hay botones que quitar; tampoco se gasta).
+- **A analizar:** qué premios del modo clásico tienen sentido en el modo tablas; ocultar o desactivar el 50:50 al escribir.
+
+#### H-16 · Música y presentación de tablas
+
+- **Estado:** `por-analizar`
+- **Dónde:** `playMelody`, `playVictoryMelody`, `showTableIntro`, `presentTables`
+- **Qué pasa:**
+  - `playVictoryMelody` pasa por `playMelody`, que ahora exige `music` además de `sound`: en el modo clásico, con la música apagada, ya no suena la melodía de victoria.
+  - Una melodía nueva corta la que está sonando.
+  - El título de la presentación no se retraduce si cambia el idioma con ella abierta.
+  - Los personajes de las tablas 1 y 2 se ven pequeños en la presentación.
+  - Si en una ronda entran varias tablas nuevas, salen varias presentaciones seguidas, cada una con su "¡Vamos!".
+- **A analizar:** si la melodía de victoria debe depender solo de `sound`; si conviene una sola presentación para varias tablas.
+
+#### H-17 · Tesoros y tienda de tablas
+
+- **Estado:** `por-analizar`
+- **Dónde:** `revealTreasure`, `renderTreasures`, clave `treasure_count`, `renderShop`/`renderCosmetics`, `.buddy-card` en `styles.css`
+- **Qué pasa:**
+  - `revealTreasure` cuenta con `collection.length` y puede no coincidir con "Mis tesoros" si hay ids huérfanos en la colección.
+  - `treasure_count` lleva el total "50" escrito en el texto.
+  - `.buddy-card` no tiene `font: inherit`.
+  - En la tienda de tablas los compañeros compiten con los cosméticos por las mismas monedas, y la tienda es larga en móvil.
+- **A analizar:** contar solo tesoros válidos; tomar el total de `TREASURES.length`; si los compañeros deben salir en la tienda de tablas.
+
+#### H-18 · Accesibilidad de las piezas nuevas
+
+- **Estado:** `por-analizar`
+- **Dónde:** `buildNumpad`, `renderAlbum`/`albumCell`, `.char-count` en `styles.css`, `nextTablesStation`
+- **Qué pasa:**
+  - Las teclas del numpad no tienen un atributo estable (`data-key`); las pruebas las buscan por texto (relacionado con H-09).
+  - Las casillas del álbum no tienen `role="img"` (o equivalente) para leer su estado.
+  - Contraste y tamaño del texto del álbum (6–7 px) y de `.char-count` (0.7rem) son bajos.
+  - En el modo tablas `run.attemptsOnCurrent` se pone a 0 pero no se usa.
+- **A analizar:** cuáles merecen la pena; se puede hacer junto con H-08 y H-09.
+
+#### H-19 · Robustez de datos y de la zona de padres
+
+- **Estado:** `por-analizar`
+- **Dónde:** `normalizeProfileStore` (`seen = {}`), `normalizeCosmetics` (`known = {}`), `DATE_RE` en `tables.js`, `recordTablesAnswer`, `openGate`/`closeGate`, campo `#edit-name`
+- **Qué pasa:**
+  - Los objetos `seen` y `known` heredan de `Object.prototype`: un id como "constructor" se trataría como ya visto.
+  - `DATE_RE` acepta fechas imposibles (p. ej. `2026-13-45`).
+  - `recordTablesAnswer` lanza un error si recibe una clave de operación desconocida.
+  - El control de padres no se cierra con Escape ni devuelve el foco al botón que lo abrió.
+  - `#edit-name` solo guarda el nombre al salir del campo.
+- **A analizar:** usar `Object.create(null)`; validar la fecha de verdad; ignorar claves desconocidas; Escape y foco en el control; guardar al escribir.
+
+#### H-20 · "Cómo jugar" solo se abre desde el menú clásico
+
+- **Estado:** `por-analizar`
+- **Dónde:** botón `go-howto` (solo en `#screen-menu`), `howto_body`
+- **Qué pasa:** el texto de "Cómo jugar" describe el modo tablas (escribir, bloques, personajes), pero el botón solo está en el menú de los otros juegos. Un perfil de tablas no llega a esa pantalla, y quien la ve juega con botones por defecto, sin bloques ni personajes.
+- **A analizar:** poner "Cómo jugar" en el inicio de tablas, o tener un texto por modo.
+
+### Salidos de la revisión final de perfiles y modo tablas (2026-10-26)
+
+Menores M-1 a M-7 de la revisión final de la rama `feature/perfiles-y-tablas`. Ninguno está aprobado: hay que analizarlos.
+
+#### H-21 · Almacén de perfiles dañado o compartido entre contextos
+
+- **Estado:** `por-analizar`
+- **Dónde:** `migrateLegacyStorage`, carga de `ms_profiles` en `startApp`, `saveProfiles`
+- **Qué pasa:**
+  - (M-1) Si `ms_profiles` no se puede leer o no trae `profiles` como lista, se reconstruye un único perfil desde `ms_progress` (copia de antes de la migración, que nunca se borra) y `saveProfiles()` sobrescribe el almacén sin avisar. Se pierden los perfiles y el registro de tablas.
+  - (M-2) Dos contextos abiertos (la PWA y una pestaña) escriben el almacén entero desde su memoria: el ajuste del adulto en uno deshace lo que la niña avanzó en el otro, o al revés.
+  - (M-3) Una instancia antigua (v1) que siga abierta tras migrar guarda en `ms_progress`, que ya no se vuelve a leer.
+- **A analizar:** guardar el valor dañado en `ms_profiles_corrupt` y no resucitar los datos antiguos (quizá con una marca `ms_migrated`); escuchar el evento `storage` y recargar el almacén o volver a "¿Quién juega?"; documentar M-3.
+
+#### H-22 · Pausa y sonido al esconder o salir de la ronda
+
+- **Estado:** `por-analizar`
+- **Dónde:** `nextTablesStation`, `startStageTimer`, `leaveRun`, `goHome`, `stopMelody`
+- **Qué pasa:**
+  - (M-5) No hay `visibilitychange`: si deja la tablet a mitad de una operación, la pista y la respuesta avanzan solas y la operación cuenta como "necesitó respuesta" (pierde sus rápidas y, si estaba dominada, vuelve a "practicando" en el álbum).
+  - (M-6) `leaveRun`/`goHome` no paran la melodía: la de victoria o la de un personaje sigue sonando en el inicio o en "¿Quién juega?".
+- **A analizar:** pausar al quedar `document.hidden` (ya existe la pausa con `pausedStage`); llamar a `stopMelody()` al salir.
+
+#### H-23 · Potenciadores de "Otros juegos" y anuncio de la pista
+
+- **Estado:** `por-analizar`
+- **Dónde:** `renderShop`, `#hint` en `index.html`
+- **Qué pasa:**
+  - (M-4) La tienda decide los potenciadores por `mainMode`, no por el tipo de ronda: un perfil de tablas no puede comprarlos para "Otros juegos", aunque allí se ven y se pueden usar. El spec dice que siguen disponibles en "Otros juegos". Relacionado con H-17.
+  - (M-7) `#hint` no tiene `aria-live`: el truco y "7 × 9 = 63. ¡Escríbelo!" no se anuncian a un lector de pantalla (el loro está en `aria-hidden`). Relacionado con H-18.
+- **A analizar:** si la tienda de tablas debe ofrecer potenciadores para "Otros juegos"; `aria-live="polite"` en la pista.
+
 ### Limitaciones de diseño heredadas
 
 #### H-10 · El progreso vive solo en un dispositivo y navegador
@@ -137,14 +248,14 @@ Hallazgos que absorbe el diseño 1+2: H-01, H-02, H-03, H-04, H-05, H-11, H-12.
 
 #### H-11 · Un error castiga mucho (retroceso de 3 estaciones, sin reintento)
 
-- **Estado:** `por-analizar`
+- **Estado:** `hecho` (`2c1a3e9`: en el modo tablas un fallo no retrocede, da más ayuda y pide escribir la respuesta; `08cd768`: retroceso opcional por perfil; `a41e254`: los otros juegos respetan ese ajuste).
 - **Dónde:** `onWrong`, `goBackOnMiss(3)`, `showSolution` (`app.js:1823–1900`)
 - **Qué pasa:** un error muestra la solución, retrocede 3 estaciones y luego avanza 1, así que el neto es −2 y esa estación se repite. Con el cronómetro, un tiempo agotado hace lo mismo.
 - **A analizar:** si frustra a la niña. Es una decisión de diseño del original; podría ser configurable. Tampoco se pide que repita la respuesta correcta, y escribirla o repetirla ayuda a fijarla.
 
 #### H-12 · Los ajustes y el nivel adaptativo no distinguen entre niñas/niños
 
-- **Estado:** `por-analizar`
+- **Estado:** `hecho` (`2e6f1e8`: modelo de perfiles y migración; `856274e`: pantalla "¿Quién juega?" y un perfil por niño).
 - **Dónde:** `state.progress` es único por navegador
 - **Qué pasa:** si más de una persona usa el mismo dispositivo, comparten nivel, monedas y logros.
 - **A analizar:** solo importa si hay más de un usuario.

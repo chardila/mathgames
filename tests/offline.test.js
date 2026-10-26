@@ -10,8 +10,11 @@ const vm = require("node:vm");
   let claimed = false;
   const root = path.join(__dirname, "..");
   const cache = {
-    addAll: async (urls) => {
-      for (const url of urls) {
+    addAll: async (requests) => {
+      for (const request of requests) {
+        // Precache must bypass the HTTP cache (no mixed versions).
+        assert.equal(request.cache, "reload");
+        const url = request.url;
         assert.ok(
           fs.existsSync(path.join(root, url === "./" ? "index.html" : url)),
           url,
@@ -24,7 +27,7 @@ const vm = require("node:vm");
   let deleted;
   const caches = {
     open: async () => cache,
-    keys: async () => ["tablas-del-tesoro-v0", "tablas-del-tesoro-v1"],
+    keys: async () => ["tablas-del-tesoro-v1", "tablas-del-tesoro-v2"],
     delete: async (key) => {
       deleted = key;
     },
@@ -34,6 +37,12 @@ const vm = require("node:vm");
   let offline = false;
   const context = {
     URL,
+    Request: class {
+      constructor(url, init) {
+        this.url = url;
+        this.cache = init && init.cache;
+      }
+    },
     Promise,
     caches,
     fetch: async () => {
@@ -70,14 +79,14 @@ const vm = require("node:vm");
     },
   });
   await pending;
-  assert.equal(stores.size, 9);
+  assert.equal(stores.size, 11);
   events.activate({
     waitUntil: (promise) => {
       pending = promise;
     },
   });
   await pending;
-  assert.equal(deleted, "tablas-del-tesoro-v0");
+  assert.equal(deleted, "tablas-del-tesoro-v1");
   assert.ok(claimed);
   let response;
   const request = {

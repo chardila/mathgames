@@ -59,12 +59,78 @@ const server = http.createServer((request, response) => {
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    const store = (p = page) =>
+      p.evaluate(() => JSON.parse(localStorage.getItem("ms_profiles")));
+    const saved = async (p = page) => {
+      const s = await store(p);
+      return s.profiles.find((profile) => profile.id === s.lastId).progress;
+    };
+    const pickProfile = (name, p = page) =>
+      p
+        .locator("#profile-grid .profile-btn")
+        .filter({
+          has: p.locator(".profile-name", {
+            hasText: new RegExp("^" + name + "$"),
+          }),
+        })
+        .click();
+    const seedProfiles = async (profiles, lastId, p = page) => {
+      await p.evaluate(
+        (value) => localStorage.setItem("ms_profiles", JSON.stringify(value)),
+        { version: 1, lastId, profiles },
+      );
+      await p.reload();
+    };
+    // Change settings of the lastId profile in storage, reload and pick it.
+    const setProfileSettings = async (changes, p = page) => {
+      const name = await p.evaluate((value) => {
+        const s = JSON.parse(localStorage.getItem("ms_profiles"));
+        const profile = s.profiles.find((item) => item.id === s.lastId);
+        Object.assign(profile.settings, value);
+        localStorage.setItem("ms_profiles", JSON.stringify(s));
+        return profile.name;
+      }, changes);
+      await p.reload();
+      await pickProfile(name, p);
+    };
+    // Answer the open parent gate with the product it asks for.
+    const passGate = async (p = page) => {
+      const [a, b] = (await p.locator("#gate-question").textContent())
+        .match(/\d+/g)
+        .map(Number);
+      await p.locator("#gate-input").fill(String(a * b));
+      await p.locator('[data-action="gate-ok"]').click();
+    };
+    const openParents = async (p = page) => {
+      await p.locator('[data-action="open-parents"]').click();
+      await passGate(p);
+    };
+    const editProfile = (name, p = page) =>
+      p
+        .locator("#parent-profiles .parent-profile")
+        .filter({
+          has: p.locator(".parent-profile-name", {
+            hasText: new RegExp("^" + name + "$"),
+          }),
+        })
+        .locator("[data-edit-id]")
+        .click();
+    const isActive = (selector, p = page) =>
+      p.locator(selector).evaluate((el) => el.classList.contains("is-active"));
+    // The visible button for an action on whichever screen is active.
+    const activeAction = (action, p = page) =>
+      p.locator('.screen.is-active [data-action="' + action + '"]');
+    const noOverflow = (p = page) =>
+      p.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      );
     await page.goto(url);
     await page
       .locator("#language-grid button")
       .filter({ hasText: "Español" })
       .click();
     await page.evaluate(() => {
+      localStorage.removeItem("ms_profiles");
       localStorage.setItem(
         "ms_settings",
         JSON.stringify({
@@ -104,8 +170,22 @@ const server = http.createServer((request, response) => {
     });
     await page.reload();
     await page.clock.install();
-    const saved = () =>
-      page.evaluate(() => JSON.parse(localStorage.getItem("ms_progress")));
+    check(
+      (await page.locator("#profile-grid .profile-btn").count()) === 1 &&
+        (await page.locator("#profile-grid").textContent()).includes(
+          "Jugador 1",
+        ),
+      "who plays lists migrated profile",
+    );
+    check(
+      (
+        await page.evaluate(() =>
+          JSON.parse(localStorage.getItem("ms_progress")),
+        )
+      ).coins === 500,
+      "legacy keys untouched",
+    );
+    await pickProfile("Jugador 1");
     check(
       (await page.locator("#menu-coins").textContent()) === "500",
       "old coins retained",
@@ -115,16 +195,46 @@ const server = http.createServer((request, response) => {
       "unknown progress retained",
     );
     check((await saved()).learning.div.level === 3, "learning retained");
+    // The classic blocks below play from the classic menu.
+    await setProfileSettings({ mainMode: "mix" });
     check(
       (await saved()).learning.add.level === 1.5,
       "raised initial adaptive level",
     );
-    await page.locator('#screen-menu [data-action="go-settings"]').click();
+    check(
+      (await page
+        .locator('#screen-menu [data-action="go-settings"]')
+        .count()) === 0 &&
+        (await page.locator("#screen-modes .switch-row").count()) === 0,
+      "no settings on child screens",
+    );
+    await page.locator('#screen-menu [data-action="switch-player"]').click();
+    // gate: wrong answer keeps it closed
+    await page.locator('[data-action="open-parents"]').click();
+    await page.locator("#gate-input").fill("1");
+    await page.locator('[data-action="gate-ok"]').click();
+    check(
+      (await page.locator("#parent-gate").isVisible()) &&
+        (await page.locator("#gate-input").inputValue()) === "" &&
+        !(await page
+          .locator("#screen-parents")
+          .evaluate((el) => el.classList.contains("is-active"))),
+      "gate rejects wrong answer",
+    );
+    await passGate(); // -> #screen-parents active
+    check(
+      (await isActive("#screen-parents")) &&
+        (await page.locator("#parent-gate").isHidden()),
+      "gate opens parents area",
+    );
+    await editProfile("Jugador 1");
     check(
       !(await page.locator("#toggle-timer").isChecked()) &&
         !(await page.locator("#toggle-blitz").isChecked()),
       "optional timing",
     );
+    await page.locator('[data-action="back-parents"]').click();
+    check(await isActive("#screen-parents"), "back to parents without gate");
     await page
       .locator("#settings-language-grid button")
       .filter({ hasText: "English" })
@@ -137,12 +247,50 @@ const server = http.createServer((request, response) => {
       .locator("#settings-language-grid button")
       .filter({ hasText: "Español" })
       .click();
-    await page.locator('#screen-settings [data-action="go-menu"]').click();
+    // add + rename + avatar
+    await page.locator('[data-action="add-profile"]').click();
+    await page.locator("#edit-name").fill("Ana");
+    await page.locator("#edit-name").blur();
+    await page.locator('#edit-avatars [data-avatar="🐼"]').click();
+    await page
+      .locator("#toggle-timer")
+      .locator("xpath=ancestor::label")
+      .click();
+    const ana = (await store()).profiles.find((p) => p.name === "Ana");
+    check(
+      ana.avatar === "🐼" && ana.settings.timer === true,
+      "editor saves to edited profile",
+    );
+    check(
+      (await store()).profiles.find((p) => p.name === "Jugador 1").settings
+        .timer === false,
+      "other profile untouched",
+    );
+    await page.locator("#edit-stations").selectOption("20");
+    await page.locator("#edit-main-mode").selectOption("mul");
+    const anaEdited = (await store()).profiles.find((p) => p.name === "Ana");
+    check(
+      anaEdited.settings.tableStations === 20 &&
+        anaEdited.settings.mainMode === "mul",
+      "editor selects save",
+    );
+    await page.locator('[data-action="back-parents"]').click();
+    await page.locator('#screen-parents [data-action="go-profiles"]').click();
+    check(
+      (await page.locator("#profile-grid .profile-btn").count()) === 2,
+      "added profile listed in who plays",
+    );
+    await pickProfile("Jugador 1");
     await page.locator('#screen-menu [data-action="go-shop"]').click();
+    check(
+      (await page.locator("#shop-powerups").isVisible()) &&
+        (await page.locator(".shop-h-pu").isVisible()) &&
+        (await page.locator("#shop-cosmetics .cosmetic-card").count()) === 10,
+      "classic profile shop sells power-ups and cosmetics",
+    );
     const oldCoins = (await saved()).coins;
     await page
-      .locator(".shop-item")
-      .filter({ hasText: "Comodín" })
+      .locator('.shop-item[data-powerup="joker"]')
       .locator(".shop-buy")
       .click();
     check(
@@ -154,25 +302,19 @@ const server = http.createServer((request, response) => {
     await page.locator('[data-action="close-shop"]').click();
 
     async function start(mode, quick, diff = "adaptive", timer = false) {
+      const s = await store();
+      const active = s.profiles.find((p) => p.id === s.lastId).settings;
+      if (active.quick !== quick || active.timer !== timer)
+        await setProfileSettings({ quick, timer });
       if (
         await page
           .locator("#screen-summary")
           .evaluate((el) => el.classList.contains("is-active"))
       )
         await page.locator('#screen-summary [data-action="go-menu"]').click();
-      await page.locator('#screen-menu [data-action="go-modes"]').click();
+      await activeAction("go-modes").click();
       await page.locator('[data-mode="' + mode + '"]').click();
       await page.locator('[data-diff="' + diff + '"]').click();
-      if ((await page.locator("#toggle-quick-modes").isChecked()) !== quick)
-        await page
-          .locator("#toggle-quick-modes")
-          .locator("xpath=ancestor::label")
-          .click();
-      if ((await page.locator("#toggle-timer-modes").isChecked()) !== timer)
-        await page
-          .locator("#toggle-timer-modes")
-          .locator("xpath=ancestor::label")
-          .click();
       await page.locator('#screen-modes [data-action="start-run"]').click();
     }
     async function current() {
@@ -193,7 +335,7 @@ const server = http.createServer((request, response) => {
             : type === "sub"
               ? numbers[0] - numbers[1]
               : numbers.reduce((sum, n) => sum + n, 0);
-      return { type, numbers, answer };
+      return { type, numbers, answer, text };
     }
     async function solve() {
       const q = await current();
@@ -293,6 +435,82 @@ const server = http.createServer((request, response) => {
       await solve();
       await quit();
     }
+    await setProfileSettings({ choices: false, setbacks: false });
+    await start("mul", true);
+    check(
+      (await page.locator("#numpad .key").count()) === 12 &&
+        !(await page.locator("#choices").isVisible()),
+      "typing mode",
+    );
+    for (let i = 0; i < 10; i++) {
+      // half with on-screen keys + Check, half with keyboard digits + Enter
+      const q = await current();
+      if (i % 2) {
+        await page.keyboard.type(String(q.answer));
+        await page.keyboard.press("Enter");
+      } else {
+        for (const d of String(q.answer))
+          await page
+            .locator("#numpad .key", { hasText: new RegExp("^" + d + "$") })
+            .click();
+        await page.locator('[data-action="check"]').click();
+      }
+      await page.clock.runFor(800);
+    }
+    check(
+      (await page.locator("#sum-accuracy").textContent()) === "100%",
+      "typed round completes",
+    );
+    // wrong typed answer at station 5 with setbacks off: stays on 5, continue -> 6
+    await page.locator('#screen-summary [data-action="go-menu"]').click();
+    await start("mul", true);
+    for (let i = 0; i < 4; i++) {
+      const q = await current();
+      await page.keyboard.type(String(q.answer));
+      await page.keyboard.press("Enter");
+      await page.clock.runFor(800);
+    }
+    const miss = await current();
+    await page.keyboard.type(String(miss.answer === 1 ? 2 : 1));
+    await page.keyboard.press("Enter");
+    check(
+      (await page.locator("#map-progress").getAttribute("data-station")) ===
+        "5" &&
+        (await page.locator("#choices .choice").count()) === 1 &&
+        (await page.locator(".choice--continue").isVisible()) &&
+        !(await page.locator("#numpad-wrap").isVisible()),
+      "no setback when off; continue button shown while typing",
+    );
+    await page.locator(".choice--continue").click();
+    check(
+      (await page.locator("#map-progress").getAttribute("data-station")) ===
+        "6" &&
+        !(await page.locator("#choices").isVisible()) &&
+        (await page.locator("#numpad-wrap").isVisible()),
+      "continue after typed miss",
+    );
+    check(
+      (await page.locator('#powerups [data-powerup="joker"]').count()) === 1 &&
+        (await page.locator('#powerups [data-powerup="shield"]').count()) === 0,
+      "shield hidden in tray when setbacks off",
+    );
+    await quit();
+    await page.locator('#screen-menu [data-action="go-shop"]').click();
+    check(
+      (await page.locator('.shop-item[data-powerup="joker"]').count()) === 1 &&
+        (await page.locator('.shop-item[data-powerup="shield"]').count()) === 0,
+      "shield hidden in shop when setbacks off",
+    );
+    await page.locator('[data-action="close-shop"]').click();
+    await setProfileSettings({ setbacks: true });
+    await page.locator('#screen-menu [data-action="go-shop"]').click();
+    check(
+      (await page.locator('.shop-item[data-powerup="shield"]').count()) === 1,
+      "shield back in shop when setbacks on",
+    );
+    await page.locator('[data-action="close-shop"]').click();
+    // the setback and shield checks below need answer buttons and setbacks on
+    await setProfileSettings({ choices: true, setbacks: true });
     await start("div", false, "hard");
     for (let i = 0; i < 4; i++) await solve();
     const q = await current();
@@ -364,7 +582,11 @@ const server = http.createServer((request, response) => {
             JSON.stringify({
               chip: document.getElementById("game-timer-chip").outerHTML,
               ringHidden: document.getElementById("timer-ring").hidden,
-              settings: JSON.parse(localStorage.getItem("ms_settings")),
+              settings: (
+                JSON.parse(localStorage.getItem("ms_profiles")) || {
+                  profiles: [],
+                }
+              ).profiles.map((profile) => profile.settings),
             }),
           )),
       );
@@ -437,6 +659,7 @@ const server = http.createServer((request, response) => {
     );
     const learningBeforeReload = JSON.stringify((await saved()).learning);
     await page.reload();
+    await pickProfile("Jugador 1");
     check(
       JSON.stringify((await saved()).learning) === learningBeforeReload,
       "persisted learning reload",
@@ -445,12 +668,14 @@ const server = http.createServer((request, response) => {
       await navigator.serviceWorker.ready;
     });
     await page.reload();
+    await pickProfile("Jugador 1");
     check(
       await page.evaluate(() => !!navigator.serviceWorker.controller),
       "service worker controls page",
     );
     await context.setOffline(true);
     await page.reload();
+    await pickProfile("Jugador 1");
     await start("div", true, "easy", false);
     await solve();
     check(
@@ -481,6 +706,579 @@ const server = http.createServer((request, response) => {
       path: path.join(root, ".cache", "mobile-modes.png"),
       fullPage: true,
     });
+    // delete every profile -> who-plays shows the empty hint and the parents button still works
+    await page.locator('#screen-modes [data-action="go-menu"]').click();
+    await page.locator('#screen-menu [data-action="switch-player"]').click();
+    await page.locator('[data-action="open-parents"]').click();
+    check(await noOverflow(), "no mobile overflow in parent gate");
+    await passGate();
+    check(await noOverflow(), "no mobile overflow in parents area");
+    await page.screenshot({
+      path: path.join(root, ".cache", "mobile-parents.png"),
+      fullPage: true,
+    });
+    let deleteRounds = 0;
+    while (
+      (await page.locator("#parent-profiles [data-edit-id]").count()) > 0
+    ) {
+      await page.locator("#parent-profiles [data-edit-id]").first().click();
+      if (deleteRounds++ === 0) {
+        check(await noOverflow(), "no mobile overflow in profile editor");
+        await page.screenshot({
+          path: path.join(root, ".cache", "mobile-profile-edit.png"),
+          fullPage: true,
+        });
+      }
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.locator('[data-action="delete-profile"]').click();
+    }
+    const emptied = await store();
+    check(
+      emptied.profiles.length === 0 && emptied.lastId === "",
+      "deleting profiles clears lastId",
+    );
+    await page.locator('#screen-parents [data-action="go-profiles"]').click();
+    check(
+      (await page.locator("#who-empty").isVisible()) &&
+        (await page.locator('[data-action="open-parents"]').isVisible()),
+      "empty who-plays usable",
+    );
+
+    // ---- tables mode ----
+    {
+      await page.setViewportSize({ width: 1024, height: 768 });
+      // Every table already introduced: these blocks test the stations, the
+      // introduction song is tested on its own below.
+      const allPresented = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      await seedProfiles(
+        [
+          {
+            id: "p1",
+            name: "Ana",
+            settings: {
+              mainMode: "tables",
+              setbacks: false,
+              tableStations: 10,
+              sound: false,
+              timer: false,
+            },
+            tables: { presented: allPresented },
+          },
+        ],
+        "p1",
+      );
+      await pickProfile("Ana");
+      // Stop natural time flow: only runFor moves the clock from here on.
+      await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
+      // On-screen keys + Check.
+      const typeAnswer = async (n) => {
+        for (const d of String(n))
+          await page
+            .locator("#numpad .key", { hasText: new RegExp("^" + d + "$") })
+            .click();
+        await page.locator('[data-action="check"]').click();
+      };
+      // Physical keyboard + Enter.
+      const pressAnswer = async (n) => {
+        await page.keyboard.type(String(n));
+        await page.keyboard.press("Enter");
+      };
+      const factOf = (q) =>
+        Math.min(q.numbers[0], q.numbers[1]) +
+        "-" +
+        Math.max(q.numbers[0], q.numbers[1]);
+      const fact = async (key) => {
+        const s = await store();
+        return s.profiles.find((p) => p.id === s.lastId).tables.facts[key];
+      };
+      const station = async () =>
+        Number(
+          await page.locator("#map-progress").getAttribute("data-station"),
+        );
+      const hintStage = () => page.locator("#hint").getAttribute("data-stage");
+      check(
+        (await isActive("#screen-tables-home")) &&
+          (await page.locator("#home-greeting").textContent()).includes("Ana"),
+        "tables home for tables profile",
+      );
+      await page.locator('[data-action="start-tables"]').click();
+      check(
+        (await page.locator("#numpad .key").count()) === 12 &&
+          !(await page.locator("#choices").isVisible()) &&
+          !(await page.locator("#powerups").isVisible()) &&
+          !(await page.locator("#timer-ring").isVisible()) &&
+          !(await page.locator("#game-timer-chip").isVisible()),
+        "typing, no tray, no timer",
+      );
+      check(
+        (await page.locator("#map-progress").getAttribute("data-total")) ===
+          "10" && (await station()) === 1,
+        "profile station count",
+      );
+      // 1) fast answer is recorded as fast
+      let q = await current();
+      await pressAnswer(q.answer);
+      await page.clock.runFor(800);
+      check((await fact(factOf(q))).fast === 1, "fast answer recorded");
+      // 2) silence: no hint before 5 s, hint at 5 s with a×b blocks
+      q = await current();
+      await page.clock.runFor(4900);
+      check(!(await page.locator("#hint").isVisible()), "no hint before 5 s");
+      await page.clock.runFor(200);
+      check(
+        (await page.locator("#hint").isVisible()) &&
+          (await hintStage()) === "hint" &&
+          (await page.locator("#hint .block").count()) === q.answer,
+        "hint blocks at 5 s",
+      );
+      // pausing during the 10 s wait freezes it
+      await page.clock.runFor(4000);
+      await page.locator('[data-action="pause"]').click();
+      await page.clock.runFor(20000);
+      await page.locator('[data-action="resume"]').click();
+      check(
+        (await hintStage()) === "hint" &&
+          (await page.locator("#hint .hint-answer").count()) === 0,
+        "pause freezes answer wait",
+      );
+      // 3) answer shown 10 s after the hint; a wrong entry there costs nothing;
+      // then the fact returns 3-4 stations later
+      await page.clock.runFor(6100);
+      check(
+        (await hintStage()) === "answer" &&
+          (await page.locator("#hint .hint-answer").textContent()).includes(
+            String(q.answer),
+          ),
+        "answer after +10 s",
+      );
+      const stationBefore = await station();
+      await pressAnswer(q.answer === 1 ? 2 : 1);
+      check(
+        (await station()) === stationBefore &&
+          (await page.locator("#game-question").textContent()) === q.text &&
+          (await hintStage()) === "answer",
+        "wrong in answer stage: same station",
+      );
+      await pressAnswer(q.answer);
+      await page.clock.runFor(800);
+      check(
+        (await fact(factOf(q))).fast === 0,
+        "needed answer resets fast count",
+      );
+      const upcoming = [];
+      for (let i = 0; i < 4; i++) {
+        const n = await current();
+        upcoming.push(factOf(n));
+        await pressAnswer(n.answer);
+        await page.clock.runFor(800);
+      }
+      check(
+        upcoming.slice(2).includes(factOf(q)),
+        "missed fact returns 3-4 stations later",
+      );
+      // 4) wrong before the hint -> hint at once; no auto-submit
+      q = await current();
+      await pressAnswer(q.answer === 1 ? 2 : 1);
+      check(
+        (await page.locator("#hint").isVisible()) &&
+          (await hintStage()) === "hint",
+        "wrong answer shows hint immediately",
+      );
+      for (const d of String(q.answer))
+        await page
+          .locator("#numpad .key", { hasText: new RegExp("^" + d + "$") })
+          .click();
+      await page.clock.runFor(3000);
+      check((await current()).text === q.text, "no auto-submit");
+      await page.locator('[data-action="check"]').click();
+      await page.clock.runFor(800);
+      // 5) pause freezes the 5 s wait and is not counted as slowness
+      q = await current();
+      await page.clock.runFor(1000);
+      await page.locator('[data-action="pause"]').click();
+      await page.clock.runFor(20000);
+      await page.locator('[data-action="resume"]').click();
+      check(
+        !(await page.locator("#hint").isVisible()),
+        "pause freezes hint wait",
+      );
+      const fastBefore = (await fact(factOf(q))).fast;
+      await pressAnswer(q.answer);
+      await page.clock.runFor(800);
+      check(
+        (await fact(factOf(q))).fast === fastBefore + 1,
+        "paused time not counted",
+      );
+      // 5b) pausing during the 750 ms transition resumes into the tables round
+      const stationAtPause = await station();
+      q = await current();
+      await pressAnswer(q.answer);
+      await page.locator('[data-action="pause"]').click();
+      await page.clock.runFor(2000);
+      await page.locator('[data-action="resume"]').click();
+      await page.clock.runFor(100);
+      check(
+        (await page.locator("#game-question").textContent()).includes("×") &&
+          (await page.locator("#numpad .key").count()) === 12 &&
+          (await station()) === stationAtPause + 1 &&
+          (await hintStage()) === "ask",
+        "resume after transition stays in tables mode",
+      );
+      // 6) quitting during a wait leaves no timer behind
+      await page.clock.runFor(1000);
+      await quit();
+      check(await isActive("#screen-tables-home"), "quit goes to tables home");
+      await page.locator('[data-action="start-tables"]').click();
+      await page.clock.runFor(4500);
+      check(
+        !(await page.locator("#hint").isVisible()) &&
+          (await hintStage()) === "ask",
+        "no stray timers after quit",
+      );
+      await quit();
+      // 7) a full round: never moves back, summary shows progress not accuracy
+      await page.locator('[data-action="start-tables"]').click();
+      let lastStation = 0;
+      let neverBack = true;
+      for (let i = 0; i < 40 && (await isActive("#screen-game")); i++) {
+        const s = await station();
+        if (s < lastStation) neverBack = false;
+        lastStation = s;
+        const n = await current();
+        if (i % 4 === 1) await page.clock.runFor(5100);
+        if (i % 2) await pressAnswer(n.answer);
+        else await typeAnswer(n.answer);
+        await page.clock.runFor(800);
+      }
+      check(
+        neverBack && lastStation === 10 && (await isActive("#screen-summary")),
+        "tables round completes without moving back",
+      );
+      check(
+        (await page.locator("#sum-accuracy-lbl").getAttribute("data-i18n")) ===
+          "lbl_mastered_today" &&
+          /^\d+$/.test(await page.locator("#sum-accuracy").textContent()) &&
+          !(await page.locator("#review-box").isVisible()) &&
+          (await page.locator("#sum-progress-line").isVisible()),
+        "tables summary",
+      );
+      // 8) phone width, with the hint blocks on screen
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.locator('[data-action="play-again"]').click();
+      check(
+        (await isActive("#screen-game")) &&
+          (await page.locator("#numpad .key").count()) === 12 &&
+          (await noOverflow()),
+        "tables game fits 390 px",
+      );
+      await page.clock.runFor(5100);
+      check(
+        (await page.locator("#hint .block").count()) > 0 &&
+          (await noOverflow()),
+        "hint blocks fit 390 px",
+      );
+      await page.screenshot({
+        path: path.join(root, ".cache", "mobile-tables.png"),
+        fullPage: true,
+      });
+      await quit();
+      // 9) worst-case hint (10 × 10 = 100 blocks) still fits a 390 × 844 phone:
+      // every fact mastered (review far off) except 10-10, which is practicing.
+      const facts = {};
+      for (let a = 1; a <= 10; a++)
+        for (let b = a; b <= 10; b++)
+          facts[a + "-" + b] = {
+            state: "mastered",
+            seen: 5,
+            fast: 3,
+            lastSeen: "2026-01-01",
+            reviewStep: 3,
+            nextReview: "2999-01-01",
+          };
+      facts["10-10"] = { state: "practicing", seen: 1, lastSeen: "2026-01-01" };
+      await seedProfiles(
+        [
+          {
+            id: "p1",
+            name: "Ana",
+            settings: {
+              mainMode: "tables",
+              setbacks: false,
+              tableStations: 10,
+              sound: false,
+              timer: false,
+            },
+            tables: { facts, presented: allPresented },
+          },
+        ],
+        "p1",
+      );
+      await pickProfile("Ana");
+      await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
+      await page.locator('[data-action="start-tables"]').click();
+      for (let i = 0; i < 10 && (await current()).answer !== 100; i++) {
+        await pressAnswer((await current()).answer);
+        await page.clock.runFor(800);
+      }
+      const loopSelectors = [
+        "#game-question",
+        "#hint",
+        "#answer-display",
+        "#numpad",
+        '[data-action="check"]',
+      ];
+      const fitsViewport = () =>
+        page.evaluate(
+          (selectors) =>
+            selectors.every((sel) => {
+              const r = document.querySelector(sel).getBoundingClientRect();
+              return (
+                r.top >= 0 &&
+                r.bottom <= window.innerHeight &&
+                r.right <= window.innerWidth
+              );
+            }),
+          loopSelectors,
+        );
+      const noScroll = () =>
+        page.evaluate(
+          () => document.documentElement.scrollHeight <= window.innerHeight,
+        );
+      // Where the question, hint slot, display, numpad and Check sit.
+      const loopRects = () =>
+        page.evaluate(
+          (selectors) =>
+            selectors
+              .map((sel) => {
+                const r = document.querySelector(sel).getBoundingClientRect();
+                return Math.round(r.left) + "," + Math.round(r.top);
+              })
+              .join(" "),
+          loopSelectors,
+        );
+      // Tablets in landscape, in portrait and a small one: the whole loop
+      // fits without scrolling, and nothing moves when the hint appears.
+      const tablets = [
+        { width: 1024, height: 768 },
+        { width: 768, height: 1024 },
+        { width: 960, height: 600 },
+      ];
+      const askRects = {};
+      const tabletStage = async (stage) => {
+        for (const size of tablets) {
+          const name = size.width + "x" + size.height;
+          await page.setViewportSize(size);
+          check(
+            (await hintStage()) === stage &&
+              (await noOverflow()) &&
+              (await noScroll()) &&
+              (await fitsViewport()),
+            "10 × 10 " + stage + " stage fits " + name + " without scrolling",
+          );
+          if (stage === "ask") askRects[name] = await loopRects();
+          else
+            check(
+              (await loopRects()) === askRects[name],
+              "nothing moves when the hint appears at " + name,
+            );
+          await page.screenshot({
+            path: path.join(
+              root,
+              ".cache",
+              "tablet-tables-" + stage + "-" + name + ".png",
+            ),
+          });
+        }
+        await page.setViewportSize({ width: 390, height: 844 });
+      };
+      check((await current()).answer === 100, "worst-case fact reached");
+      await tabletStage("ask");
+      check(await fitsViewport(), "10 × 10 ask stage fits 390 × 844");
+      const phoneAsk = await loopRects();
+      await page.clock.runFor(5100);
+      check(
+        (await page.locator("#hint .block").count()) === 100 &&
+          (await noOverflow()) &&
+          (await fitsViewport()),
+        "10 × 10 hint fits 390 × 844 without scrolling",
+      );
+      check(
+        (await loopRects()) === phoneAsk,
+        "nothing moves when the hint appears at 390 × 844",
+      );
+      await tabletStage("hint");
+      await page.clock.runFor(10000);
+      check(
+        (await hintStage()) === "answer" &&
+          (await noOverflow()) &&
+          (await fitsViewport()),
+        "answer stage fits 390 × 844 without scrolling",
+      );
+      await pressAnswer(1);
+      check(
+        (await page.locator("#feedback").textContent()) !== "" &&
+          (await noOverflow()) &&
+          (await fitsViewport()),
+        "wrong entry feedback still fits 390 × 844",
+      );
+      await page.screenshot({
+        path: path.join(root, ".cache", "mobile-tables-hint.png"),
+      });
+      await quit();
+      await page.setViewportSize({ width: 1024, height: 768 });
+      // 10) setbacks: the answer stage sends her back 3 stations, the round
+      // grows past its first 10 facts and still ends at station 10
+      const seedLeo = async (settings) => {
+        await seedProfiles(
+          [
+            {
+              id: "p1",
+              name: "Leo",
+              settings: Object.assign(
+                {
+                  mainMode: "tables",
+                  setbacks: false,
+                  tableStations: 10,
+                  sound: false,
+                  timer: false,
+                },
+                settings,
+              ),
+              tables: { presented: allPresented },
+            },
+          ],
+          "p1",
+        );
+        await pickProfile("Leo");
+        await page.clock.pauseAt(
+          (await page.evaluate(() => Date.now())) + 1000,
+        );
+        await page.locator('[data-action="start-tables"]').click();
+      };
+      const seenTotal = async () => {
+        const s = await store();
+        const facts = s.profiles.find((p) => p.id === s.lastId).tables.facts;
+        return Object.keys(facts).reduce(
+          (sum, k) => sum + (facts[k].seen || 0),
+          0,
+        );
+      };
+      await seedLeo({ setbacks: true });
+      for (let i = 0; i < 4; i++) {
+        await pressAnswer((await current()).answer);
+        await page.clock.runFor(800);
+      }
+      check((await station()) === 5, "setbacks: four stations answered");
+      q = await current();
+      await page.clock.runFor(15100);
+      check(
+        (await hintStage()) === "answer" &&
+          (await station()) === 2 &&
+          (await page.locator("#game-question").textContent()) === q.text,
+        "setback: answer stage sends back to station 2",
+      );
+      // a wrong entry in the answer stage sends her back no further
+      await pressAnswer(q.answer === 1 ? 2 : 1);
+      check((await station()) === 2, "one setback per station");
+      for (let i = 0; i < 60 && (await isActive("#screen-game")); i++) {
+        await pressAnswer((await current()).answer);
+        await page.clock.runFor(800);
+      }
+      check(
+        (await isActive("#screen-summary")) &&
+          (await page
+            .locator("#sum-accuracy-lbl")
+            .getAttribute("data-i18n")) === "lbl_mastered_today",
+        "setbacks round ends with the tables summary",
+      );
+      check((await seenTotal()) > 10, "setbacks round asked more than 10");
+      await page.locator('#screen-summary [data-action="go-menu"]').click();
+      // 11) visible timer: ring and chip; time up only shows the answer
+      await seedLeo({ timer: true });
+      check(
+        (await page.locator("#timer-ring").isVisible()) &&
+          (await page.locator("#game-timer-chip").isVisible()) &&
+          !(await page.locator("#blitz-tag").isVisible()) &&
+          !(await page.locator("#powerups").isVisible()),
+        "timer: ring and chip, no blitz tag, no tray",
+      );
+      q = await current();
+      const budget = Number(await page.locator("#timer-num").textContent());
+      await page.clock.runFor(budget * 1000 + 200);
+      check(
+        (await hintStage()) === "answer" &&
+          (await page.locator("#hint .hint-answer").count()) === 1 &&
+          (await page.locator("#hint .hint-answer").textContent()).includes(
+            String(q.answer),
+          ) &&
+          (await page.locator("#feedback").textContent()) === "" &&
+          (await station()) === 1 &&
+          !(await page.locator("#timer-ring").isVisible()),
+        "time up: answer stage only, ring stops",
+      );
+      // pausing in the answer stage does not restart the ring
+      await page.locator('[data-action="pause"]').click();
+      await page.clock.runFor(1000);
+      await page.locator('[data-action="resume"]').click();
+      await page.clock.runFor(500);
+      check(
+        !(await page.locator("#timer-ring").isVisible()) &&
+          (await page.locator("#hint .hint-answer").count()) === 1,
+        "resume in answer stage keeps the ring off",
+      );
+      await pressAnswer(q.answer);
+      check(
+        !(await page.locator("#timer-ring").isVisible()),
+        "ring stops on a correct answer",
+      );
+      await page.clock.runFor(800);
+      // the 3 s threshold is still measured: a quick answer counts as fast
+      q = await current();
+      check(
+        await page.locator("#timer-ring").isVisible(),
+        "ring restarts on the next station",
+      );
+      const fastWas = (await fact(factOf(q))).fast || 0;
+      await pressAnswer(q.answer);
+      await page.clock.runFor(800);
+      check(
+        (await fact(factOf(q))).fast === fastWas + 1,
+        "timer on: quick answer still fast",
+      );
+      await quit();
+      await page.clock.resume();
+    }
+    // switching player during a pending transition writes nothing into the next profile
+    await seedProfiles(
+      [
+        { id: "p1", name: "A", progress: { coins: 10 } },
+        { id: "p2", name: "B", progress: { coins: 99 } },
+      ],
+      "p1",
+    );
+    await pickProfile("A");
+    await start("add", true);
+    const pending = await current();
+    await page
+      .locator("#choices .choice")
+      .filter({ hasText: new RegExp("^" + pending.answer + "$") })
+      .click();
+    await quit();
+    await activeAction("switch-player").click();
+    await pickProfile("B");
+    const bBefore = JSON.stringify(
+      (await store()).profiles.find((p) => p.name === "B").progress,
+    );
+    await page.clock.runFor(1000);
+    check(
+      JSON.stringify(
+        (await store()).profiles.find((p) => p.name === "B").progress,
+      ) === bBefore &&
+        !(await page
+          .locator("#screen-game")
+          .evaluate((el) => el.classList.contains("is-active"))),
+      "no cross-profile writes after switch",
+    );
     check(errors.length === 0, "no browser errors: " + errors.join("; "));
     await context.close();
     // Fresh installation uses untimed practice by default.
@@ -491,7 +1289,8 @@ const server = http.createServer((request, response) => {
       .locator("#language-grid button")
       .filter({ hasText: "Español" })
       .click();
-    await freshPage.locator('#screen-menu [data-action="go-settings"]').click();
+    await openParents(freshPage);
+    await editProfile("Jugador 1", freshPage);
     check(
       !(await freshPage.locator("#toggle-timer").isChecked()) &&
         !(await freshPage.locator("#toggle-blitz").isChecked()),
@@ -503,9 +1302,13 @@ const server = http.createServer((request, response) => {
         JSON.stringify({ timer: true, blitz: true, sound: false }),
       );
       localStorage.setItem("ms_progress", "{broken");
+      localStorage.removeItem("ms_profiles");
     });
     await freshPage.reload();
-    await freshPage.locator('#screen-menu [data-action="go-settings"]').click();
+    await pickProfile("Jugador 1", freshPage);
+    await activeAction("switch-player", freshPage).click();
+    await openParents(freshPage);
+    await editProfile("Jugador 1", freshPage);
     check(
       (await freshPage.locator("#toggle-timer").isChecked()) &&
         (await freshPage.locator("#toggle-blitz").isChecked()),
@@ -517,14 +1320,80 @@ const server = http.createServer((request, response) => {
     );
     freshPage.once("dialog", (dialog) => dialog.accept());
     await freshPage.locator('[data-action="reset"]').click();
-    const reset = await freshPage.evaluate(() =>
-      JSON.parse(localStorage.getItem("ms_progress")),
-    );
+    const reset = await saved(freshPage);
     check(
       reset.coins === 0 &&
         reset.stars === 0 &&
         Object.values(reset.learning).every((r) => r.level === 1.5),
       "explicit reset clears learning and rewards",
+    );
+    // Two seeded profiles: A (coins 10), B (coins 99, classic: the shop
+    // sells power-ups only outside tables mode)
+    await seedProfiles(
+      [
+        { id: "p1", name: "A", progress: { coins: 10 } },
+        {
+          id: "p2",
+          name: "B",
+          settings: { mainMode: "mix" },
+          progress: { coins: 99 },
+        },
+      ],
+      "p1",
+      freshPage,
+    );
+    await pickProfile("A", freshPage);
+    check(
+      (await freshPage.locator("#menu-coins").textContent()) === "10",
+      "profile A coins",
+    );
+    await activeAction("switch-player", freshPage).click();
+    check(
+      (await freshPage.locator("#profile-grid .profile-btn").count()) === 2,
+      "switch player shows who plays",
+    );
+    await pickProfile("B", freshPage);
+    check(
+      (await freshPage.locator("#menu-coins").textContent()) === "99",
+      "profile B coins",
+    );
+    // buy a joker as B -> A still has 10 coins in the store
+    await activeAction("go-shop", freshPage).click();
+    await freshPage
+      .locator('.shop-item[data-powerup="joker"] .shop-buy')
+      .click();
+    await freshPage.locator('[data-action="close-shop"]').click();
+    check(
+      (await store(freshPage)).profiles.find((p) => p.name === "B").progress
+        .coins === 89 &&
+        (await store(freshPage)).profiles.find((p) => p.name === "B").progress
+          .inventory.joker === 1 &&
+        (await store(freshPage)).profiles.find((p) => p.name === "A").progress
+          .coins === 10,
+      "profiles isolated",
+    );
+    await seedProfiles([], "", freshPage);
+    check(
+      (await freshPage.locator("#profile-grid .profile-btn").count()) === 0 &&
+        (await freshPage.locator("#who-empty").isVisible()),
+      "who-empty shown without profiles",
+    );
+    // ms_profiles = "{broken" and no legacy keys -> one "Jugador 1" with 0 coins
+    await freshPage.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem("ms_lang", '"es"');
+      localStorage.setItem("ms_profiles", "{broken");
+    });
+    await freshPage.reload();
+    check(
+      (await freshPage.locator("#profile-grid .profile-btn").count()) === 1 &&
+        (await store(freshPage)).profiles[0].name === "Jugador 1" &&
+        (await store(freshPage)).profiles[0].progress.coins === 0,
+      "corrupt profile store recovers",
+    );
+    check(
+      await freshPage.locator("#who-empty").isHidden(),
+      "who-empty hidden with profiles",
     );
     await fresh.close();
     const privateContext = await browser.newContext();
@@ -542,7 +1411,8 @@ const server = http.createServer((request, response) => {
       .locator("#language-grid button")
       .filter({ hasText: "Español" })
       .click();
-    await privatePage.locator('#screen-menu [data-action="go-modes"]').click();
+    await pickProfile("Jugador 1", privatePage);
+    await activeAction("go-modes", privatePage).click();
     await privatePage
       .locator('#screen-modes [data-action="start-run"]')
       .click();
@@ -551,6 +1421,602 @@ const server = http.createServer((request, response) => {
       "game without storage",
     );
     await privateContext.close();
+    // Characters: one per table on the tables home, filled by mastered facts.
+    // Ana has mastered everything except 7-8, one fast answer away (fast 2,
+    // the earlier fast day yesterday).
+    const charContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: "reduce",
+      hasTouch: true,
+    });
+    const charPage = await charContext.newPage();
+    const charErrors = [];
+    charPage.on("pageerror", (error) => charErrors.push(error.message));
+    await charPage.clock.install({ time: new Date(2026, 9, 25, 10, 0) });
+    await charPage.goto(url);
+    await charPage
+      .locator("#language-grid button")
+      .filter({ hasText: "Español" })
+      .click();
+    const charFacts = {};
+    for (let a = 1; a <= 10; a++)
+      for (let b = a; b <= 10; b++)
+        charFacts[a + "-" + b] = {
+          state: "mastered",
+          everMastered: true,
+          seen: 5,
+          fast: 3,
+          fastDays: ["2026-10-01", "2026-10-02"],
+          lastSeen: "2026-10-02",
+          reviewStep: 3,
+          nextReview: "2999-01-01",
+        };
+    charFacts["7-8"] = {
+      state: "practicing",
+      seen: 3,
+      fast: 2,
+      fastDays: ["2026-10-24"],
+      lastSeen: "2026-10-24",
+    };
+    await seedProfiles(
+      [
+        {
+          id: "p1",
+          name: "Ana",
+          settings: {
+            mainMode: "tables",
+            setbacks: false,
+            tableStations: 10,
+            sound: false,
+            timer: false,
+          },
+          tables: { facts: charFacts },
+        },
+      ],
+      "p1",
+      charPage,
+    );
+    await pickProfile("Ana", charPage);
+    const card = (n) => charPage.locator('.char-card[data-table="' + n + '"]');
+    check(
+      (await isActive("#screen-tables-home", charPage)) &&
+        (await charPage.locator("#home-characters .char-card").count()) ===
+          10 &&
+        (await charPage.locator("#home-characters .char-svg").count()) === 10,
+      "ten characters on the tables home",
+    );
+    check(
+      (await card(7).getAttribute("data-fill")) === "9" &&
+        (await card(7).locator(".char-svg").getAttribute("data-fill")) ===
+          "9" &&
+        (await card(7).locator(".char-count").textContent()) === "9/10" &&
+        (await card(1).getAttribute("data-fill")) === "10",
+      "table 7 character is 9/10",
+    );
+    check(
+      (await noOverflow(charPage)) &&
+        (await charPage.evaluate(() => {
+          const r = document
+            .querySelector('#screen-tables-home [data-action="start-tables"]')
+            .getBoundingClientRect();
+          return r.bottom <= window.innerHeight;
+        })),
+      "characters fit the 390 × 844 tables home",
+    );
+    await charPage.screenshot({
+      path: path.join(root, ".cache", "tables-home.png"),
+    });
+    // The status is in the card's label; tapping opens the introduction.
+    check(
+      (await card(7).getAttribute("aria-label")).includes("Nube") &&
+        (await card(7).getAttribute("aria-label")).includes("9"),
+      "character status in the card label",
+    );
+    await card(7).click();
+    check(
+      (await charPage.locator("#intro-overlay").getAttribute("data-table")) ===
+        "7" && (await charPage.locator("#fx-layer .toast").count()) === 0,
+      "tapping a character opens its introduction, no toast",
+    );
+    await charPage.locator('[data-action="intro-done"]').click();
+    await charPage.clock.runFor(2500);
+    await charPage.clock.pauseAt(
+      (await charPage.evaluate(() => Date.now())) + 1000,
+    );
+    await charPage.locator('[data-action="start-tables"]').click();
+    const charCurrent = async () => {
+      const n = (await charPage.locator("#game-question").textContent())
+        .match(/\d+/g)
+        .map(Number);
+      return { a: n[0], b: n[1], answer: n[0] * n[1] };
+    };
+    let fullToast = false;
+    let reached = false;
+    for (let i = 0; i < 40 && (await isActive("#screen-game", charPage)); i++) {
+      const q = await charCurrent();
+      await charPage.keyboard.type(String(q.answer));
+      await charPage.keyboard.press("Enter");
+      if (q.answer === 56 && !reached) {
+        reached = true;
+        fullToast =
+          (await charPage
+            .locator('#fx-layer .toast[data-milestone="full"][data-table="7"]')
+            .count()) === 1;
+      }
+      await charPage.clock.runFor(800);
+    }
+    check(reached && fullToast, "completing table 7 is announced");
+    if (await isActive("#screen-summary", charPage))
+      await charPage.locator('#screen-summary [data-action="go-menu"]').click();
+    else {
+      await charPage.locator('[data-action="pause"]').click();
+      await charPage.locator('[data-action="quit"]').click();
+    }
+    check(
+      (await isActive("#screen-tables-home", charPage)) &&
+        (await card(7).getAttribute("data-fill")) === "10" &&
+        (await card(7).locator(".char-count").textContent()) === "10/10",
+      "table 7 character is full after the round",
+    );
+    check(
+      charErrors.length === 0,
+      "no browser errors (characters): " + charErrors.join("; "),
+    );
+    await charContext.close();
+    // Album: 100 cells in the parents area, coloured by each fact's state.
+    const albumContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: "reduce",
+      hasTouch: true,
+    });
+    const albumPage = await albumContext.newPage();
+    const albumErrors = [];
+    albumPage.on("pageerror", (error) => albumErrors.push(error.message));
+    await albumPage.goto(url);
+    await albumPage
+      .locator("#language-grid button")
+      .filter({ hasText: "Español" })
+      .click();
+    await seedProfiles(
+      [
+        {
+          id: "p1",
+          name: "Ana",
+          settings: { mainMode: "tables", sound: false },
+          tables: {
+            facts: {
+              "7-9": {
+                state: "mastered",
+                everMastered: true,
+                seen: 6,
+                fast: 3,
+                avgMs: 2400,
+                nextReview: "2999-01-01",
+              },
+              "3-4": { state: "practicing", seen: 2, fast: 1, avgMs: 3100 },
+              "2-2": { state: "practicing", seen: 1, fast: 0, avgMs: 5000 },
+            },
+          },
+        },
+      ],
+      "p1",
+      albumPage,
+    );
+    check(
+      (await albumPage.locator('[data-action="open-album"]').count()) === 1 &&
+        (await albumPage
+          .locator('#screen-profile-edit [data-action="open-album"]')
+          .count()) === 1,
+      "album button only in the profile editor",
+    );
+    await openParents(albumPage);
+    await editProfile("Ana", albumPage);
+    await albumPage.locator('[data-action="open-album"]').click();
+    const cell = (a, b) =>
+      albumPage.locator(
+        '#album-grid .album-cell[data-a="' + a + '"][data-b="' + b + '"]',
+      );
+    check(
+      (await isActive("#screen-album", albumPage)) &&
+        (await albumPage.locator("#album-grid .album-cell").count()) === 100,
+      "album shows 100 cells",
+    );
+    check(
+      (await cell(7, 9).getAttribute("data-state")) === "mastered" &&
+        (await cell(9, 7).getAttribute("data-state")) === "mastered" &&
+        (await cell(4, 3).getAttribute("data-state")) === "almost" &&
+        (await cell(2, 2).getAttribute("data-state")) === "practicing" &&
+        (await cell(5, 5).getAttribute("data-state")) === "new",
+      "album cells show each fact's state",
+    );
+    check(
+      (await albumPage.locator("#album-title").textContent()).includes("Ana") &&
+        (await albumPage
+          .locator("#album-summary")
+          .getAttribute("data-mastered")) === "1" &&
+        (await albumPage
+          .locator("#album-summary")
+          .getAttribute("data-practicing")) === "2" &&
+        (await albumPage.locator("#album-legend .album-cell").count()) === 4 &&
+        (await cell(7, 9).getAttribute("title")).includes("6") &&
+        (await cell(7, 9).getAttribute("title")).includes("2,4"),
+      "album title, summary, legend and cell detail",
+    );
+    check(await noOverflow(albumPage), "album fits a 390 px screen");
+    await albumPage.screenshot({
+      path: path.join(root, ".cache", "album.png"),
+      fullPage: true,
+    });
+    await albumPage.locator('#screen-album [data-action="back-edit"]').click();
+    check(
+      (await isActive("#screen-profile-edit", albumPage)) &&
+        (await albumPage.locator("#edit-name").inputValue()) === "Ana",
+      "back from the album returns to the editor",
+    );
+    check(
+      albumErrors.length === 0,
+      "no browser errors (album): " + albumErrors.join("; "),
+    );
+    await albumContext.close();
+    // Table introduction song: shown before the first station of a round with
+    // new facts of a table not presented yet, and on demand from the home.
+    const introContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: "reduce",
+      hasTouch: true,
+    });
+    await introContext.addInitScript(() => {
+      window.__osc = 0;
+      if (window.AudioContext) {
+        const orig = AudioContext.prototype.createOscillator;
+        AudioContext.prototype.createOscillator = function () {
+          window.__osc++;
+          return orig.apply(this, arguments);
+        };
+      }
+    });
+    const introPage = await introContext.newPage();
+    const introErrors = [];
+    introPage.on("pageerror", (error) => introErrors.push(error.message));
+    await introPage.clock.install({ time: new Date(2026, 9, 25, 10, 0) });
+    await introPage.goto(url);
+    await introPage
+      .locator("#language-grid button")
+      .filter({ hasText: "Español" })
+      .click();
+    const introFacts = {};
+    for (let b = 1; b <= 10; b++)
+      introFacts["1-" + b] = {
+        state: "mastered",
+        everMastered: true,
+        seen: 5,
+        fast: 3,
+        fastDays: ["2026-10-01", "2026-10-02"],
+        lastSeen: "2026-10-02",
+        reviewStep: 3,
+        nextReview: "2999-01-01",
+      };
+    await seedProfiles(
+      [
+        {
+          id: "p1",
+          name: "Ana",
+          settings: {
+            mainMode: "tables",
+            setbacks: false,
+            tableStations: 10,
+            sound: true,
+            music: true,
+            timer: false,
+          },
+          tables: {
+            facts: introFacts,
+            probes: { 2: { introduce: true } },
+            presented: [],
+          },
+        },
+      ],
+      "p1",
+      introPage,
+    );
+    await pickProfile("Ana", introPage);
+    await introPage.clock.pauseAt(
+      (await introPage.evaluate(() => Date.now())) + 1000,
+    );
+    const introOverlay = introPage.locator("#intro-overlay");
+    const introNumber = () => introPage.locator("#intro-number").textContent();
+    const introDone = () =>
+      introPage.locator('[data-action="intro-done"]').click();
+    const presented = async () => {
+      const s = await store(introPage);
+      return s.profiles.find((p) => p.id === s.lastId).tables.presented;
+    };
+    await introPage.locator('[data-action="start-tables"]').click();
+    check(
+      (await introOverlay.isVisible()) &&
+        (await introOverlay.getAttribute("role")) === "dialog" &&
+        (await introOverlay.getAttribute("data-table")) === "2" &&
+        (await introPage.locator("#intro-title").getAttribute("data-table")) ===
+          "2" &&
+        (await introPage.evaluate(
+          () =>
+            document.activeElement.getAttribute("data-action") === "intro-done",
+        )),
+      "new table 2 is introduced before the first station",
+    );
+    check(
+      (await introPage.locator("#intro-character .char-svg").count()) === 1 &&
+        (await introPage.locator('[data-action="intro-replay"]').count()) === 1,
+      "introduction shows the character and a replay button",
+    );
+    await introPage.clock.runFor(6000);
+    check(
+      (await introNumber()) === "20" &&
+        (await introPage.locator("#intro-blocks .intro-block").count()) ===
+          20 &&
+        (await introPage.evaluate(() => window.__osc)) > 0,
+      "introduction counts to 20 with music",
+    );
+    check(await noOverflow(introPage), "introduction fits a 390 px screen");
+    await introPage.screenshot({
+      path: path.join(root, ".cache", "table-intro.png"),
+    });
+    await introDone();
+    check(
+      !(await introOverlay.isVisible()) &&
+        (await isActive("#screen-game", introPage)) &&
+        (await presented()).includes(2),
+      "after the introduction the round starts and table 2 is presented",
+    );
+    await introPage.locator('[data-action="pause"]').click();
+    await introPage.locator('[data-action="quit"]').click();
+    await introPage.locator('[data-action="start-tables"]').click();
+    check(
+      !(await introOverlay.isVisible()) &&
+        (await isActive("#screen-game", introPage)),
+      "a presented table is not introduced again",
+    );
+    await introPage.locator('[data-action="pause"]').click();
+    await introPage.locator('[data-action="quit"]').click();
+    await introPage.locator('.char-card[data-table="7"]').click();
+    check(
+      (await introOverlay.isVisible()) &&
+        (await introOverlay.getAttribute("data-table")) === "7",
+      "tapping a character replays its introduction",
+    );
+    await introDone();
+    check(
+      !(await introOverlay.isVisible()) &&
+        (await isActive("#screen-tables-home", introPage)) &&
+        !(await presented()).includes(7),
+      "on-demand introduction returns home and marks nothing",
+    );
+    await setProfileSettings({ music: false }, introPage);
+    await introPage.evaluate(() => {
+      window.__osc = 0;
+    });
+    await introPage.locator('.char-card[data-table="7"]').click();
+    await introPage.clock.runFor(6000);
+    check(
+      (await introPage.evaluate(() => window.__osc)) === 0 &&
+        (await introNumber()) === "70",
+      "without music the count still runs, silently",
+    );
+    await introDone();
+    check(
+      introErrors.length === 0,
+      "no browser errors (intro): " + introErrors.join("; "),
+    );
+    await introContext.close();
+    // Cosmetic shop in tables mode, map themes and "My treasures".
+    const shopContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: "reduce",
+      hasTouch: true,
+    });
+    const shopPage = await shopContext.newPage();
+    const shopErrors = [];
+    shopPage.on("pageerror", (error) => shopErrors.push(error.message));
+    await shopPage.goto(url);
+    await shopPage
+      .locator("#language-grid button")
+      .filter({ hasText: "Español" })
+      .click();
+    const realTreasures = require("../app.js").TREASURES;
+    const tablesAna = (progress) => ({
+      id: "p1",
+      name: "Ana",
+      settings: {
+        mainMode: "tables",
+        setbacks: false,
+        tableStations: 10,
+        sound: false,
+        timer: false,
+      },
+      progress,
+      tables: { presented: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    });
+    await seedProfiles(
+      [
+        tablesAna({
+          coins: 200,
+          // Already played today: no daily bonus to blur the coin counts.
+          lastPlayed: new Date().toISOString().slice(0, 10),
+        }),
+      ],
+      "p1",
+      shopPage,
+    );
+    await pickProfile("Ana", shopPage);
+    const cosmetic = (id) =>
+      shopPage.locator('.cosmetic-card[data-cosmetic-id="' + id + '"]');
+    await activeAction("go-shop", shopPage).click();
+    check(
+      !(await shopPage.locator("#shop-powerups").isVisible()) &&
+        !(await shopPage.locator(".shop-h-pu").isVisible()) &&
+        (await shopPage.locator(".shop-h-cosm").isVisible()) &&
+        (await shopPage.locator("#shop-cosmetics .cosmetic-card").count()) ===
+          10,
+      "tables shop hides power-ups and sells cosmetics",
+    );
+    check(
+      (await cosmetic("theme-ocean").getAttribute("data-owned")) === "false" &&
+        (await cosmetic("theme-ocean").getAttribute("aria-label")).includes(
+          "60",
+        ),
+      "cosmetic card labelled with name and price",
+    );
+    await cosmetic("theme-ocean").click();
+    check(
+      (await saved(shopPage)).coins === 140 &&
+        (await saved(shopPage)).equipped.theme === "ocean" &&
+        (await cosmetic("theme-ocean").getAttribute("data-equipped")) ===
+          "true",
+      "buy and equip ocean theme",
+    );
+    await shopPage.locator("#shop-overlay").screenshot({
+      path: path.join(root, ".cache", "shop-tables.png"),
+    });
+    await shopPage.locator('[data-action="close-shop"]').click();
+    await shopPage.locator('[data-action="start-tables"]').click();
+    check(
+      await shopPage
+        .locator("#screen-game .map")
+        .evaluate((el) => el.classList.contains("map--ocean")),
+      "ocean theme on the map",
+    );
+    await shopPage.locator('[data-action="pause"]').click();
+    await shopPage.locator('[data-action="quit"]').click();
+    await activeAction("go-shop", shopPage).click();
+    await cosmetic("acc-crown").click();
+    check(
+      (await saved(shopPage)).coins === 20 &&
+        (await saved(shopPage)).equipped.accessory === "crown" &&
+        (
+          await shopPage
+            .locator('#home-characters .char-card[data-table="1"]')
+            .innerHTML()
+        ).includes("acc-crown"),
+      "buy crown and see it on the home characters",
+    );
+    await cosmetic("theme-galaxy").click();
+    check(
+      (await saved(shopPage)).coins === 20 &&
+        (await saved(shopPage)).equipped.theme === "ocean" &&
+        (await cosmetic("theme-galaxy").getAttribute("data-owned")) === "false",
+      "cannot buy without coins",
+    );
+    await cosmetic("acc-crown").click();
+    check(
+      (await saved(shopPage)).equipped.accessory === "none" &&
+        (await saved(shopPage)).cosmetics.includes("acc-crown") &&
+        !(
+          await shopPage
+            .locator('#home-characters .char-card[data-table="1"]')
+            .innerHTML()
+        ).includes("acc-crown"),
+      "tapping the equipped crown removes it",
+    );
+    await shopPage.locator('[data-action="close-shop"]').click();
+    // One screenshot per map theme, to check legibility by eye.
+    const allThemes = ["ocean", "forest", "sunset", "galaxy"];
+    for (const theme of allThemes) {
+      await seedProfiles(
+        [
+          tablesAna({
+            coins: 0,
+            lastPlayed: new Date().toISOString().slice(0, 10),
+            cosmetics: allThemes.map((name) => "theme-" + name),
+            equipped: { theme },
+          }),
+        ],
+        "p1",
+        shopPage,
+      );
+      await pickProfile("Ana", shopPage);
+      await shopPage.locator('[data-action="start-tables"]').click();
+      const map = shopPage.locator("#screen-game .map");
+      check(
+        await map.evaluate(
+          (el, name) => el.classList.contains("map--" + name),
+          theme,
+        ),
+        theme + " theme applied",
+      );
+      // A few stations done, so trail and done stations show too.
+      for (let i = 1; i <= 3; i++) {
+        const nums = (await shopPage.locator("#game-question").textContent())
+          .match(/\d+/g)
+          .map(Number);
+        await shopPage.keyboard.type(String(nums[0] * nums[1]));
+        await shopPage.keyboard.press("Enter");
+        await shopPage.waitForFunction(
+          (n) =>
+            Number(
+              document
+                .getElementById("map-progress")
+                .getAttribute("data-station"),
+            ) === n,
+          i + 1,
+        );
+      }
+      await map.screenshot({
+        path: path.join(root, ".cache", "theme-" + theme + ".png"),
+      });
+      await shopPage.locator('[data-action="pause"]').click();
+      await shopPage.locator('[data-action="quit"]').click();
+    }
+    // My treasures, from the tables home.
+    await seedProfiles(
+      [
+        tablesAna({
+          collection: [realTreasures[0].id, realTreasures[7].id, "gone"],
+        }),
+      ],
+      "p1",
+      shopPage,
+    );
+    await pickProfile("Ana", shopPage);
+    await activeAction("go-treasures", shopPage).click();
+    check(
+      (await isActive("#screen-treasures", shopPage)) &&
+        (await shopPage.locator("#treasure-grid .treasure-tile").count()) ===
+          50 &&
+        (await shopPage
+          .locator("#treasure-grid .treasure-tile.is-locked")
+          .count()) === 48 &&
+        (await shopPage
+          .locator("#treasure-total")
+          .getAttribute("data-count")) === "2" &&
+        (await shopPage.locator("#treasure-total").textContent()) ===
+          "2 de 50 tesoros",
+      "my treasures shows 2 of 50",
+    );
+    check(
+      (await shopPage
+        .locator("#treasure-grid .treasure-tile:not(.is-locked) svg")
+        .count()) === 2 &&
+        (await shopPage
+          .locator("#treasure-grid .treasure-tile.is-locked")
+          .first()
+          .getAttribute("aria-label")) === "Tesoro por descubrir",
+      "collected tiles show the treasure, locked ones are labelled",
+    );
+    check(await noOverflow(shopPage), "my treasures fits a 390 px screen");
+    await shopPage.screenshot({
+      path: path.join(root, ".cache", "treasures.png"),
+      fullPage: true,
+    });
+    await activeAction("go-menu", shopPage).click();
+    check(
+      await isActive("#screen-tables-home", shopPage),
+      "back from treasures goes home",
+    );
+    check(
+      shopErrors.length === 0,
+      "no browser errors (shop): " + shopErrors.join("; "),
+    );
+    await shopContext.close();
     console.log(
       checks +
         " browser checks passed in " +
