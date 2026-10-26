@@ -282,10 +282,15 @@ const server = http.createServer((request, response) => {
     );
     await pickProfile("Jugador 1");
     await page.locator('#screen-menu [data-action="go-shop"]').click();
+    check(
+      (await page.locator("#shop-powerups").isVisible()) &&
+        (await page.locator(".shop-h-pu").isVisible()) &&
+        (await page.locator("#shop-cosmetics .cosmetic-card").count()) === 10,
+      "classic profile shop sells power-ups and cosmetics",
+    );
     const oldCoins = (await saved()).coins;
     await page
-      .locator(".shop-item")
-      .filter({ hasText: "Comodín" })
+      .locator('.shop-item[data-powerup="joker"]')
       .locator(".shop-buy")
       .click();
     check(
@@ -1252,11 +1257,17 @@ const server = http.createServer((request, response) => {
         Object.values(reset.learning).every((r) => r.level === 1.5),
       "explicit reset clears learning and rewards",
     );
-    // Two seeded profiles: A (coins 10), B (coins 99)
+    // Two seeded profiles: A (coins 10), B (coins 99, classic: the shop
+    // sells power-ups only outside tables mode)
     await seedProfiles(
       [
         { id: "p1", name: "A", progress: { coins: 10 } },
-        { id: "p2", name: "B", progress: { coins: 99 } },
+        {
+          id: "p2",
+          name: "B",
+          settings: { mainMode: "mix" },
+          progress: { coins: 99 },
+        },
       ],
       "p1",
       freshPage,
@@ -1727,6 +1738,215 @@ const server = http.createServer((request, response) => {
       "no browser errors (intro): " + introErrors.join("; "),
     );
     await introContext.close();
+    // Cosmetic shop in tables mode, map themes and "My treasures".
+    const shopContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: "reduce",
+      hasTouch: true,
+    });
+    const shopPage = await shopContext.newPage();
+    const shopErrors = [];
+    shopPage.on("pageerror", (error) => shopErrors.push(error.message));
+    await shopPage.goto(url);
+    await shopPage
+      .locator("#language-grid button")
+      .filter({ hasText: "Español" })
+      .click();
+    const realTreasures = require("../app.js").TREASURES;
+    const tablesAna = (progress) => ({
+      id: "p1",
+      name: "Ana",
+      settings: {
+        mainMode: "tables",
+        setbacks: false,
+        tableStations: 10,
+        sound: false,
+        timer: false,
+      },
+      progress,
+      tables: { presented: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    });
+    await seedProfiles(
+      [
+        tablesAna({
+          coins: 200,
+          // Already played today: no daily bonus to blur the coin counts.
+          lastPlayed: new Date().toISOString().slice(0, 10),
+        }),
+      ],
+      "p1",
+      shopPage,
+    );
+    await pickProfile("Ana", shopPage);
+    const cosmetic = (id) =>
+      shopPage.locator('.cosmetic-card[data-cosmetic-id="' + id + '"]');
+    await activeAction("go-shop", shopPage).click();
+    check(
+      !(await shopPage.locator("#shop-powerups").isVisible()) &&
+        !(await shopPage.locator(".shop-h-pu").isVisible()) &&
+        (await shopPage.locator(".shop-h-cosm").isVisible()) &&
+        (await shopPage.locator("#shop-cosmetics .cosmetic-card").count()) ===
+          10,
+      "tables shop hides power-ups and sells cosmetics",
+    );
+    check(
+      (await cosmetic("theme-ocean").getAttribute("data-owned")) === "false" &&
+        (await cosmetic("theme-ocean").getAttribute("aria-label")).includes(
+          "60",
+        ),
+      "cosmetic card labelled with name and price",
+    );
+    await cosmetic("theme-ocean").click();
+    check(
+      (await saved(shopPage)).coins === 140 &&
+        (await saved(shopPage)).equipped.theme === "ocean" &&
+        (await cosmetic("theme-ocean").getAttribute("data-equipped")) ===
+          "true",
+      "buy and equip ocean theme",
+    );
+    await shopPage.locator("#shop-overlay").screenshot({
+      path: path.join(root, ".cache", "shop-tables.png"),
+    });
+    await shopPage.locator('[data-action="close-shop"]').click();
+    await shopPage.locator('[data-action="start-tables"]').click();
+    check(
+      await shopPage
+        .locator("#screen-game .map")
+        .evaluate((el) => el.classList.contains("map--ocean")),
+      "ocean theme on the map",
+    );
+    await shopPage.locator('[data-action="pause"]').click();
+    await shopPage.locator('[data-action="quit"]').click();
+    await activeAction("go-shop", shopPage).click();
+    await cosmetic("acc-crown").click();
+    check(
+      (await saved(shopPage)).coins === 20 &&
+        (await saved(shopPage)).equipped.accessory === "crown" &&
+        (
+          await shopPage
+            .locator('#home-characters .char-card[data-table="1"]')
+            .innerHTML()
+        ).includes("acc-crown"),
+      "buy crown and see it on the home characters",
+    );
+    await cosmetic("theme-galaxy").click();
+    check(
+      (await saved(shopPage)).coins === 20 &&
+        (await saved(shopPage)).equipped.theme === "ocean" &&
+        (await cosmetic("theme-galaxy").getAttribute("data-owned")) === "false",
+      "cannot buy without coins",
+    );
+    await cosmetic("acc-crown").click();
+    check(
+      (await saved(shopPage)).equipped.accessory === "none" &&
+        (await saved(shopPage)).cosmetics.includes("acc-crown") &&
+        !(
+          await shopPage
+            .locator('#home-characters .char-card[data-table="1"]')
+            .innerHTML()
+        ).includes("acc-crown"),
+      "tapping the equipped crown removes it",
+    );
+    await shopPage.locator('[data-action="close-shop"]').click();
+    // One screenshot per map theme, to check legibility by eye.
+    const allThemes = ["ocean", "forest", "sunset", "galaxy"];
+    for (const theme of allThemes) {
+      await seedProfiles(
+        [
+          tablesAna({
+            coins: 0,
+            lastPlayed: new Date().toISOString().slice(0, 10),
+            cosmetics: allThemes.map((name) => "theme-" + name),
+            equipped: { theme },
+          }),
+        ],
+        "p1",
+        shopPage,
+      );
+      await pickProfile("Ana", shopPage);
+      await shopPage.locator('[data-action="start-tables"]').click();
+      const map = shopPage.locator("#screen-game .map");
+      check(
+        await map.evaluate(
+          (el, name) => el.classList.contains("map--" + name),
+          theme,
+        ),
+        theme + " theme applied",
+      );
+      // A few stations done, so trail and done stations show too.
+      for (let i = 1; i <= 3; i++) {
+        const nums = (await shopPage.locator("#game-question").textContent())
+          .match(/\d+/g)
+          .map(Number);
+        await shopPage.keyboard.type(String(nums[0] * nums[1]));
+        await shopPage.keyboard.press("Enter");
+        await shopPage.waitForFunction(
+          (n) =>
+            Number(
+              document
+                .getElementById("map-progress")
+                .getAttribute("data-station"),
+            ) === n,
+          i + 1,
+        );
+      }
+      await map.screenshot({
+        path: path.join(root, ".cache", "theme-" + theme + ".png"),
+      });
+      await shopPage.locator('[data-action="pause"]').click();
+      await shopPage.locator('[data-action="quit"]').click();
+    }
+    // My treasures, from the tables home.
+    await seedProfiles(
+      [
+        tablesAna({
+          collection: [realTreasures[0].id, realTreasures[7].id, "gone"],
+        }),
+      ],
+      "p1",
+      shopPage,
+    );
+    await pickProfile("Ana", shopPage);
+    await activeAction("go-treasures", shopPage).click();
+    check(
+      (await isActive("#screen-treasures", shopPage)) &&
+        (await shopPage.locator("#treasure-grid .treasure-tile").count()) ===
+          50 &&
+        (await shopPage
+          .locator("#treasure-grid .treasure-tile.is-locked")
+          .count()) === 48 &&
+        (await shopPage
+          .locator("#treasure-total")
+          .getAttribute("data-count")) === "2" &&
+        (await shopPage.locator("#treasure-total").textContent()) ===
+          "2 de 50 tesoros",
+      "my treasures shows 2 of 50",
+    );
+    check(
+      (await shopPage
+        .locator("#treasure-grid .treasure-tile:not(.is-locked) svg")
+        .count()) === 2 &&
+        (await shopPage
+          .locator("#treasure-grid .treasure-tile.is-locked")
+          .first()
+          .getAttribute("aria-label")) === "Tesoro por descubrir",
+      "collected tiles show the treasure, locked ones are labelled",
+    );
+    check(await noOverflow(shopPage), "my treasures fits a 390 px screen");
+    await shopPage.screenshot({
+      path: path.join(root, ".cache", "treasures.png"),
+      fullPage: true,
+    });
+    await activeAction("go-menu", shopPage).click();
+    check(
+      await isActive("#screen-tables-home", shopPage),
+      "back from treasures goes home",
+    );
+    check(
+      shopErrors.length === 0,
+      "no browser errors (shop): " + shopErrors.join("; "),
+    );
+    await shopContext.close();
     console.log(
       checks +
         " browser checks passed in " +

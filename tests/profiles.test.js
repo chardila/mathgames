@@ -161,6 +161,56 @@ for (let i = 0; i < 1000; i++) {
     "parent challenge range",
   );
 }
+// cosmetics
+check(
+  app.SHOP_COSMETICS.length === 10 &&
+    new Set(app.SHOP_COSMETICS.map((c) => c.id)).size === 10 &&
+    app.SHOP_COSMETICS.every(
+      (c) =>
+        ["theme", "accessory", "melody"].includes(c.kind) &&
+        c.price >= 40 &&
+        c.price <= 150 &&
+        c.es &&
+        c.en,
+    ),
+  "cosmetic catalogue",
+);
+check(
+  app.SHOP_COSMETICS.filter((c) => c.kind === "melody").every((c) =>
+    Array.isArray(app.VICTORY_MELODIES[c.value]),
+  ) && Array.isArray(app.VICTORY_MELODIES.classic),
+  "melodies exist",
+);
+assert.deepEqual(app.defaultProgress().equipped, {
+  theme: "classic",
+  accessory: "none",
+  melody: "classic",
+});
+const eq = (cosmetics, equipped) =>
+  app.normalizeProfile({ id: "p1", progress: { cosmetics, equipped } }).progress
+    .equipped;
+check(
+  eq([], { theme: "ocean" }).theme === "classic" &&
+    eq(["theme-ocean"], { theme: "ocean" }).theme === "ocean" &&
+    eq(["acc-crown"], { accessory: "cape" }).accessory === "none",
+  "equipped must be owned",
+);
+check(
+  eq(["theme-ocean"], { theme: "ocean" }).melody === "classic" &&
+    eq(["acc-crown"], "broken").accessory === "none",
+  "missing or broken equipped keys fall back",
+);
+check(
+  JSON.stringify(
+    app.normalizeProfile({
+      id: "p1",
+      progress: { cosmetics: ["acc-hat", "acc-hat", "nope", 3] },
+    }).progress.cosmetics,
+  ) === '["acc-hat"]' &&
+    app.normalizeProfile({ id: "p1", progress: { cosmetics: "x" } }).progress
+      .cosmetics.length === 0,
+  "cosmetics keep known ids once",
+);
 console.log(
   checks + " profile model, migration and parent challenge checks passed.",
 );

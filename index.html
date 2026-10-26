@@ -123,6 +123,10 @@
               <span class="btn-emoji" aria-hidden="true">🛒</span>
               <span data-i18n="btn_shop">Tienda</span>
             </button>
+            <button class="btn btn--secondary" data-action="go-treasures">
+              <span class="btn-emoji" aria-hidden="true">💎</span>
+              <span data-i18n="btn_treasures">Mis tesoros</span>
+            </button>
             <button class="btn btn--ghost" data-action="switch-player">
               <span class="btn-emoji" aria-hidden="true">👥</span>
               <span data-i18n="btn_switch_player">Cambiar jugador</span>
@@ -154,6 +158,10 @@
             <button class="btn btn--secondary" data-action="go-shop">
               <span class="btn-emoji" aria-hidden="true">🛒</span>
               <span data-i18n="btn_shop">Tienda</span>
+            </button>
+            <button class="btn btn--secondary" data-action="go-treasures">
+              <span class="btn-emoji" aria-hidden="true">💎</span>
+              <span data-i18n="btn_treasures">Mis tesoros</span>
             </button>
             <button class="btn btn--ghost" data-action="go-modes">
               <span class="btn-emoji" aria-hidden="true">🎲</span>
@@ -716,6 +724,23 @@
           <p id="album-summary" class="album-summary"></p>
           <div id="album-grid" class="album-grid"></div>
           <ul id="album-legend" class="album-legend"></ul>
+        </div>
+      </section>
+
+      <!-- ============ MY TREASURES ============ -->
+      <section
+        id="screen-treasures"
+        class="screen screen--treasures"
+        aria-labelledby="treasures-title"
+      >
+        <div class="card">
+          <button class="btn btn--ghost btn--back" data-action="go-menu">
+            <span aria-hidden="true">←</span>
+            <span data-i18n="btn_back">Atrás</span>
+          </button>
+          <h2 id="treasures-title" data-i18n="treasures_title">Mis tesoros</h2>
+          <p id="treasure-total" class="treasure-total" aria-live="polite"></p>
+          <div id="treasure-grid" class="treasure-grid"></div>
         </div>
       </section>
 

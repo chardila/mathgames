@@ -139,6 +139,12 @@ var I18N = {
     shop_buy: "Buy",
     shop_equip: "Select",
     shop_equipped: "Active",
+    shop_cosmetics: "For your buddies and your map",
+    shop_unequip: "Remove",
+    shop_price: "{n} coins",
+    btn_treasures: "My treasures",
+    treasures_title: "My treasures",
+    treasure_locked: "Treasure not found yet",
     not_enough_coins: "Not enough coins",
     no_powerup: "Buy it in the shop first",
     joker_used: "Joker! Solved.",
@@ -286,6 +292,12 @@ var I18N = {
     shop_buy: "Comprar",
     shop_equip: "Elegir",
     shop_equipped: "Activo",
+    shop_cosmetics: "Para tus personajes y tu mapa",
+    shop_unequip: "Quitar",
+    shop_price: "{n} monedas",
+    btn_treasures: "Mis tesoros",
+    treasures_title: "Mis tesoros",
+    treasure_locked: "Tesoro por descubrir",
     not_enough_coins: "No tienes suficientes monedas",
     no_powerup: "Primero c\u00f3mpralo en la tienda",
     joker_used: "\u00a1Comod\u00edn! Resuelto.",
@@ -845,9 +857,42 @@ function defaultProgress() {
     inventory: { joker: 0, fifty: 0, time: 0, shield: 0 },
     buddies: ["kid"],
     buddy: "kid",
+    cosmetics: [],
+    equipped: defaultEquipped(),
     learning: normalizeLearning(),
     learningStartVersion: 1,
   };
+}
+
+function defaultEquipped() {
+  return { theme: "classic", accessory: "none", melody: "classic" };
+}
+
+// Keep only known cosmetic ids, and only equipped items that were bought;
+// anything else goes back to its default.
+function normalizeCosmetics(progress) {
+  var known = {};
+  SHOP_COSMETICS.forEach(function (c) {
+    known[c.id] = c;
+  });
+  var owned = [];
+  (Array.isArray(progress.cosmetics) ? progress.cosmetics : []).forEach(
+    function (id) {
+      if (known[id] && owned.indexOf(id) === -1) owned.push(id);
+    },
+  );
+  var saved = isPlainObject(progress.equipped) ? progress.equipped : {};
+  var equipped = defaultEquipped();
+  Object.keys(equipped).forEach(function (kind) {
+    var value = saved[kind];
+    var ok = owned.some(function (id) {
+      return known[id].kind === kind && known[id].value === value;
+    });
+    if (ok) equipped[kind] = value;
+  });
+  progress.cosmetics = owned;
+  progress.equipped = equipped;
+  return progress;
 }
 
 // Keep only known settings, falling back to defaults on missing/invalid values.
@@ -906,10 +951,12 @@ function normalizeProfile(saved) {
         ? PROFILE_AVATARS[0]
         : saved.avatar,
     settings: normalizeSettings(saved.settings),
-    progress: migrateLearningStart(
-      Object.assign(
-        defaultProgress(),
-        isPlainObject(saved.progress) ? saved.progress : {},
+    progress: normalizeCosmetics(
+      migrateLearningStart(
+        Object.assign(
+          defaultProgress(),
+          isPlainObject(saved.progress) ? saved.progress : {},
+        ),
       ),
     ),
     tables: Tables.normalizeTables(saved.tables),
@@ -1476,6 +1523,128 @@ var SHOP_BUDDIES = [
   { id: "dragon", price: 320, emoji: "🐲", es: "Drag\u00f3n", en: "Dragon" },
 ];
 
+// Cosmetics for the characters and the map (about 20 coins per 15-station
+// round). Bought once; one of each kind can be equipped at a time.
+var SHOP_COSMETICS = [
+  {
+    id: "acc-hat",
+    kind: "accessory",
+    value: "hat",
+    price: 40,
+    icon: "🎩",
+    es: "Sombrero",
+    en: "Top hat",
+  },
+  {
+    id: "acc-glasses",
+    kind: "accessory",
+    value: "glasses",
+    price: 50,
+    icon: "👓",
+    es: "Gafas",
+    en: "Glasses",
+  },
+  {
+    id: "mel-marimba",
+    kind: "melody",
+    value: "marimba",
+    price: 50,
+    icon: "🎶",
+    es: "Marimba",
+    en: "Marimba",
+  },
+  {
+    id: "theme-ocean",
+    kind: "theme",
+    value: "ocean",
+    price: 60,
+    icon: "🌊",
+    es: "Océano",
+    en: "Ocean",
+  },
+  {
+    id: "theme-forest",
+    kind: "theme",
+    value: "forest",
+    price: 60,
+    icon: "🌲",
+    es: "Bosque",
+    en: "Forest",
+  },
+  {
+    id: "acc-scarf",
+    kind: "accessory",
+    value: "scarf",
+    price: 60,
+    icon: "🧣",
+    es: "Bufanda",
+    en: "Scarf",
+  },
+  {
+    id: "mel-fanfare",
+    kind: "melody",
+    value: "fanfare",
+    price: 80,
+    icon: "🎺",
+    es: "Fanfarria",
+    en: "Fanfare",
+  },
+  {
+    id: "theme-sunset",
+    kind: "theme",
+    value: "sunset",
+    price: 90,
+    icon: "🌅",
+    es: "Atardecer",
+    en: "Sunset",
+  },
+  {
+    id: "acc-crown",
+    kind: "accessory",
+    value: "crown",
+    price: 120,
+    icon: "👑",
+    es: "Corona",
+    en: "Crown",
+  },
+  {
+    id: "theme-galaxy",
+    kind: "theme",
+    value: "galaxy",
+    price: 150,
+    icon: "🌌",
+    es: "Galaxia",
+    en: "Galaxy",
+  },
+];
+
+// End-of-round tunes, as [frequency Hz, duration ms] notes.
+var VICTORY_MELODIES = {
+  classic: [
+    [523, 150],
+    [659, 150],
+    [784, 150],
+    [1047, 320],
+  ],
+  marimba: [
+    [784, 110],
+    [659, 110],
+    [784, 110],
+    [988, 110],
+    [1175, 110],
+    [988, 110],
+    [1319, 300],
+  ],
+  fanfare: [
+    [392, 120],
+    [392, 120],
+    [392, 120],
+    [523, 360],
+    [659, 160],
+    [784, 420],
+  ],
+};
+
 function startApp() {
   /* ---------------- Storage helpers ---------------- */
   var STORAGE_KEYS = {
@@ -1585,6 +1754,9 @@ function startApp() {
     menuBadges: document.getElementById("menu-badges"),
     homeCoins: document.getElementById("home-coins"),
     homeCharacters: document.getElementById("home-characters"),
+    map: document.querySelector("#screen-game .map"),
+    treasureTotal: document.getElementById("treasure-total"),
+    treasureGrid: document.getElementById("treasure-grid"),
     homeGreeting: document.getElementById("home-greeting"),
     gameStreak: document.getElementById("game-streak"),
     gameCoins: document.getElementById("game-coins"),
@@ -1864,6 +2036,7 @@ function startApp() {
     hideComboTag();
     buildMap(total);
     applyBuddy();
+    applyMapTheme();
     if (els.powerups) els.powerups.hidden = false;
     renderPowerups();
     showScreen("screen-game");
@@ -1889,6 +2062,7 @@ function startApp() {
     hideComboTag();
     buildMap(total);
     applyBuddy();
+    applyMapTheme();
     if (els.powerups) els.powerups.hidden = true;
     showScreen("screen-game");
     presentTables(
@@ -2905,14 +3079,9 @@ function startApp() {
     });
   }
 
-  // A short, cheerful arpeggio when the goal is reached.
+  // A short, cheerful tune when the goal is reached: the equipped one.
   function playVictoryMelody() {
-    playMelody([
-      [523, 150],
-      [659, 150],
-      [784, 150],
-      [1047, 320],
-    ]);
+    playMelody(VICTORY_MELODIES[equipped().melody] || VICTORY_MELODIES.classic);
   }
 
   /* ---------------- Table introduction song ---------------- */
@@ -2959,7 +3128,11 @@ function startApp() {
     els.introOverlay.setAttribute("data-table", table);
     els.introTitle.setAttribute("data-table", table);
     els.introTitle.textContent = t("intro_title", { n: table });
-    els.introCharacter.innerHTML = Characters.characterSvg(table, fill, "none");
+    els.introCharacter.innerHTML = Characters.characterSvg(
+      table,
+      fill,
+      equipped().accessory,
+    );
     els.introOverlay.hidden = false;
     var done = els.introOverlay.querySelector('[data-action="intro-done"]');
     if (done) done.focus();
@@ -3163,11 +3336,14 @@ function startApp() {
       '<div class="shop-list" id="shop-powerups"></div>' +
       '<h3 class="shop-section-label shop-h-buddy"></h3>' +
       '<div class="shop-grid" id="shop-buddies"></div>' +
+      '<h3 class="shop-section-label shop-h-cosm"></h3>' +
+      '<div class="shop-grid" id="shop-cosmetics"></div>' +
       "</div>";
     document.body.appendChild(ov);
     els.shopOverlay = ov;
     els.shopPowerups = ov.querySelector("#shop-powerups");
     els.shopBuddies = ov.querySelector("#shop-buddies");
+    els.shopCosmetics = ov.querySelector("#shop-cosmetics");
     ov.addEventListener("click", function (event) {
       if (event.target === ov) closeShop();
     });
@@ -3186,6 +3362,12 @@ function startApp() {
     ov.querySelector(".shop-coins").textContent = "🪙 " + state.progress.coins;
     ov.querySelector(".shop-h-pu").textContent = t("shop_powerups");
     ov.querySelector(".shop-h-buddy").textContent = t("shop_buddies");
+    ov.querySelector(".shop-h-cosm").textContent = t("shop_cosmetics");
+    // Tables mode has no power-ups, so the shop does not sell them.
+    var noPowerups = state.settings.mainMode === "tables";
+    ov.querySelector(".shop-h-pu").hidden = noPowerups;
+    els.shopPowerups.hidden = noPowerups;
+    renderCosmetics();
     els.shopPowerups.innerHTML = "";
     SHOP_POWERUPS.forEach(function (pu) {
       // Without setbacks there is nothing for a shield to absorb.
@@ -3270,6 +3452,126 @@ function startApp() {
     refreshMenuStats();
     renderShop();
   }
+  // The equipped cosmetics of the active player (defaults if none).
+  function equipped() {
+    return (state.progress && state.progress.equipped) || defaultEquipped();
+  }
+  function ownsCosmetic(c) {
+    return (state.progress.cosmetics || []).indexOf(c.id) !== -1;
+  }
+  function renderCosmetics() {
+    els.shopCosmetics.innerHTML = "";
+    SHOP_COSMETICS.forEach(function (c) {
+      var owned = ownsCosmetic(c);
+      var isOn = owned && equipped()[c.kind] === c.value;
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "cosmetic-card" + (isOn ? " is-equipped" : "");
+      if (!owned && state.progress.coins < c.price) {
+        card.classList.add("is-locked");
+      }
+      card.setAttribute("data-cosmetic-id", c.id);
+      card.setAttribute("data-kind", c.kind);
+      card.setAttribute("data-owned", owned ? "true" : "false");
+      card.setAttribute("data-equipped", isOn ? "true" : "false");
+      card.setAttribute("aria-pressed", isOn ? "true" : "false");
+      card.innerHTML =
+        '<span class="cosmetic-icon" aria-hidden="true">' +
+        c.icon +
+        '</span><span class="cosmetic-name"></span><span class="cosmetic-action"></span>';
+      card.querySelector(".cosmetic-name").textContent = shopLabel(c);
+      var action = isOn
+        ? t("shop_unequip")
+        : owned
+          ? t("shop_equip")
+          : c.price + " 🪙";
+      card.querySelector(".cosmetic-action").textContent = action;
+      card.setAttribute(
+        "aria-label",
+        shopLabel(c) +
+          ", " +
+          (isOn
+            ? t("shop_equipped") + ", " + t("shop_unequip")
+            : owned
+              ? t("shop_equip")
+              : t("shop_price", { n: c.price })),
+      );
+      card.addEventListener("click", function () {
+        buyOrEquipCosmetic(c);
+      });
+      els.shopCosmetics.appendChild(card);
+    });
+  }
+  // Not owned: buy (if affordable) and equip. Owned: equip. Equipped: remove.
+  function buyOrEquipCosmetic(c) {
+    var p = state.progress;
+    if (!ownsCosmetic(c)) {
+      if (p.coins < c.price) {
+        showToast(t("not_enough_coins"), "🪙");
+        return;
+      }
+      p.coins -= c.price;
+      if (!Array.isArray(p.cosmetics)) p.cosmetics = [];
+      p.cosmetics.push(c.id);
+      beep(720, 120, "triangle");
+    }
+    if (!isPlainObject(p.equipped)) p.equipped = defaultEquipped();
+    if (p.equipped[c.kind] === c.value) {
+      p.equipped[c.kind] = defaultEquipped()[c.kind];
+    } else {
+      p.equipped[c.kind] = c.value;
+      if (c.kind === "melody") playVictoryMelody();
+    }
+    saveProfiles();
+    applyMapTheme();
+    renderHomeCharacters();
+    refreshMenuStats();
+    renderShop();
+  }
+  // Paint the round's map with the equipped theme (none for classic).
+  function applyMapTheme() {
+    if (!els.map) return;
+    SHOP_COSMETICS.forEach(function (c) {
+      if (c.kind === "theme") els.map.classList.remove("map--" + c.value);
+    });
+    var theme = equipped().theme;
+    if (theme !== "classic") els.map.classList.add("map--" + theme);
+  }
+  // "My treasures": every treasure, collected ones with picture and name.
+  function renderTreasures() {
+    var have = state.progress.collection || [];
+    var count = 0;
+    els.treasureGrid.innerHTML = "";
+    els.treasureGrid.setAttribute("role", "list");
+    TREASURES.forEach(function (tr) {
+      var tile = document.createElement("div");
+      tile.setAttribute("role", "listitem");
+      tile.setAttribute("data-treasure-id", tr.id);
+      if (have.indexOf(tr.id) !== -1) {
+        count++;
+        tile.className = "treasure-tile";
+        tile.setAttribute("aria-label", treasureName(tr));
+        tile.innerHTML =
+          '<span class="treasure-tile-img" aria-hidden="true">' +
+          tr.svg +
+          '</span><span class="treasure-tile-name" aria-hidden="true"></span>';
+        tile.querySelector(".treasure-tile-name").textContent =
+          treasureName(tr);
+      } else {
+        tile.className = "treasure-tile is-locked";
+        tile.setAttribute("aria-label", t("treasure_locked"));
+        tile.innerHTML =
+          '<span class="treasure-tile-q" aria-hidden="true">?</span>';
+      }
+      els.treasureGrid.appendChild(tile);
+    });
+    els.treasureTotal.textContent = t("treasure_count", { n: count });
+    els.treasureTotal.setAttribute("data-count", String(count));
+  }
+  function openTreasures() {
+    renderTreasures();
+    showScreen("screen-treasures");
+  }
   // Apply the chosen travelling buddy to the map walker.
   function applyBuddy() {
     var id = state.progress.buddy || "kid";
@@ -3323,7 +3625,11 @@ function startApp() {
         "aria-label",
         t("char_status", { name: ch.name, n: ch.table, fill: fill }),
       );
-      card.innerHTML = Characters.characterSvg(ch.table, fill, "none");
+      card.innerHTML = Characters.characterSvg(
+        ch.table,
+        fill,
+        equipped().accessory,
+      );
       var name = document.createElement("span");
       name.className = "char-name";
       name.textContent = ch.name;
@@ -3831,6 +4137,9 @@ function startApp() {
       case "close-shop":
         closeShop();
         break;
+      case "go-treasures":
+        openTreasures();
+        break;
       default:
         break;
     }
@@ -3967,6 +4276,8 @@ if (typeof module !== "undefined" && module.exports) {
     computeTimeBudget: computeTimeBudget,
     updateAvgMs: updateAvgMs,
     TREASURES: TREASURES,
+    SHOP_COSMETICS: SHOP_COSMETICS,
+    VICTORY_MELODIES: VICTORY_MELODIES,
     dailyTreasureIndex: dailyTreasureIndex,
     taskDifficultyScore: taskDifficultyScore,
     vibrationForTask: vibrationForTask,
