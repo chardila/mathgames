@@ -1470,6 +1470,101 @@ const server = http.createServer((request, response) => {
       "no browser errors (characters): " + charErrors.join("; "),
     );
     await charContext.close();
+    // Album: 100 cells in the parents area, coloured by each fact's state.
+    const albumContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      reducedMotion: "reduce",
+      hasTouch: true,
+    });
+    const albumPage = await albumContext.newPage();
+    const albumErrors = [];
+    albumPage.on("pageerror", (error) => albumErrors.push(error.message));
+    await albumPage.goto(url);
+    await albumPage
+      .locator("#language-grid button")
+      .filter({ hasText: "Español" })
+      .click();
+    await seedProfiles(
+      [
+        {
+          id: "p1",
+          name: "Ana",
+          settings: { mainMode: "tables", sound: false },
+          tables: {
+            facts: {
+              "7-9": {
+                state: "mastered",
+                everMastered: true,
+                seen: 6,
+                fast: 3,
+                avgMs: 2400,
+                nextReview: "2999-01-01",
+              },
+              "3-4": { state: "practicing", seen: 2, fast: 1, avgMs: 3100 },
+              "2-2": { state: "practicing", seen: 1, fast: 0, avgMs: 5000 },
+            },
+          },
+        },
+      ],
+      "p1",
+      albumPage,
+    );
+    check(
+      (await albumPage.locator('[data-action="open-album"]').count()) === 1 &&
+        (await albumPage
+          .locator('#screen-profile-edit [data-action="open-album"]')
+          .count()) === 1,
+      "album button only in the profile editor",
+    );
+    await openParents(albumPage);
+    await editProfile("Ana", albumPage);
+    await albumPage.locator('[data-action="open-album"]').click();
+    const cell = (a, b) =>
+      albumPage.locator(
+        '#album-grid .album-cell[data-a="' + a + '"][data-b="' + b + '"]',
+      );
+    check(
+      (await isActive("#screen-album", albumPage)) &&
+        (await albumPage.locator("#album-grid .album-cell").count()) === 100,
+      "album shows 100 cells",
+    );
+    check(
+      (await cell(7, 9).getAttribute("data-state")) === "mastered" &&
+        (await cell(9, 7).getAttribute("data-state")) === "mastered" &&
+        (await cell(4, 3).getAttribute("data-state")) === "almost" &&
+        (await cell(2, 2).getAttribute("data-state")) === "practicing" &&
+        (await cell(5, 5).getAttribute("data-state")) === "new",
+      "album cells show each fact's state",
+    );
+    check(
+      (await albumPage.locator("#album-title").textContent()).includes("Ana") &&
+        (await albumPage
+          .locator("#album-summary")
+          .getAttribute("data-mastered")) === "1" &&
+        (await albumPage
+          .locator("#album-summary")
+          .getAttribute("data-practicing")) === "2" &&
+        (await albumPage.locator("#album-legend .album-cell").count()) === 4 &&
+        (await cell(7, 9).getAttribute("title")).includes("6") &&
+        (await cell(7, 9).getAttribute("title")).includes("2,4"),
+      "album title, summary, legend and cell detail",
+    );
+    check(await noOverflow(albumPage), "album fits a 390 px screen");
+    await albumPage.screenshot({
+      path: path.join(root, ".cache", "album.png"),
+      fullPage: true,
+    });
+    await albumPage.locator('#screen-album [data-action="back-edit"]').click();
+    check(
+      (await isActive("#screen-profile-edit", albumPage)) &&
+        (await albumPage.locator("#edit-name").inputValue()) === "Ana",
+      "back from the album returns to the editor",
+    );
+    check(
+      albumErrors.length === 0,
+      "no browser errors (album): " + albumErrors.join("; "),
+    );
+    await albumContext.close();
     console.log(
       checks +
         " browser checks passed in " +

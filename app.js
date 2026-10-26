@@ -175,6 +175,14 @@ var I18N = {
     sum_mastered_one: "Today you mastered 1 new fact!",
     sum_mastered: "Today you mastered {n} new facts!",
     sum_practiced: "Today you practised {n} facts! Every round counts.",
+    btn_album: "View album",
+    album_title: "{name}'s album",
+    album_summary: "{m} of 55 mastered · {p} practising",
+    album_new: "New",
+    album_practicing: "Practising",
+    album_almost: "Almost there",
+    album_mastered: "Mastered",
+    album_cell_detail: "{q} · {seen} times · {secs} s",
   },
   es: {
     lang_title: "Elige tu idioma",
@@ -316,6 +324,14 @@ var I18N = {
     sum_mastered_one: "\u00a1Hoy dominaste 1 operaci\u00f3n nueva!",
     sum_mastered: "\u00a1Hoy dominaste {n} operaciones nuevas!",
     sum_practiced: "\u00a1Hoy practicaste {n} operaciones! Cada ronda cuenta.",
+    btn_album: "Ver \u00e1lbum",
+    album_title: "\u00c1lbum de {name}",
+    album_summary: "{m} de 55 dominadas \u00b7 {p} practicando",
+    album_new: "Nueva",
+    album_practicing: "Practicando",
+    album_almost: "Casi dominada",
+    album_mastered: "Dominada",
+    album_cell_detail: "{q} \u00b7 {seen} veces \u00b7 {secs} s",
   },
 };
 
@@ -1608,6 +1624,10 @@ function startApp() {
     editAvatars: document.getElementById("edit-avatars"),
     editMainMode: document.getElementById("edit-main-mode"),
     editStations: document.getElementById("edit-stations"),
+    albumTitle: document.getElementById("album-title"),
+    albumSummary: document.getElementById("album-summary"),
+    albumGrid: document.getElementById("album-grid"),
+    albumLegend: document.getElementById("album-legend"),
     numpadWrap: document.getElementById("numpad-wrap"),
     choices: document.getElementById("choices"),
     powerups: document.getElementById("powerups"),
@@ -3425,6 +3445,95 @@ function startApp() {
     goToParents();
   }
 
+  /* ---------------- Fact album (parents area) ---------------- */
+  var ALBUM_STATES = ["new", "practicing", "almost", "mastered"];
+  function albumCell(state, label, title) {
+    var cell = document.createElement("div");
+    cell.className = "album-cell";
+    cell.setAttribute("data-state", state);
+    cell.textContent = label;
+    if (title) {
+      cell.title = title;
+      cell.setAttribute("aria-label", title);
+    }
+    return cell;
+  }
+  function albumHead(text) {
+    var head = document.createElement("div");
+    head.className = "album-head";
+    head.textContent = text;
+    return head;
+  }
+  function formatSeconds(ms) {
+    var secs = Math.round(ms / 100) / 10;
+    try {
+      return secs.toLocaleString(state.lang, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      });
+    } catch (error) {
+      return secs.toFixed(1);
+    }
+  }
+  // 11 x 11 grid: a corner, column headers 1-10, then each row's header and
+  // its ten facts coloured by state; the summary counts the 55 facts.
+  function renderAlbum() {
+    var profile = editingProfile();
+    if (!profile) return;
+    var tables = profile.tables;
+    els.albumTitle.textContent = t("album_title", { name: profile.name });
+    var mastered = 0;
+    var practicing = 0;
+    Object.keys(tables.facts).forEach(function (key) {
+      var factState = tables.facts[key].state;
+      if (factState === "mastered") mastered++;
+      else if (factState === "practicing") practicing++;
+    });
+    els.albumSummary.textContent = t("album_summary", {
+      m: mastered,
+      p: practicing,
+    });
+    els.albumSummary.setAttribute("data-mastered", String(mastered));
+    els.albumSummary.setAttribute("data-practicing", String(practicing));
+    els.albumGrid.innerHTML = "";
+    els.albumGrid.appendChild(albumHead("×"));
+    for (var n = 1; n <= 10; n++) els.albumGrid.appendChild(albumHead(n));
+    Tables.albumCells(tables).forEach(function (item) {
+      if (item.b === 1) els.albumGrid.appendChild(albumHead(item.a));
+      var fact = tables.facts[item.key];
+      var q = item.a + " × " + item.b;
+      var cell = albumCell(
+        item.state,
+        q,
+        t("album_cell_detail", {
+          q: q,
+          seen: fact.seen,
+          secs: fact.seen ? formatSeconds(fact.avgMs) : "–",
+        }),
+      );
+      cell.setAttribute("data-a", String(item.a));
+      cell.setAttribute("data-b", String(item.b));
+      els.albumGrid.appendChild(cell);
+    });
+    els.albumLegend.innerHTML = "";
+    ALBUM_STATES.forEach(function (key) {
+      var row = document.createElement("li");
+      row.className = "album-legend-item";
+      var swatch = albumCell(key, "");
+      swatch.setAttribute("aria-hidden", "true");
+      row.appendChild(swatch);
+      var label = document.createElement("span");
+      label.textContent = t("album_" + key);
+      row.appendChild(label);
+      els.albumLegend.appendChild(row);
+    });
+  }
+  function openAlbum() {
+    if (!editingProfile()) return;
+    renderAlbum();
+    showScreen("screen-album");
+  }
+
   /* ---------------- Profile editor controls ---------------- */
   var SETTING_TOGGLES = [
     ["toggleSound", "sound"],
@@ -3538,6 +3647,12 @@ function startApp() {
         break;
       case "delete-profile":
         deleteEditingProfile();
+        break;
+      case "open-album":
+        openAlbum();
+        break;
+      case "back-edit":
+        showScreen("screen-profile-edit");
         break;
       case "go-howto":
         showScreen("screen-howto");

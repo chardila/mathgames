@@ -679,6 +679,11 @@
             <select id="edit-stations" class="field-input"></select>
           </label>
 
+          <button class="btn btn--secondary btn--wide" data-action="open-album">
+            <span class="btn-emoji" aria-hidden="true">📒</span>
+            <span data-i18n="btn_album">Ver álbum</span>
+          </button>
+
           <button
             class="btn btn--danger"
             data-action="reset"
@@ -693,6 +698,24 @@
           >
             Borrar jugador
           </button>
+        </div>
+      </section>
+
+      <!-- ============ FACT ALBUM (parents) ============ -->
+      <section
+        id="screen-album"
+        class="screen screen--settings"
+        aria-labelledby="album-title"
+      >
+        <div class="card">
+          <button class="btn btn--ghost btn--back" data-action="back-edit">
+            <span aria-hidden="true">←</span>
+            <span data-i18n="btn_back">Atrás</span>
+          </button>
+          <h2 id="album-title">Álbum</h2>
+          <p id="album-summary" class="album-summary"></p>
+          <div id="album-grid" class="album-grid"></div>
+          <ul id="album-legend" class="album-legend"></ul>
         </div>
       </section>
 

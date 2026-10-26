@@ -1907,3 +1907,69 @@ h3 {
     padding-bottom: 12px;
   }
 }
+
+/* Fact album (parents area): 11 x 11 grid with headers, coloured by state */
+.album-summary {
+  margin: 0 0 10px;
+  font-weight: 700;
+  color: var(--c-muted);
+}
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 2px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 12px;
+}
+.album-head,
+.album-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  line-height: 1;
+  text-align: center;
+}
+.album-head {
+  font-size: clamp(0.6rem, 2.6vw, 0.85rem);
+  font-weight: 800;
+  color: var(--c-muted);
+}
+.album-cell {
+  font-size: clamp(6px, 1.7vw, 9px);
+  font-weight: 700;
+  color: rgba(14, 27, 58, 0.75);
+  background: #d7dbe6;
+  overflow: hidden;
+}
+.album-cell[data-state="practicing"] {
+  background: var(--c-gold);
+}
+.album-cell[data-state="almost"] {
+  background: #b8e05a;
+}
+.album-cell[data-state="mastered"] {
+  background: var(--c-correct);
+  color: #fff;
+}
+.album-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.album-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.album-legend-item .album-cell {
+  width: 18px;
+  flex: none;
+}
