@@ -1625,6 +1625,32 @@ var SHOP_COSMETICS = [
 ];
 
 // End-of-round tunes, as [frequency Hz, duration ms] notes.
+// Where an accessory sits on a profile emoji. Slots: head, face, neck.
+var ACCESSORY_SLOTS = {
+  hat: "head",
+  crown: "head",
+  glasses: "face",
+  scarf: "neck",
+};
+// Per-animal nudge of each slot, in em, [dx, dy]; missing means [0, 0].
+var AVATAR_FIT = {
+  "\uD83D\uDC27": { head: [-0.15, 0], face: [-0.1, 0] },
+  "\uD83D\uDC22": { head: [-0.4, 0.1], face: [-0.4, 0.05] },
+};
+
+// What to draw over a profile emoji: null when nothing is equipped.
+function avatarAccessory(avatar, accessory) {
+  var slot = ACCESSORY_SLOTS[accessory];
+  if (!slot) return null;
+  var cosmetic = null;
+  SHOP_COSMETICS.forEach(function (c) {
+    if (c.kind === "accessory" && c.value === accessory) cosmetic = c;
+  });
+  if (!cosmetic) return null;
+  var fit = (AVATAR_FIT[avatar] && AVATAR_FIT[avatar][slot]) || [0, 0];
+  return { icon: cosmetic.icon, slot: slot, dx: fit[0], dy: fit[1] };
+}
+
 var VICTORY_MELODIES = {
   classic: [
     [523, 150],
@@ -3463,6 +3489,20 @@ function startApp() {
     renderShop();
   }
   // The equipped cosmetics of the active player (defaults if none).
+  // Fill a .profile-avatar with the emoji and the profile's own accessory.
+  function fillAvatar(el, profile) {
+    el.textContent = profile.avatar;
+    var eq = profile.progress && profile.progress.equipped;
+    var acc = avatarAccessory(profile.avatar, eq && eq.accessory);
+    if (!acc) return;
+    var piece = document.createElement("span");
+    piece.className = "avatar-acc avatar-acc--" + acc.slot;
+    piece.setAttribute("aria-hidden", "true");
+    piece.style.setProperty("--dx", acc.dx + "em");
+    piece.style.setProperty("--dy", acc.dy + "em");
+    piece.textContent = acc.icon;
+    el.appendChild(piece);
+  }
   function equipped() {
     return (state.progress && state.progress.equipped) || defaultEquipped();
   }
@@ -3693,7 +3733,7 @@ function startApp() {
       var avatar = document.createElement("span");
       avatar.className = "profile-avatar";
       avatar.setAttribute("aria-hidden", "true");
-      avatar.textContent = profile.avatar;
+      fillAvatar(avatar, profile);
       var name = document.createElement("span");
       name.className = "profile-name";
       name.textContent = profile.name;
@@ -3789,7 +3829,7 @@ function startApp() {
       var avatar = document.createElement("span");
       avatar.className = "profile-avatar";
       avatar.setAttribute("aria-hidden", "true");
-      avatar.textContent = profile.avatar;
+      fillAvatar(avatar, profile);
       var name = document.createElement("span");
       name.className = "parent-profile-name";
       name.textContent = profile.name;
@@ -4298,6 +4338,7 @@ if (typeof module !== "undefined" && module.exports) {
     updateAvgMs: updateAvgMs,
     TREASURES: TREASURES,
     SHOP_COSMETICS: SHOP_COSMETICS,
+    avatarAccessory: avatarAccessory,
     VICTORY_MELODIES: VICTORY_MELODIES,
     dailyTreasureIndex: dailyTreasureIndex,
     taskDifficultyScore: taskDifficultyScore,
