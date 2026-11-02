@@ -211,6 +211,25 @@ check(
       .cosmetics.length === 0,
   "cosmetics keep known ids once",
 );
+// avatarAccessory
+check(app.avatarAccessory("🦊", "none") === null, "no accessory, no overlay");
+check(app.avatarAccessory("🦊", "bogus") === null, "unknown accessory ignored");
+["hat", "glasses", "scarf", "crown"].forEach(function (acc) {
+  const a = app.avatarAccessory("🐱", acc);
+  const cosmetic = app.SHOP_COSMETICS.find(function (c) {
+    return c.kind === "accessory" && c.value === acc;
+  });
+  check(
+    a && a.icon === cosmetic.icon && ["head", "face", "neck"].includes(a.slot),
+    "overlay for " + acc,
+  );
+});
+check(
+  app.avatarAccessory("🐼", "hat").slot === "head" &&
+    app.avatarAccessory("🐼", "glasses").slot === "face" &&
+    app.avatarAccessory("🐼", "scarf").slot === "neck",
+  "accessories sit in head, face and neck slots",
+);
 console.log(
   checks + " profile model, migration and parent challenge checks passed.",
 );

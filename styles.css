@@ -463,8 +463,27 @@ h3 {
   border-color: var(--c-primary);
 }
 .profile-avatar {
+  position: relative;
+  display: inline-block;
   font-size: 2.4em;
   line-height: 1;
+}
+.avatar-acc {
+  position: absolute;
+  left: 50%;
+  font-size: 0.6em;
+  line-height: 1;
+  pointer-events: none;
+  transform: translate(calc(-50% + var(--dx, 0em)), var(--dy, 0em));
+}
+.avatar-acc--head {
+  top: -0.3em;
+}
+.avatar-acc--face {
+  top: 0.35em;
+}
+.avatar-acc--neck {
+  bottom: -0.6em;
 }
 .profile-name {
   overflow-wrap: anywhere;

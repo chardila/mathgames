@@ -25,9 +25,13 @@ const vm = require("node:vm");
     put: async (request, response) => stores.set(request.url, response),
   };
   let deleted;
+  // The current cache name comes from the worker, so bumping it needs no edit here.
+  const current = /CACHE_VERSION = "([^"]+)"/.exec(
+    fs.readFileSync(path.join(root, "service-worker.js"), "utf8"),
+  )[1];
   const caches = {
     open: async () => cache,
-    keys: async () => ["tablas-del-tesoro-v1", "tablas-del-tesoro-v2"],
+    keys: async () => ["tablas-del-tesoro-v1", current],
     delete: async (key) => {
       deleted = key;
     },

@@ -1918,6 +1918,32 @@ const server = http.createServer((request, response) => {
       "tapping the equipped crown removes it",
     );
     await shopPage.locator('[data-action="close-shop"]').click();
+    // The profile emoji wears its own accessory in the picker and the parents list.
+    await seedProfiles(
+      [
+        tablesAna({
+          cosmetics: ["acc-crown"],
+          equipped: { accessory: "crown" },
+        }),
+      ],
+      "p1",
+      shopPage,
+    );
+    check(
+      (
+        await shopPage
+          .locator("#profile-grid .profile-avatar .avatar-acc")
+          .allTextContents()
+      ).join("") === "👑",
+      "profile picker shows the crown on the emoji",
+    );
+    await openParents(shopPage);
+    check(
+      (await shopPage
+        .locator("#parent-profiles .profile-avatar .avatar-acc")
+        .count()) === 1,
+      "parents list shows the crown on the emoji",
+    );
     // One screenshot per map theme, to check legibility by eye.
     const allThemes = ["ocean", "forest", "sunset", "galaxy"];
     for (const theme of allThemes) {
